@@ -4,14 +4,13 @@ from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import Optional
 from typing import cast
 
-logger = logging.getLogger('red.mycog')
+logger = logging.getLogger('red.welcome')
 
-DEFAULT_WELCOME = "Welcome {user.name} to {guild.name}!"
+DEFAULT_WELCOME = 'Everyone welcome {user.mention} to {guild}!'
 
 
 class Welcome(commands.Cog):
-    """My custom cog"""
-
+    """Carl's Welcome Cog"""
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(
@@ -35,7 +34,7 @@ class Welcome(commands.Cog):
         _enabled = await self.config.guild(guild).enabled()
         logger.debug('_enabled: %s', _enabled)
         if not _enabled:
-            logger.debug('Welcome messages are DISABLED, not processing.')
+            logger.debug('Welcome messages are DISABLED.')
             return
         _channel = await self.config.guild(guild).channel()
         logger.debug('_channel: %s', _channel)
@@ -47,7 +46,8 @@ class Welcome(commands.Cog):
         _delete_after = await self.config.guild(guild).delete_after()
         logger.debug('_delete_after: %s', _delete_after)
         _msg = await self.config.guild(guild).message()
-        await channel.send(_msg, delete_after=_delete_after)
+        message = _msg.format(user=member, guild=guild)
+        await channel.send(message, delete_after=_delete_after)
 
     @commands.group(name='welcome')
     @commands.guild_only()
@@ -57,15 +57,23 @@ class Welcome(commands.Cog):
 
     @welcome.command(name='test')
     async def welcome_test(self, ctx):
-        """This does stuff!"""
+        """Test the Welcome Message."""
+        _conf = await self.config.guild(ctx.message.guild).all()
         logger.debug('ctx: %s', ctx)
         logger.debug('ctx.author: %s', ctx.author)
         logger.debug('ctx.guild: %s', ctx.guild)
-        await self.on_member_join(ctx.author)
+        if not bool(_conf['enabled']):
+            await ctx.send('Error: Module is disabled, enable first.')
+        elif not _conf['channel']:
+            await ctx.send('Error: Channel is not set, set one first.')
+        elif not _conf['message']:
+            await ctx.send('Error: Message is not set, set one first.')
+        else:
+            await self.on_member_join(ctx.author)
 
     @welcome.command(name='enable')
     async def welcome_enable(self, ctx):
-        """Enables welcome messages"""
+        """Enables welcome messages."""
         _enabled = await self.config.guild(ctx.message.guild).enabled()
         if _enabled:
             await ctx.send('Server welcome messages are already enabled.')
@@ -75,7 +83,7 @@ class Welcome(commands.Cog):
 
     @welcome.command(name='disable')
     async def welcome_disable(self, ctx):
-        """Disable welcome messages"""
+        """Disable welcome messages."""
         _enabled = await self.config.guild(ctx.message.guild).enabled()
         if not _enabled:
             await ctx.send('Server welcome messages are already disabled.')
@@ -85,44 +93,46 @@ class Welcome(commands.Cog):
 
     @welcome.command(name='status')
     async def welcome_status(self, ctx):
-        """Get welcome message status"""
-        _enabled = await self.config.guild(ctx.message.guild).enabled()
-        if _enabled:
-            await ctx.send('Server welcome messages are enabled.')
-        else:
-            await ctx.send('Server welcome messages are disabled.')
+        """Get welcome message status."""
+        _conf = await self.config.guild(ctx.message.guild).all()
+        _chan = cast(discord.TextChannel, _conf['channel'])
+        channel = discord.utils.get(ctx.guild.channels, id=_chan)
+        logger.debug(channel)
+        logger.debug(channel.name)
+        _enabled = str(bool(_conf['channel']))
+        out = f"Welcome Message Status:\n```Enabled: {_enabled}\n"
+        out += f"Delete After: {_conf['delete_after']}\n"
+        out += f"Channel: #{channel.name} - {channel.id}\n"
+        out += f"Message: {_conf['message']}```"
+        await ctx.send(out)
 
     @welcome.command(name='channel')
     async def welcome_channel(self, ctx, channel: discord.TextChannel):
-        """Sets the channel to send the welcome message"""
+        """Sets the channel to send the welcome message."""
         # _channel = await self.config.guild(ctx.message.guild).channel()
         await self.config.guild(ctx.message.guild).channel.set(channel.id)
         msg = f'I will now send welcome messages to {channel.mention}'
         await ctx.send(msg)
 
     @welcome.command(name='message')
-    async def welcome_message(self, ctx, *, message: str = None):
+    async def welcome_message(self, ctx, *, message: str):
         """
         Adds a welcome message format for the guild to be chosen at random
         Variables that can be used are:
-            {user.name} {user.discriminator} {user.id}
-            {guild.name}
+            {user.mention} {user.name} {user.id} {user} {guild}
         Example format:
-            Everyone welcome {user} to {guild}.
+            Everyone welcome {user.mention} to {guild}!
         """
         logger.debug('welcome_message: %s', message)
         if message:
             await self.config.guild(ctx.message.guild).message.set(message)
-            await ctx.send('Welcome message has been set.')
-        else:
-            _message = await self.config.guild(ctx.message.guild).message()
-            await ctx.send('Include a new message to change it.\n'
-                           f'Current Welcome Message: ```{_message}```')
+            await ctx.send('Welcome message has been updated.')
 
     @welcome.command(name="deleteafter")
     async def welcome_deleteafter(self, ctx, delete_after: Optional[int] = None):
         """
         Set the time after which a welcome message is deleted in seconds.
+        Leave empty or enter 0 to disable.
         """
         logger.debug(delete_after)
         if delete_after:
