@@ -51,7 +51,7 @@ class Welcome(commands.Cog):
 
     @commands.group(name='welcome')
     @commands.guild_only()
-    @commands.admin_or_permissions(manage_server=True)
+    @commands.admin_or_permissions(manage_guild=True)
     async def welcome(self, ctx):
         """Options for sending welcome messages."""
 
