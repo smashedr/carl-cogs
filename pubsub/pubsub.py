@@ -9,7 +9,7 @@ logger = logging.getLogger('red.pubsub')
 
 
 class PubSub(commands.Cog):
-    """My PubSub Cog"""
+    """Carl's PubSub Cog"""
 
     def __init__(self, bot):
         logger.debug("__init__")
@@ -18,12 +18,12 @@ class PubSub(commands.Cog):
         self.client = None
         self.pubsub = None
 
-    def cog_unload(self):
-        self.loop.cancel()
+    async def cog_unload(self):
+        await self.loop.cancel()
 
     async def initialize(self):
         logger.debug("Initializing PubSub Cog Start")
-        self.client = aredis.StrictRedis(host='dev01.cssnr.com', port=6379, db=0, password='4xTgwNpL6GrT3ulY')
+        self.client = aredis.StrictRedis(host='redis', port=6379, db=0)
         self.pubsub = self.client.pubsub(ignore_subscribe_messages=True)
         self.loop = asyncio.create_task(self.my_main_loop())
         logger.debug("Initializing PubSub Cog Finished")

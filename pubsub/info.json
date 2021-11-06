@@ -3,7 +3,7 @@
   "author": ["Shane#0816"],
   "short": "Custom Redis Pub/Sub.",
   "description": "Custom Redis pubsub module for Red and Carl Bot.",
-  "install_msg": "**This is not for public use...**\nOnly use this cog if you know what you are doing.",
+  "install_msg": "**This is not for public use...**\nOnly use if you know what you are doing.",
   "end_user_data_statement": "Caveat Emptor.",
   "required_cogs": {},
   "requirements": ["aredis"],
