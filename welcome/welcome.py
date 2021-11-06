@@ -98,11 +98,13 @@ class Welcome(commands.Cog):
         _chan = cast(discord.TextChannel, _conf['channel'])
         channel = discord.utils.get(ctx.guild.channels, id=_chan)
         logger.debug(channel)
-        logger.debug(channel.name)
         _enabled = str(bool(_conf['enabled']))
         out = f"Welcome Message Status:\n```Enabled: {_enabled}\n"
         out += f"Delete After: {_conf['delete_after']}\n"
-        out += f"Channel: #{channel.name} - {channel.id}\n"
+        if channel:
+            out += f"Channel: #{channel.name} - {channel.id}\n"
+        else:
+            out += f"Channel: **NOT SET**\n"
         out += f"Message: {_conf['message']}```"
         await ctx.send(out)
 
