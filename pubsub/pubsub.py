@@ -18,25 +18,15 @@ class PubSub(commands.Cog):
         self.client = None
         self.pubsub = None
 
-    @staticmethod
-    def my_handler(x):
-        print(x)
-
     async def initialize(self):
-        """
-        This does NOT work, please tell me why!
-        """
         logger.debug("Initializing PubSub Cog Start")
-        # await self.bot.wait_until_ready()
-        logger.debug('bot.wait_until_ready')
-        self.client = aredis.StrictRedis(host='redis', port=6379, db=0)
+        self.client = aredis.StrictRedis(host='dev01.cssnr.com', port=6379, db=0, password='4xTgwNpL6GrT3ulY')
         self.pubsub = self.client.pubsub(ignore_subscribe_messages=True)
         self.loop = asyncio.create_task(self.my_main_loop())
         logger.debug("Initializing PubSub Cog Finished")
 
     async def my_main_loop(self) -> None:
         logger.debug('my_main_loop')
-        # await pubsub.subscribe(**{'my-channel': self.my_handler}, ignore_subscribe_messages=True)
         await self.pubsub.subscribe('loop')
         while self is self.bot.get_cog('PubSub'):
             # logger.debug('looping: my_main_loop')
@@ -69,15 +59,17 @@ class PubSub(commands.Cog):
                 data['roles'] = self.process_roles(guild.roles)
             if 'channels' in message['requests']:
                 data['channels'] = self.process_channels(guild.channels)
-            print(data)
-            await self.client.publish(channel, json.dumps(data))
+            if 'members' in message['requests']:
+                data['members'] = self.process_members(guild.members)
+            logger.debug(data)
+            await self.client.publish(channel, json.dumps(data, default=str))
         except Exception as error:
             logger.exception(error)
             logger.warning('Exception processing message.')
 
     @staticmethod
     def process_roles(roles):
-        resp = []
+        response = []
         for role in roles:
             data = {
                 'color': str(role.color),
@@ -89,12 +81,12 @@ class PubSub(commands.Cog):
                 'permissions': role.permissions.value,
                 'position': role.position,
             }
-            resp.append(data)
-        return resp
+            response.append(data)
+        return response
 
     @staticmethod
     def process_channels(channels):
-        resp = []
+        response = []
         for channel in channels:
             data = {
                 'type': channel.type,
@@ -102,16 +94,37 @@ class PubSub(commands.Cog):
                 'id': channel.id,
                 'name': channel.name,
             }
+            response.append(data)
+        return response
+
+    @classmethod
+    def process_members(cls, members):
+        resp = []
+        for member in members:
+            data = {
+                'id': member.id,
+                'name': member.name,
+                'discriminator': member.discriminator,
+                'nick': member.nick,
+                'display_name': member.display_name,
+                'default_avatar_url': member.default_avatar_url,
+                'avatar_url': member.avatar_url,
+                'roles': cls.process_iterable(member.roles, ['id', 'name']),
+                'bot': bool(member.bot),
+                'pending': bool(member.pending),
+                'status': member.status,
+                'color': member.color,
+                'joined_at': member.joined_at,
+            }
             resp.append(data)
         return resp
 
-    # @staticmethod
-    # def process_iterable(iterable):
-    #     keys = ['color', 'hoist', 'id', 'managed', 'mentionable', 'name', 'permissions', 'position', 'tags']
-    #     resp = []
-    #     for i in iterable:
-    #         data = {}
-    #         for key in keys:
-    #             data[key] = getattr(i, key)
-    #         resp.append(data)
-    #     return resp
+    @staticmethod
+    def process_iterable(iterable, keys: list) -> list:
+        resp = []
+        for i in iterable:
+            data = {}
+            for key in keys:
+                data[key] = getattr(i, key)
+            resp.append(data)
+        return resp

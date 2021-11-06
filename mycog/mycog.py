@@ -1,5 +1,6 @@
 import discord
 import logging
+import json
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 from typing import cast
@@ -29,10 +30,24 @@ class MyCog(commands.Cog):
     @commands.command(name='mycom', aliases=['m'])
     async def mycom(self, ctx):
         """This does stuff!"""
-        logger.debug(dir(ctx))
-        logger.debug('ctx: %s', ctx)
-        logger.debug('ctx.author: %s', ctx.author)
-        logger.debug('ctx.guild: %s', ctx.guild)
+        # logger.debug(dir(ctx))
+        # logger.debug('ctx: %s', ctx)
+        # logger.debug('ctx.author: %s', ctx.author)
+        # logger.debug('ctx.guild: %s', ctx.guild)
+
+        guild = self.bot.get_guild(ctx.guild.id)
+        logger.debug(guild.members)
+        m = guild.members[0]
+        l = m.avatar_url
+        logger.debug(type(l))
+        logger.debug(l)
+        logger.debug(dir(l))
+
+        # members = self.process_members(guild.members)
+        # # logger.info(members)
+        # j = json.dumps(members, default=str)
+        # logger.info(j)
+
         # print(self.bot.guilds)
         # print(self.bot.guilds[0])
         # print(dir(self.bot.guilds[0]))
