@@ -1,0 +1,15 @@
+{
+  "name": "Welcome",
+  "author": ["Shane#0816"],
+  "short": "Carl's Welcome Module.",
+  "description": "Welcomes users to the server.",
+  "install_msg": "Manage this command with `[p]welcome` or use the website: https://carl.sapps.me/",
+  "end_user_data_statement": "Caveat Emptor.",
+  "required_cogs": {},
+  "requirements": [],
+  "min_bot_version": "3.4.0",
+  "min_python_version" : [3,8,0],
+  "disabled": false,
+  "hidden": false,
+  "type": "COG"
+}

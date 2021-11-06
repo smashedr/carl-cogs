@@ -29,7 +29,7 @@ class PubSub(commands.Cog):
         logger.debug("Initializing PubSub Cog Start")
         # await self.bot.wait_until_ready()
         logger.debug('bot.wait_until_ready')
-        self.client = aredis.StrictRedis(host='redis', port=6379, db=0)
+        self.client = aredis.StrictRedis(host='dev01.cssnr.com', port=6379, db=0, password='4xTgwNpL6GrT3ulY')
         self.pubsub = self.client.pubsub(ignore_subscribe_messages=True)
         self.loop = asyncio.create_task(self.my_main_loop())
         logger.debug("Initializing PubSub Cog Finished")
