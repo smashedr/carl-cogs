@@ -5,54 +5,38 @@ from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 from typing import cast
 
-logger = logging.getLogger('red.mycog')
+from .messages import Message
 
-DEFAULT_WELCOME = "Welcome {user.name} to {guild.name}!"
+logger = logging.getLogger('red.mycog')
 
 
 class MyCog(commands.Cog):
     """My custom cog"""
-
     def __init__(self, bot):
         self.bot = bot
-        # self.config = Config.get_conf(
-        #     self, identifier=1337, force_registration=True
-        # )
-        # self.config.register_guild(
-        #     message=DEFAULT_WELCOME,
-        #     enabled=False,
-        #     channel=None,
-        # )
+        self.msg = Message
+        # self.config = Config.get_conf(self, 1337, True)
+        # self.config.register_guild(**DEFAULT_SETTINGS)
 
     async def initialize(self) -> None:
         logger.debug('WINNING - Initializing MyCog Cog')
 
+    @staticmethod
+    def from_hex_id(hex_id):
+        return discord.Colour(int(hex_id.lstrip('#'), base=16))
+
     @commands.command(name='mycom', aliases=['m'])
     async def mycom(self, ctx):
         """This does stuff!"""
-        # logger.debug(dir(ctx))
-        # logger.debug('ctx: %s', ctx)
-        # logger.debug('ctx.author: %s', ctx.author)
-        # logger.debug('ctx.guild: %s', ctx.guild)
+        # guild = self.bot.get_guild(ctx.guild.id)
 
-        guild = self.bot.get_guild(ctx.guild.id)
-        logger.debug(guild.members)
-        m = guild.members[0]
-        l = m.avatar_url
-        logger.debug(type(l))
-        logger.debug(l)
-        logger.debug(dir(l))
+        # logger.debug(dir(self))
+        # logger.debug(dir(self.bot))
+        # embed = discord.Embed()
+        # embed.description = 'I can do stuff! yes'
+        # embed.color = self.from_hex_id('#00ff00')
+        # await ctx.send(embed=embed)
 
-        # members = self.process_members(guild.members)
-        # # logger.info(members)
-        # j = json.dumps(members, default=str)
-        # logger.info(j)
-
-        # print(self.bot.guilds)
-        # print(self.bot.guilds[0])
-        # print(dir(self.bot.guilds[0]))
-        # print(self.bot.guilds[0].roles)
         # guild = self.bot.get_guild(188145201879973889)
-        # print(dir(guild.channels[0]))
-        # print(guild.channels[0])
-        await ctx.send('I can do stuff! yes')
+        # await ctx.send('I can do stuff! yes')
+        await ctx.send(embed=self.msg.ok('Winning'))

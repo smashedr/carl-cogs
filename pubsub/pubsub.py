@@ -10,9 +10,7 @@ logger = logging.getLogger('red.pubsub')
 
 class PubSub(commands.Cog):
     """Carl's PubSub Cog"""
-
     def __init__(self, bot):
-        logger.debug("__init__")
         self.bot = bot
         self.loop = None
         self.client = None
