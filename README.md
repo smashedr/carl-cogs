@@ -16,9 +16,10 @@ Cogs for Carl Bot.
 
 Cog | Description
 ------------ | -------------
-**welcome** | Welcomes new users to your servers.
+**autorole** | Adds roles to new members on join.
+**welcome** | Welcomes new users to your servers on join.
 
-### Internal Cogs
+### Internal/Hidden Cogs
 
 Cog | Description
 ------------ | -------------
