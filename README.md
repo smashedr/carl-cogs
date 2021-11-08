@@ -17,6 +17,7 @@ Cogs for Carl Bot.
 Cog | Description
 ------------ | -------------
 **autorole** | Adds roles to new members on join.
+**stickyroles** | Remembers users roles and adds them on rejoin.
 **welcome** | Welcomes new users to your servers on join.
 
 ### Internal/Hidden Cogs

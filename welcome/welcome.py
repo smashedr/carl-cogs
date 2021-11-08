@@ -27,15 +27,11 @@ class Welcome(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
         config = await self.config.guild(member.guild).all()
-        if not config['enabled']:
-            logger.debug('Welcome messages are DISABLED.')
-            return
-        if not config['channel']:
-            logger.warning('NO WELCOME CHANNEL SET!')
+        if not config['enabled'] or not config['channel']:
             return
         channel = cast(discord.TextChannel, member.guild.get_channel(config['channel']))
         if not channel:
-            logger.warning('CHANNEL SET BUT NOT FOUND! Was it deleted?')
+            logger.warning('Channel set but not found! Was it deleted?')
             return
         message = config['message'].format(user=member, guild=member.guild)
         await channel.send(message, delete_after=config['delete_after'])

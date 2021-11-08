@@ -10,7 +10,7 @@ class Autorole(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
-        self.config.register_guild(roles=None, enabled=False)
+        self.config.register_guild(enabled=False, roles=None)
 
     async def initialize(self) -> None:
         logger.info('Initializing Autorole Cog')

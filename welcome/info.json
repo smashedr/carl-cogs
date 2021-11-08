@@ -2,7 +2,7 @@
   "name": "Welcome",
   "author": ["Shane#0816"],
   "short": "Carl's Welcome Module.",
-  "description": "Welcomes users to the server.",
+  "description": "Welcomes new users to your servers on join.",
   "install_msg": "Manage this command with `[p]welcome` or use the website: https://carl.sapps.me/",
   "end_user_data_statement": "Caveat Emptor.",
   "required_cogs": {},

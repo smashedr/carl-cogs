@@ -1,9 +1,9 @@
 {
-  "name": "Autorole",
+  "name": "Stickyroles",
   "author": ["Shane#0816"],
-  "short": "Carl's Autorole Module.",
-  "description": "Adds roles to new members on join.",
-  "install_msg": "Manage this command with `[p]autorole`",
+  "short": "Carl's Stickyroles Module.",
+  "description": "Remembers users roles and adds them on rejoin.",
+  "install_msg": "Enable this with `[p]stickyroles enable`",
   "end_user_data_statement": "Caveat Emptor.",
   "required_cogs": {},
   "requirements": [],

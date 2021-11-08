@@ -1,9 +1,13 @@
+import asyncio
 import discord
 import logging
 import json
-from redbot.core import commands, Config
-from redbot.core.utils.chat_formatting import box, humanize_list, pagify
+
 from typing import cast
+
+from redbot.core import commands, Config
+from redbot.core.utils.menus import start_adding_reactions
+from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 
 from .messages import Message
 
@@ -14,7 +18,6 @@ class MyCog(commands.Cog):
     """My custom cog"""
     def __init__(self, bot):
         self.bot = bot
-        self.msg = Message
         # self.config = Config.get_conf(self, 1337, True)
         # self.config.register_guild(**DEFAULT_SETTINGS)
 
@@ -22,7 +25,7 @@ class MyCog(commands.Cog):
         logger.debug('WINNING - Initializing MyCog Cog')
 
     @staticmethod
-    def from_hex_id(hex_id):
+    def hex_to_dis(hex_id):
         return discord.Colour(int(hex_id.lstrip('#'), base=16))
 
     @commands.command(name='mycom', aliases=['m'])
@@ -30,13 +33,16 @@ class MyCog(commands.Cog):
         """This does stuff!"""
         # guild = self.bot.get_guild(ctx.guild.id)
 
-        # logger.debug(dir(self))
-        # logger.debug(dir(self.bot))
+        # log = ctx
+        # logger.debug(dir(log))
+        # logger.debug(type(log))
+        # logger.debug(log)
+
         # embed = discord.Embed()
         # embed.description = 'I can do stuff! yes'
         # embed.color = self.from_hex_id('#00ff00')
         # await ctx.send(embed=embed)
 
         # guild = self.bot.get_guild(188145201879973889)
-        # await ctx.send('I can do stuff! yes')
-        await ctx.send(embed=self.msg.ok('Winning'))
+
+        await ctx.send('I am my cog.')
