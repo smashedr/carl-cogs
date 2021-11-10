@@ -233,7 +233,7 @@ class Reactroles(commands.Cog):
         Create a reaction role
         `<message>` The channel_id-message_id pair. Right click on the message,
         hold SHIFT, then click Copy ID. If you don't see Copy ID enable it under
-         User Settings -> Advanced -> Developer Mode
+        User Settings -> Advanced -> Developer Mode
         `<name>` The name of a previouly created Reaction Role.
         """
         logger.debug(message.channel.id)

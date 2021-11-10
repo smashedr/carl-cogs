@@ -20,7 +20,7 @@ If you run a bot compatible with Cogs:
 
 Cog | Description
 ------------ | -------------
-**autorole** | Adds roles to new members on join.
+**autoroles** | Adds roles to new members on join.
 **stickyroles** | Remembers users roles and adds them on rejoin.
 **welcome** | Welcomes new users to your servers on join.
 
