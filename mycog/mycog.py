@@ -3,7 +3,7 @@ import discord
 import logging
 import json
 
-from typing import cast
+from typing import cast, Optional
 
 from redbot.core import commands, Config
 from redbot.core.utils.menus import start_adding_reactions
@@ -22,7 +22,7 @@ class MyCog(commands.Cog):
         # self.config.register_guild(**DEFAULT_SETTINGS)
 
     async def initialize(self) -> None:
-        logger.debug('WINNING - Initializing MyCog Cog')
+        logger.debug('Initializing MyCog Cog')
 
     @staticmethod
     def hex_to_dis(hex_id):
@@ -30,7 +30,7 @@ class MyCog(commands.Cog):
 
     @commands.command(name='mycom', aliases=['m'])
     async def mycom(self, ctx):
-        """This does stuff!"""
+        """I am MyCom!"""
         # guild = self.bot.get_guild(ctx.guild.id)
 
         # log = ctx
@@ -45,4 +45,4 @@ class MyCog(commands.Cog):
 
         # guild = self.bot.get_guild(188145201879973889)
 
-        await ctx.send('I am my cog.')
+        await ctx.send("I'm a Cog!")

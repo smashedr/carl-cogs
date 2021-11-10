@@ -6,6 +6,10 @@ Cogs for Carl Bot.
 
 ### Installing
 
+To add Carl Bot to your server visit: [https://carl.sapps.me/](https://carl.sapps.me/) 
+
+If you run a bot compatible with Cogs:
+
 ```
 [p]repo add carl-cogs https://github.com/smashedr/carl-cogs
 [p]cog list carl-cogs
@@ -24,5 +28,6 @@ Cog | Description
 
 Cog | Description
 ------------ | -------------
-**mycog** | For testing purposes only...
+**mycog** | For testing purposes only!
 **pubsub** | Custom Redis Pub/Sub for Carl's website.
+**reactroles** | React Roles cog; working but not finished.

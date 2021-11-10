@@ -42,9 +42,9 @@ class Stickyroles(commands.Cog):
 
     @commands.group(name='stickyroles', aliases=['stickyrole', 'sr'])
     @commands.guild_only()
-    @commands.admin_or_permissions()
+    @commands.admin_or_permissions(manage_roles=True)
     async def stickyroles(self, ctx):
-        """Enable or disable remembering users roles and adding them back ."""
+        """Enable or disable remembering users roles and adding them back."""
 
     @stickyroles.command(name='enable', aliases=['on'])
     async def stickyrolesenable(self, ctx):
@@ -77,28 +77,6 @@ class Stickyroles(commands.Cog):
             return
         await self.sync_roles(ctx)
 
-    # @stickyroles.command(name='add')
-    # async def stickyroles_add(self, ctx, role: discord.Role) -> None:
-    #     """Adds a role to Stickyroles list of roles to add on rejoin"""
-    #     roles = await self.config.guild(ctx.guild).roles()
-    #     if role.id not in roles:
-    #         roles.append(role.id)
-    #         await self.config.guild(ctx.guild).roles.set(roles)
-    #         await ctx.send(f'Added role `@{role.name}` to Stickyroles list.')
-    #     else:
-    #         await ctx.send(f'Role `@{role.name}` already in Stickyroles list.')
-    #
-    # @stickyroles.command(name='delete', aliases=['del', 'remove'])
-    # async def stickyroles_delete(self, ctx, role: discord.Role):
-    #     """Removes a role from Stickyroles list of roles to add on rejoin"""
-    #     roles = await self.config.guild(ctx.guild).roles()
-    #     if role.id in roles:
-    #         roles.remove(role.id)
-    #         await self.config.guild(ctx.guild).roles.set(roles)
-    #         await ctx.send(f'Removed role `@{role.name}` from Stickyroles list.')
-    #     else:
-    #         await ctx.send(f'Role `@{role.name}` not in Stickyroles list.')
-
     async def sync_roles(self, ctx):
         steps = 2
         members = ctx.guild.members
@@ -128,3 +106,25 @@ class Stickyroles(commands.Cog):
                 await self.config.member(member).roles.set(role_ids)
         await ctx.send('✅ All Done.', delete_after=30)
         await message.delete()
+
+    # @stickyroles.command(name='add')
+    # async def stickyroles_add(self, ctx, role: discord.Role) -> None:
+    #     """Adds a role to Stickyroles list of roles to add on rejoin"""
+    #     roles = await self.config.guild(ctx.guild).roles()
+    #     if role.id not in roles:
+    #         roles.append(role.id)
+    #         await self.config.guild(ctx.guild).roles.set(roles)
+    #         await ctx.send(f'Added role `@{role.name}` to Stickyroles list.')
+    #     else:
+    #         await ctx.send(f'Role `@{role.name}` already in Stickyroles list.')
+    #
+    # @stickyroles.command(name='delete', aliases=['del', 'remove'])
+    # async def stickyroles_delete(self, ctx, role: discord.Role):
+    #     """Removes a role from Stickyroles list of roles to add on rejoin"""
+    #     roles = await self.config.guild(ctx.guild).roles()
+    #     if role.id in roles:
+    #         roles.remove(role.id)
+    #         await self.config.guild(ctx.guild).roles.set(roles)
+    #         await ctx.send(f'Removed role `@{role.name}` from Stickyroles list.')
+    #     else:
+    #         await ctx.send(f'Role `@{role.name}` not in Stickyroles list.')

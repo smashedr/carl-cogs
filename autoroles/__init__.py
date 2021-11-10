@@ -1,7 +1,7 @@
-from .autorole import Autorole
+from .autoroles import Autoroles
 
 
 async def setup(bot):
-    cog = Autorole(bot)
+    cog = Autoroles(bot)
     bot.add_cog(cog)
     await cog.initialize()
