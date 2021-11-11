@@ -34,20 +34,20 @@ class Autoroles(commands.Cog):
         """Enables Autoroles."""
         enabled = await self.config.guild(ctx.guild).enabled()
         if enabled:
-            await ctx.send('Autorole is already enabled.')
+            await ctx.send('Autoroles is already enabled.')
         else:
             await self.config.guild(ctx.guild).enabled.set(True)
-            await ctx.send('Autorole has been enabled.')
+            await ctx.send('Autoroles has been enabled.')
 
     @autoroles.command(name='disable', aliases=['off'])
     async def autoroles_disable(self, ctx):
         """Disable Autoroles."""
         enabled = await self.config.guild(ctx.guild).enabled()
         if not enabled:
-            await ctx.send('Autorole is already disabled.')
+            await ctx.send('Autoroles is already disabled.')
         else:
             await self.config.guild(ctx.guild).enabled.set(False)
-            await ctx.send('Autorole has been disabled.')
+            await ctx.send('Autoroles has been disabled.')
 
     @autoroles.command(name='add')
     @commands.max_concurrency(1, commands.BucketType.guild)

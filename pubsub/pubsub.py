@@ -3,7 +3,8 @@ import asyncio
 import json
 import logging
 import time
-from redbot.core import commands
+from redbot.core import commands, Config
+from redbot.core.utils.predicates import MessagePredicate
 
 logger = logging.getLogger('red.pubsub')
 
@@ -12,16 +13,24 @@ class PubSub(commands.Cog):
     """Carl's PubSub Cog"""
     def __init__(self, bot):
         self.bot = bot
+        self.config = Config.get_conf(self, 1337, True)
+        self.config.register_global(host='redis', password=None)
         self.loop = None
         self.client = None
         self.pubsub = None
+        self.host = None
+        self.password = None
 
-    async def cog_unload(self):
-        await self.loop.cancel()
+    def cog_unload(self):
+        self.loop.cancel()
 
     async def initialize(self):
         logger.debug("Initializing PubSub Cog Start")
-        self.client = aredis.StrictRedis(host='redis', port=6379, db=0)
+        self.host = await self.config.host()
+        self.password = await self.config.password()
+        logger.debug(self.host)
+        logger.debug(self.password)
+        self.client = aredis.StrictRedis(host=self.host, port=6379, db=0, password=self.password)
         self.pubsub = self.client.pubsub(ignore_subscribe_messages=True)
         self.loop = asyncio.create_task(self.my_main_loop())
         logger.debug("Initializing PubSub Cog Finished")
@@ -129,3 +138,67 @@ class PubSub(commands.Cog):
                 data[key] = getattr(i, key)
             resp.append(data)
         return resp
+
+    @commands.group(name='pubsub', aliases=['ps'])
+    @commands.is_owner()
+    async def pubsub(self, ctx):
+        """Options for configuring PubSub."""
+
+    @pubsub.command(name='start', aliases=['on'])
+    async def pubsub_start(self, ctx):
+        """Starts PubSub."""
+        # enabled = await self.config.enabled()
+        await ctx.send('PubSub started. Does not work.')
+
+    @pubsub.command(name='stop', aliases=['off'])
+    async def pubsub_stop(self, ctx):
+        """Stops PubSub."""
+        # enabled = await self.config.enabled()
+        await ctx.send('PubSub stopped. Does not work, [p]unload instead.')
+
+    @pubsub.command(name='set', aliases=['s'])
+    async def pubsub_set(self, ctx, setting):
+        """Set optional PubSub settings."""
+        # enabled = await self.config.enabled()
+        if setting.lower() in ['password', 'pass']:
+            await ctx.send('Check your DM.')
+            channel = await ctx.author.create_dm()
+            await channel.send('Please enter the password...')
+            pred = MessagePredicate.same_context(channel=channel, user=ctx.author)
+            try:
+                response = await self.bot.wait_for("message", check=pred, timeout=30)
+            except asyncio.TimeoutError:
+                await channel.send(f'Request timed out. You need to start over.')
+                return
+            if response:
+                password = response.content
+                await channel.send('Password recorded successfully. You can delete '
+                                   'the message containing the password now!')
+            else:
+                logger.debug('Error like wtf yo...')
+                logger.debug(pred.result)
+                logger.debug(response.content)
+                return
+            logger.debug('SUCCESS password')
+            logger.debug(password)
+            await self.config.password.set(password)
+
+        elif setting.lower() in ['hostname', 'host']:
+            await ctx.channel.send('Please enter the hostname...')
+            pred = MessagePredicate.same_context(ctx)
+            try:
+                response = await self.bot.wait_for("message", check=pred, timeout=30)
+            except asyncio.TimeoutError:
+                await ctx.channel.send(f'Request timed out. You need to start over.')
+                return
+            if response:
+                host = response.content
+                await ctx.channel.send('Hostname recorded successfully.')
+            else:
+                logger.debug('Error like wtf yo...')
+                logger.debug(pred.result)
+                logger.debug(response.content)
+                return
+            logger.debug('SUCCESS hostname')
+            logger.debug(host)
+            await self.config.host.set(host)

@@ -1,9 +1,9 @@
 {
-  "name": "Autoroles",
+  "name": "Autorooms",
   "author": ["Shane#0816"],
-  "short": "Carl's Autoroles Module.",
-  "description": "Adds roles to new members on join.",
-  "install_msg": "Manage this command with `[p]autoroles`",
+  "short": "Carl's Autorooms Module.",
+  "description": "Creates custom user rooms on the fly and cleans up when done.",
+  "install_msg": "Manage this command with `[p]autorooms`",
   "end_user_data_statement": "Caveat Emptor.",
   "required_cogs": {},
   "requirements": [],

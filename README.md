@@ -21,6 +21,7 @@ If you run a bot compatible with Cogs:
 Cog | Description
 ------------ | -------------
 **autoroles** | Adds roles to new members on join.
+**autorooms** | Creates custom user rooms on the fly and cleans up when done.
 **stickyroles** | Remembers users roles and adds them on rejoin.
 **welcome** | Welcomes new users to your servers on join.
 
