@@ -20,6 +20,7 @@ If you run a bot compatible with Cogs:
 
 Cog | Description
 ------------ | -------------
+**autochannels** | Creates and removes extra voice channels as needed.
 **autoroles** | Adds roles to new members on join.
 **stickyroles** | Remembers users roles and adds them on rejoin.
 **userchannels** | Creates temporary rooms on the fly and cleans up when done.
@@ -29,7 +30,6 @@ Cog | Description
 
 Cog | Description
 ------------ | -------------
-**autochannels** | WIP: Creates and removes extra voice channels as needed. Not working!
 **mycog** | For testing purposes only!
 **pubsub** | Custom Redis Pub/Sub for Carl's website.
 **reactroles** | WIP: React Roles cog; working but not finished.
