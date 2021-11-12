@@ -28,7 +28,7 @@ ROOM_NAMES = {
     't': ['Tent', 'Tower', 'Town'],
     'u': ['Union'],
     'v': ['Valley', 'Villa', 'Vineyard'],
-    'ww': [''],
+    'w': ['Warehouse'],
     'xx': [''],
     'yy': [''],
     'zz': [''],
@@ -143,7 +143,7 @@ class Userchannels(commands.Cog):
 
     @userchannels.command(name='enable', aliases=['e', 'on'])
     async def userchannels_enable(self, ctx):
-        """Enable Userchannels Globally."""
+        """Enable Userchannels."""
         enabled = await self.config.guild(ctx.guild).enabled()
         if enabled:
             await ctx.send('Userchannels is already enabled.')
@@ -153,7 +153,7 @@ class Userchannels(commands.Cog):
 
     @userchannels.command(name='disable', aliases=['d', 'off'])
     async def userchannels_disable(self, ctx):
-        """Disable Userchannels Globally."""
+        """Disable Userchannels."""
         enabled = await self.config.guild(ctx.guild).enabled()
         if not enabled:
             await ctx.send('Userchannels is already disabled.')
@@ -164,7 +164,7 @@ class Userchannels(commands.Cog):
     @userchannels.command(name='channel', aliases=['ch', 'chan', 'chann'])
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def userchannels_channel(self, ctx, *, channel: discord.VoiceChannel):
-        """Set Userchannels Userchannels channel."""
+        """Set Userchannels channel."""
         logger.debug(channel.id)
         await self.config.guild(ctx.guild).channel.set(channel.id)
         await ctx.send(f'Userchannels Userchannels Channel set to:\n'
@@ -173,7 +173,7 @@ class Userchannels(commands.Cog):
     @userchannels.command(name='category', aliases=['ca', 'cat'])
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def userchannels_category(self, ctx, *, category: discord.CategoryChannel):
-        """Set Userchannels Userchannels category."""
+        """Set Userchannels category."""
         logger.debug(category.id)
         await self.config.guild(ctx.guild).category.set(category.id)
         await ctx.send(f'Userchannels Userchannels Category set to:\n'
@@ -181,7 +181,7 @@ class Userchannels(commands.Cog):
 
     @userchannels.command(name='status', aliases=['s', 'stat', 'settings'])
     async def userchannels_status(self, ctx):
-        """Get Userchannels Userchannels status."""
+        """Get Userchannels status."""
         config = await self.config.guild(ctx.guild).all()
         logger.debug(config)
         status = '**Enabled**' if config['enabled'] else '**NOT ENABLED**'
