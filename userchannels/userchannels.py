@@ -88,7 +88,18 @@ class Userchannels(commands.Cog):
         logger.debug(channel_name)
 
         # create channel
-        overwrites = {
+        voice_channel = await member.guild.create_voice_channel(
+            name=channel_name,
+            category=dest_category,
+            reason='Userchannels autocreated channel.',
+            user_limit=99,
+            bitrate=96000,
+        )
+        await self.config.channel(voice_channel).auto.set(True)
+        logger.debug('Created Channel')
+
+        # set permissions
+        permissions = {
             'connect': True,
             'create_instant_invite': True,
             'deafen_members': True,
@@ -99,16 +110,7 @@ class Userchannels(commands.Cog):
             'speak': True,
             'stream': True,
         }
-        voice_channel = await member.guild.create_voice_channel(
-            name=channel_name,
-            category=dest_category,
-            reason='Userchannels autocreated channel.',
-            user_limit=99,
-            bitrate=96000,
-            # overwrites=overwrites,
-        )
-        await self.config.channel(voice_channel).auto.set(True)
-        logger.debug('Created Channel')
+        await voice_channel.set_permissions(member, **permissions)
 
         # move member
         await member.move_to(voice_channel, reason='Userchannels moving user.')
