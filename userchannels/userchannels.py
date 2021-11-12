@@ -107,8 +107,11 @@ class Userchannels(commands.Cog):
             'manage_permissions': True,
             'move_members': True,
             'mute_members': True,
+            'priority_speaker': True,
             'speak': True,
             'stream': True,
+            'use_voice_activation': True,
+            'view_channel': True,
         }
         await voice_channel.set_permissions(member, **permissions)
 
