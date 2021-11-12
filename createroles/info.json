@@ -1,9 +1,9 @@
 {
-  "name": "Reactroles",
+  "name": "Createroles",
   "author": ["Shane#0816"],
-  "short": "Carl's Reactroles Module.",
-  "description": "Create Reaction Role sets to let users get roles from reactions.",
-  "install_msg": "Get started with `[p]reactroles create`",
+  "short": "Carl's Createroles Module.",
+  "description": "Create pre-defined or user-defined role sets.",
+  "install_msg": "Get started with `[p]createroles list`",
   "end_user_data_statement": "Caveat Emptor.",
   "required_cogs": {},
   "requirements": [],
