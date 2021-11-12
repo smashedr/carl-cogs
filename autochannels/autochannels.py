@@ -120,6 +120,9 @@ class Autochannels(commands.Cog):
             if not await self.config.channel(channel).auto():
                 logger.debug('Not Auto Channel')
                 continue
+            if channel.members:
+                logger.debug('Channel Not Empty')
+                return
             try:
                 channel_id = channel.id
                 await channel.delete(reason='Userchannels channel empty.')
