@@ -29,6 +29,7 @@ Cog | Description
 
 Cog | Description
 ------------ | -------------
+**autochannels** | WIP: Creates and removes extra voice channels as needed. Not working!
 **mycog** | For testing purposes only!
 **pubsub** | Custom Redis Pub/Sub for Carl's website.
-**reactroles** | React Roles cog; working but not finished.
+**reactroles** | WIP: React Roles cog; working but not finished.

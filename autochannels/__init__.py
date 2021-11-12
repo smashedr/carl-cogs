@@ -1,7 +1,7 @@
-from .autorooms import Autorooms
+from .autochannels import Autochannels
 
 
 async def setup(bot):
-    cog = Autorooms(bot)
+    cog = Autochannels(bot)
     bot.add_cog(cog)
     await cog.initialize()
