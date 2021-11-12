@@ -10,24 +10,24 @@ ROOM_NAMES = {
     'b': ['Bistro'],
     'c': ['Camp', 'Castle', 'Chamber', 'Crib'],
     'd': ['Dorm', 'Digs', 'Den'],
-    'e': ['Encampment'],
-    'f': ['Firehouse'],
-    'gg': [''],
+    'e': ['Encampment', 'Estate'],
+    'f': ['Farm', 'Firehouse'],
+    'g': ['Grotto'],
     'h': ['Hall', 'Harbor', 'Haven', 'Hotel', 'House'],
     'i': ['Inn'],
     'j': ['Joint'],
     'kk': [''],
     'l': ['Lodge'],
-    'm': ['Motel', 'Mansion'],
+    'm': ['Manor', 'Meadow', 'Motel', 'Mansion'],
     'n': ['Nest'],
-    'oo': [''],
+    'o': ['Oasis', 'Orchard'],
     'p': ['Pad', 'Paradise', 'Place', 'Pub'],
-    'qq': ['Quarters'],
-    'r': ['Range', 'Resort'],
+    'q': ['Quarters'],
+    'r': ['Ranch', 'Range', 'Resort'],
     's': ['Square', 'Shack', 'Shelter', 'Startup'],
     't': ['Tent', 'Tower', 'Town'],
-    'uu': [''],
-    'v': ['Valley'],
+    'u': ['Union'],
+    'v': ['Valley', 'Villa', 'Vineyard'],
     'ww': [''],
     'xx': [''],
     'yy': [''],
@@ -42,7 +42,6 @@ GUILD_SETTINGS = {
 
 CHANNEL_SETTINGS = {
     'auto': False,
-    'owner': None,
 }
 
 
@@ -109,7 +108,6 @@ class Userchannels(commands.Cog):
             # overwrites=overwrites,
         )
         await self.config.channel(voice_channel).auto.set(True)
-        await self.config.channel(voice_channel).owner.set(member.id)
         logger.debug('Created Channel')
 
         # move member
