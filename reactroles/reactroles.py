@@ -218,7 +218,7 @@ class Reactroles(commands.Cog):
                 update = init_msg.content + f'\n{emoji} - `@{role.name}`'
                 await init_msg.edit(content=update)
                 await message.delete()
-                logger.info(roles)
+                logger.debug(roles)
             else:
                 await ctx.send('Already added emoji.', delete_after=5)
 

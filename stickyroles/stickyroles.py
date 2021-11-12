@@ -100,7 +100,7 @@ class Stickyroles(commands.Cog):
         await message.edit(content='Role sync in progress now...')
         async for member in AsyncIter(members, delay=1, steps=steps):
             if not member.bot:
-                logger.info(member)
+                logger.debug(member)
                 role_ids = [r.id for r in member.roles]
                 role_ids.remove(member.guild.id)
                 await self.config.member(member).roles.set(role_ids)

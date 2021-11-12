@@ -8,7 +8,7 @@ Cogs for Carl Bot.
 
 To add Carl Bot to your server visit: [https://carl.sapps.me/](https://carl.sapps.me/) 
 
-If you run a bot compatible with Cogs:
+If you run a bot compatible with Red Cogs:
 
 ```
 [p]repo add carl-cogs https://github.com/smashedr/carl-cogs
