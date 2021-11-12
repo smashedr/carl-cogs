@@ -20,11 +20,11 @@ If you run a bot compatible with Red Cogs:
 
 Cog | Description
 ------------ | -------------
-**autochannels** | Creates duplicate channels on the fly and cleans up when done.
-**autoroles** | Adds roles to new members on join.
-**stickyroles** | Remembers users roles and adds them back on rejoin.
-**userchannels** | Creates custom user rooms on the fly and cleans up when done.
-**welcome** | Welcomes new users to your servers on join.
+**[autochannels](autochannels/autochannels.py)** | Creates duplicate channels on the fly and cleans up when done.
+**[autoroles](autoroles/autoroles.py)** | Adds roles to new members on join.
+**[stickyroles](stickyroles/stickyroles.py)** | Remembers users roles and adds them back on rejoin.
+**[userchannels](userchannels/userchannels.py)** | Creates custom user rooms on the fly and cleans up when done.
+**[welcome](welcome/welcome.py)** | Welcomes new users to your servers on join.
 
 ### Internal/Hidden Cogs
 
