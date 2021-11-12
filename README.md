@@ -20,10 +20,10 @@ If you run a bot compatible with Cogs:
 
 Cog | Description
 ------------ | -------------
-**autochannels** | Creates and removes extra voice channels as needed.
+**autochannels** | Creates duplicate channels on the fly and cleans up when done.
 **autoroles** | Adds roles to new members on join.
-**stickyroles** | Remembers users roles and adds them on rejoin.
-**userchannels** | Creates temporary rooms on the fly and cleans up when done.
+**stickyroles** | Remembers users roles and adds them back on rejoin.
+**userchannels** | Creates custom user rooms on the fly and cleans up when done.
 **welcome** | Welcomes new users to your servers on join.
 
 ### Internal/Hidden Cogs

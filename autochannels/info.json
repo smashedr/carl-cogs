@@ -2,7 +2,7 @@
   "name": "Autochannels",
   "author": ["Shane#0816"],
   "short": "Carl's Autochannels Module.",
-  "description": "Creates custom user rooms on the fly and cleans up when done.",
+  "description": "Creates duplicate channels on the fly and cleans up when done.",
   "install_msg": "Manage this command with `[p]autochannels`",
   "end_user_data_statement": "Caveat Emptor.",
   "required_cogs": {},
