@@ -130,7 +130,7 @@ class Reactroles(commands.Cog):
         emoji = discord.utils.get(self.bot.emojis, id=emoji_id)
         return emoji
 
-    @commands.group(name='reactroles', aliases=['reactrole', 'rr'])
+    @commands.group(name='reactroles', aliases=['rr'])
     @commands.guild_only()
     @commands.admin()
     async def reactroles(self, ctx):
