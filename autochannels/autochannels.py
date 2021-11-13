@@ -194,7 +194,7 @@ class Autochannels(commands.Cog):
 
         await self.config.channel(channel).set({'room': True, 'parent': None})
         # rooms.append(channel.id)
-        await self.config.guild(ctx.guild).rooms.set([] + [channel.id])
+        await self.config.guild(ctx.guild).rooms.set(rooms + [channel.id])
         await ctx.send(f'Autochannels Autorooms added:\n'
                        f'**{channel.category.name}** - _{channel.name}_')
 
