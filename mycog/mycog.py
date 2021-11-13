@@ -63,7 +63,7 @@ class MyCog(commands.Cog):
         message = await ctx.send(f'Will process **{num_members}** guild '
                                  f'members for role `@{role.name}` \n'
                                  f'Minimum ETA **{num_members//5}** sec. '
-                                 f'Proceed?', delete_after=60)
+                                 f'Proceed?')
 
         pred = ReactionPredicate.yes_or_no(message, ctx.author)
         start_adding_reactions(message, ReactionPredicate.YES_OR_NO_EMOJIS)
@@ -71,11 +71,12 @@ class MyCog(commands.Cog):
             await self.bot.wait_for('reaction_add', check=pred, timeout=60)
         except asyncio.TimeoutError:
             await ctx.send('Request timed out. Aborting.', delete_after=60)
+            await message.delete()
             return
 
         if not pred.result:
-            await message.delete()
             await ctx.send('Aborting...', delete_after=5)
+            await message.delete()
             return
 
         await ctx.send('Processing now. Please wait...')
@@ -89,3 +90,4 @@ class MyCog(commands.Cog):
                         users.append(member.name)
                         await asyncio.sleep(5)
         await ctx.send(f'Done! Added `@{role.name}` to:\n{users}')
+        await message.delete()
