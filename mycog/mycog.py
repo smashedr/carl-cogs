@@ -21,13 +21,13 @@ class MyCog(commands.Cog):
         # self.config.register_guild(**DEFAULT_SETTINGS)
 
     async def initialize(self) -> None:
-        logger.debug('Initializing MyCog Cog')
+        logger.info('Initializing MyCog Cog')
 
     @staticmethod
     def hex_to_dis(hex_id):
         return discord.Colour(int(hex_id.lstrip('#'), base=16))
 
-    @commands.command(name='mycom', aliases=['m'])
+    @commands.command(name='mycom', aliases=['mm'])
     @commands.is_owner()
     async def mycom(self, ctx):
         """I am MyCom!"""
@@ -42,15 +42,15 @@ class MyCog(commands.Cog):
         # await ctx.send(embed=embed)
         # guild = self.bot.get_guild(188145201879973889)
         await ctx.send("I hack you now...")
-        dm_channel = await ctx.author.create_dm()
-        message = await dm_channel.send('PASSWORD!')
-        pred = MessagePredicate.same_context(channel=dm_channel, user=ctx.author)
-        try:
-            response = await self.bot.wait_for("message", check=pred, timeout=30)
-        except asyncio.TimeoutError:
-            await dm_channel.send(f'Request timed out. You need to start over.')
-            return
-        logger.debug(response.content)
+        # dm_channel = await ctx.author.create_dm()
+        # message = await dm_channel.send('PASSWORD!')
+        # pred = MessagePredicate.same_context(channel=dm_channel, user=ctx.author)
+        # try:
+        #     response = await self.bot.wait_for("message", check=pred, timeout=30)
+        # except asyncio.TimeoutError:
+        #     await dm_channel.send(f'Request timed out. You need to start over.')
+        #     return
+        # logger.debug(response.content)
 
     @commands.command(name='roleaddmulti', aliases=['ram'])
     @commands.is_owner()
