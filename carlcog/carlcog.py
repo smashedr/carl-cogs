@@ -11,7 +11,7 @@ from redbot.core.utils.predicates import ReactionPredicate
 logger = logging.getLogger('red.carlcog')
 
 
-class MyCog(commands.Cog):
+class Carlcog(commands.Cog):
     """Carl's Carlcog Cog"""
     def __init__(self, bot):
         self.bot = bot
