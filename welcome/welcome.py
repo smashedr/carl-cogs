@@ -42,33 +42,13 @@ class Welcome(commands.Cog):
     async def welcome(self, ctx):
         """Options for sending welcome messages."""
 
-    @welcome.command(name='enable', aliases=['on'])
-    async def welcome_enable(self, ctx):
-        """Enables welcome messages."""
-        enabled = await self.config.guild(ctx.guild).enabled()
-        if enabled:
-            await ctx.send('Server welcome messages are already enabled.')
-        else:
-            await self.config.guild(ctx.guild).enabled.set(True)
-            await ctx.send('Server welcome have been enabled.')
-
-    @welcome.command(name='disable', aliases=['off'])
-    async def welcome_disable(self, ctx):
-        """Disable welcome messages."""
-        enabled = await self.config.guild(ctx.guild).enabled()
-        if not enabled:
-            await ctx.send('Server welcome messages are already disabled.')
-        else:
-            await self.config.guild(ctx.guild).enabled.set(False)
-            await ctx.send('Server welcome messages have been disabled.')
-
-    @welcome.command(name='channel')
+    @welcome.command(name='channel', aliases=['c'])
     async def welcome_channel(self, ctx, channel: discord.TextChannel):
         """Sets the channel to send the welcome message."""
         await self.config.guild(ctx.guild).channel.set(channel.id)
         await ctx.send(f'Now sending welcome messages to: {channel.mention}')
 
-    @welcome.command(name='message')
+    @welcome.command(name='message', aliases=['m'])
     async def welcome_message(self, ctx, *, message: str):
         """
         Adds a welcome message format for the guild to be chosen at random
@@ -82,7 +62,7 @@ class Welcome(commands.Cog):
             await self.config.guild(ctx.guild).message.set(message)
             await ctx.send('Welcome message updated.')
 
-    @welcome.command(name="deleteafter")
+    @welcome.command(name='deleteafter', aliases=['da', 'delete'])
     async def welcome_deleteafter(self, ctx, delete_after: Optional[int] = None):
         """
         Set the time after which a welcome message is deleted in seconds.
@@ -95,7 +75,27 @@ class Welcome(commands.Cog):
             await ctx.send("No longer deleting welcome messages.")
         await self.config.guild(ctx.guild).delete_after.set(delete_after)
 
-    @welcome.command(name='status', aliases=['info', 'settings'])
+    @welcome.command(name='enable', aliases=['e', 'on'])
+    async def welcome_enable(self, ctx):
+        """Enables welcome messages."""
+        enabled = await self.config.guild(ctx.guild).enabled()
+        if enabled:
+            await ctx.send('Server welcome messages are already enabled.')
+        else:
+            await self.config.guild(ctx.guild).enabled.set(True)
+            await ctx.send('Server welcome have been enabled.')
+
+    @welcome.command(name='disable', aliases=['d', 'off'])
+    async def welcome_disable(self, ctx):
+        """Disable welcome messages."""
+        enabled = await self.config.guild(ctx.guild).enabled()
+        if not enabled:
+            await ctx.send('Server welcome messages are already disabled.')
+        else:
+            await self.config.guild(ctx.guild).enabled.set(False)
+            await ctx.send('Server welcome messages have been disabled.')
+
+    @welcome.command(name='status', aliases=['s', 'settings'])
     async def welcome_status(self, ctx):
         """Get welcome message status."""
         config = await self.config.guild(ctx.guild).all()
