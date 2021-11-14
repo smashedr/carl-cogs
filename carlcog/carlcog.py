@@ -19,12 +19,34 @@ class Carlcog(commands.Cog):
     async def initialize(self) -> None:
         logger.info('Initializing Carlcog Cog')
 
+    @commands.command(name='moveusto', aliases=['mut'])
+    @commands.admin_or_permissions(move_members=True)
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def carl_moveusto(self, ctx, *, channel: discord.VoiceChannel):
+        """Moves all users from your current channel to `channel`"""
+        if not ctx.author.voice or not ctx.author.voice.channel:
+            await ctx.send('You are not in a Voice channel.', delete_after=15)
+            return
+
+        source = ctx.author.voice.channel
+        if channel == source:
+            await ctx.send(f'You are already in the destination channel '
+                           f'{channel.name}.', delete_after=15)
+            return
+
+        await ctx.send(f'Stand by, moving {len(source.members)} members to '
+                       f'**{channel.name}**', delete_after=60)
+        await ctx.trigger_typing()
+        for member in await AsyncIter(source.members, delay=0.2):
+            await member.move_to(channel)
+        await ctx.send('All done, enjoy =)', delete_after=60)
+
     @commands.command(name='roleaddmulti', aliases=['ram'])
     @commands.is_owner()
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def roleaddmulti(self, ctx, role: discord.Role, *, members: str):
-        """Adds a `role` to multiple users, without sucking..."""
-        members = members.split(' ')
+    async def carl_roleaddmulti(self, ctx, role: discord.Role, *, members: str):
+        """Attempts to add a `role` to multiple `users`, space separated..."""
+        members = members.split()
         logger.debug(members)
         num_members = len(ctx.guild.members)
         message = await ctx.send(f'Will process **{num_members}** guild '
@@ -48,13 +70,13 @@ class Carlcog(commands.Cog):
 
         await ctx.send('Processing now. Please wait...')
         users = []
-        for member in await AsyncIter(ctx.guild.members, delay=1, steps=5):
-            for m in await AsyncIter(members):
-                if (member.name and m.lower() == member.name.lower()) or \
-                        (member.nick and m.lower() == member.nick.lower()):
-                    if role not in member.roles:
-                        await member.add_roles(role, reason=f'{ctx.author} roleaddmulti')
-                        users.append(member.name)
-                        await asyncio.sleep(3)
+        async with ctx.channel.typing():
+            for member in await AsyncIter(ctx.guild.members, delay=1, steps=5):
+                for m in await AsyncIter(members):
+                    if (member.name and m.lower() == member.name.lower()) or \
+                            (member.nick and m.lower() == member.nick.lower()):
+                        if role not in member.roles:
+                            await member.add_roles(role, reason=f'{ctx.author} roleaddmulti')
+                            users.append(member.name)
         await ctx.send(f'Done! Added `@{role.name}` to:\n{users}')
         await message.delete()
