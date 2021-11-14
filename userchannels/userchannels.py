@@ -93,7 +93,7 @@ class Userchannels(commands.Cog):
             category=dest_category,
             reason='Userchannels autocreated channel.',
             user_limit=99,
-            bitrate=96000,
+            bitrate=member.guild.bitrate_limit,
         )
         await self.config.channel(voice_channel).auto.set(True)
         logger.debug('Created Channel')
