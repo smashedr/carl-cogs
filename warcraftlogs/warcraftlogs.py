@@ -17,13 +17,15 @@ class Warcraftlogs(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_without_command(self, message: discord.Message):
-        if not message.webhook_id:
-            logger.debug('not webhook')
+        if not message.webhook_id or not message.embeds:
+            logger.debug('not webhook or embed')
             return
 
-        if not message.embeds and \
-                'warcraftlogs.com' not in message.embeds[0].url:
-            logger.debug('not wcl hook')
+        embed: discord.Embed = message.embeds[0]
+        logger.debug(embed)
+
+        if 'url' not in embed or 'warcraftlogs.com' not in embed.url:
+            logger.debug('no url or not wcl')
             return
 
         config = await self.config.guild(message.guild).all()
@@ -31,9 +33,7 @@ class Warcraftlogs(commands.Cog):
             logger.debug('disabled or no splits')
             return
 
-        embed: discord.Embed = message.embeds[0]
-
-        em = discord.Embed(colour=int("00FF00", 16))
+        em = discord.Embed(colour=int('00FF00', 16))
         em.description = 'Report ID: `{}`'.format(embed.url.split('/')[4])
         em.url = embed.url
         em.title = embed.title
