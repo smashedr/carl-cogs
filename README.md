@@ -6,7 +6,7 @@ Cogs for Carl Bot.
 
 ### Installing
 
-To add Carl Bot to your server visit: [https://carl.sapps.me/](https://carl.sapps.me/) 
+To add Carl Bot to your server visit: [https://carl.sapps.me/](https://carl.sapps.me/)
 
 If you run a bot compatible with Red Cogs:
 
@@ -33,5 +33,6 @@ Cog | Description
 
 Cog | Description
 ------------ | -------------
-**pubsub** | Custom Redis Pub/Sub for Carl's website.
-**reactroles** | WIP: React Roles cog; working but not finished.
+**carlcog** | Custom Cog for Carl, has useful functions but may not stay here.
+**pubsub** | Custom Redis Pub/Sub for Carl Bot and Carl's website.
+**reactroles** | WIP: React Roles cog; working but not yet finished.

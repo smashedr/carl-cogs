@@ -19,8 +19,33 @@ class Carlcog(commands.Cog):
     async def initialize(self) -> None:
         logger.info('Initializing Carlcog Cog')
 
+    @commands.group(name='prefix')
+    @commands.admin()
+    @commands.guild_only()
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def carl_prefix(self, ctx):
+        """Sets the prefix on a per-guild basis. You may provide multiple."""
+
+    @carl_prefix.command(name='set', aliases=['s'])
+    @commands.admin()
+    @commands.guild_only()
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def carl_setprefix(self, ctx, *, prefix: str = None):
+        """Sets the prefix on a per-guild basis. You may provide multiple."""
+        await ctx.trigger_typing()
+        if not prefix:
+            await self.bot.set_prefixes([], ctx.guild)
+            prefixes = await self.bot.get_valid_prefixes(ctx.guild)
+            await ctx.send(f'Custom prefix reset to default: ```{prefixes}```')
+        else:
+            prefixes = prefix.split()
+            logger.debug(prefixes)
+            await self.bot.set_prefixes(prefixes, ctx.guild)
+            await ctx.send(f'Prefixes for guild set to: ```{prefixes}```')
+
     @commands.command(name='moveusto', aliases=['mut'])
     @commands.admin_or_permissions(move_members=True)
+    @commands.guild_only()
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def carl_moveusto(self, ctx, *, channel: discord.VoiceChannel):
         """Moves all users from your current channel to `channel`"""
@@ -42,7 +67,8 @@ class Carlcog(commands.Cog):
         await ctx.send('All done, enjoy =)', delete_after=60)
 
     @commands.command(name='roleaddmulti', aliases=['ram'])
-    @commands.is_owner()
+    @commands.admin()
+    @commands.guild_only()
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def carl_roleaddmulti(self, ctx, role: discord.Role, *, members: str):
         """Attempts to add a `role` to multiple `users`, space separated..."""
