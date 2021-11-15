@@ -1,7 +1,7 @@
-from .mycog import MyCog
+from .warcraftlogs import Warcraftlogs
 
 
 async def setup(bot):
-    cog = MyCog(bot)
+    cog = Warcraftlogs(bot)
     bot.add_cog(cog)
     await cog.initialize()

@@ -32,6 +32,5 @@ Cog | Description
 
 Cog | Description
 ------------ | -------------
-**mycog** | For testing purposes only!
 **pubsub** | Custom Redis Pub/Sub for Carl's website.
 **reactroles** | WIP: React Roles cog; working but not finished.
