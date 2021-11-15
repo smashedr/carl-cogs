@@ -26,6 +26,7 @@ Cog | Description
 **[liverole](liverole/liverole.py)** | Give members a role when they go live in Discord.
 **[stickyroles](stickyroles/stickyroles.py)** | Remembers users roles and adds them back on rejoin.
 **[userchannels](userchannels/userchannels.py)** | Creates custom user rooms on the fly and cleans up when done.
+**[warcraftlogs](warcraftlogs/warcraftlogs.py)** | Splits Warcraftlogs into multiple channels based on filters.
 **[welcome](welcome/welcome.py)** | Welcomes new users to your servers on join.
 
 ### Internal/Hidden Cogs
