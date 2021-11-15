@@ -48,7 +48,7 @@ class Createroles(commands.Cog):
                 results.append(f'`@{role.name}` - Already Exist')
                 logger.debug('Role %s already exists.', name)
                 continue
-            logger.info('Creating Role: %s', name)
+            logger.debug('Creating Role: %s', name)
             role = await ctx.guild.create_role(
                 name=name, color=int(color),
                 reason=f'Carl createroles command used by {ctx.author.name}',

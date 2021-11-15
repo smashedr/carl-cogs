@@ -67,7 +67,7 @@ class Userchannels(commands.Cog):
         try:
             channel_id = channel.id
             await channel.delete(reason='Userchannels channel empty.')
-            logger.info('Removed Channel %s', channel_id)
+            logger.debug('Removed Channel %s', channel_id)
         except discord.NotFound:
             logger.debug('Channel Not Found')
 
