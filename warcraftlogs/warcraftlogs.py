@@ -64,7 +64,7 @@ class Warcraftlogs(commands.Cog):
         [p]wcl add <channel> <matching title term>
         [p]wcl add #raid-2 Raid 2
         """
-        config = await self.config.guild(ctx.guild).splits() or {}
+        config = await self.config.guild(ctx.guild).splits()
         if match.lower() not in config:
             config[match.lower()] = channel.id
             await self.config.guild(ctx.guild).splits.set(config)
@@ -76,7 +76,7 @@ class Warcraftlogs(commands.Cog):
     @wcl.command(name='remove', aliases=['r'])
     async def wcl_remove(self, ctx, *, match):
         """Removes a channel from Warcraftlogs splits."""
-        config = await self.config.guild(ctx.guild).splits() or {}
+        config = await self.config.guild(ctx.guild).splits()
         if match.lower() in config:
             del config[match.lower()]
             await self.config.guild(ctx.guild).splits.set(config)

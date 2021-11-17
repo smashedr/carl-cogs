@@ -17,28 +17,28 @@ class Reactroles(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
-        self.config.register_guild(rr=None, at=None)
+        self.config.register_guild(rr={}, at={})
 
     async def initialize(self) -> None:
         logger.debug('Initializing Reactroles Cog')
 
     async def get_rr(self, guild, name):
-        config = await self.config.guild(guild).rr() or {}
+        config = await self.config.guild(guild).rr()
         config = config[name] if name in config else None
         return config
 
     async def put_rr(self, guild, name, data: dict):
-        config = await self.config.guild(guild).rr() or {}
+        config = await self.config.guild(guild).rr()
         config[name] = data
         await self.config.guild(guild).rr.set(config)
 
     async def get_at(self, guild, cm_id):
-        config = await self.config.guild(guild).at() or {}
+        config = await self.config.guild(guild).at()
         config = config[cm_id] if cm_id in config else None
         return config
 
     async def put_at(self, guild, cm_id, data: str):
-        config = await self.config.guild(guild).at() or {}
+        config = await self.config.guild(guild).at()
         config[cm_id] = data
         await self.config.guild(guild).at.set(config)
 

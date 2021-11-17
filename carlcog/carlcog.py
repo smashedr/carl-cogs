@@ -66,6 +66,24 @@ class Carlcog(commands.Cog):
             await member.move_to(channel)
         await ctx.send('All done, enjoy =)', delete_after=60)
 
+    @commands.command(name='bitrateall', aliases=['bra'])
+    @commands.admin()
+    @commands.guild_only()
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def carl_bitrateall(self, ctx, bitrate: int = 0):
+        """Set the bitrate for ALL channels to Guild Max or `bitrate`."""
+        await ctx.trigger_typing()
+        new_rate = bitrate or ctx.guild.bitrate_limit
+        updated = []
+        for channel in await AsyncIter(ctx.guild.channels):
+            if str(channel.type) == 'voice':
+                if channel.bitrate != new_rate:
+                    updated.append(channel.name)
+                    reason = f'{ctx.author} used bitrateall {new_rate}'
+                    await channel.edit(bitrate=new_rate, reason=reason)
+
+        await ctx.send(f'Done. Updated: ```{updated or "Nothing"}```')
+
     @commands.command(name='roleaddmulti', aliases=['ram'])
     @commands.admin()
     @commands.guild_only()
