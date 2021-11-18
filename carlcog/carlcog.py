@@ -73,7 +73,13 @@ class Carlcog(commands.Cog):
     async def carl_bitrateall(self, ctx, bitrate: int = 0):
         """Set the bitrate for ALL channels to Guild Max or `bitrate`."""
         await ctx.trigger_typing()
-        new_rate = bitrate or ctx.guild.bitrate_limit
+        limit = ctx.guild.bitrate_limit
+        if bitrate and not (8000 > bitrate > 360000) or bitrate > limit:
+            await ctx.send(f'Invalid bitrate. Specify a number between `8000` '
+                           f'and `360000` or leave blank for the guild max of '
+                           f'`{limit}`')
+            return
+        new_rate = bitrate or limit
         updated = []
         for channel in await AsyncIter(ctx.guild.channels):
             if str(channel.type) == 'voice':

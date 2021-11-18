@@ -154,7 +154,7 @@ class PubSub(commands.Cog):
     async def pubsub_stop(self, ctx):
         """Stops PubSub."""
         # enabled = await self.config.enabled()
-        await ctx.send('PubSub stopped. Does not work, [p]unload instead.')
+        await ctx.send(f'PubSub stopped. Does not work, {ctx.prefix}unload instead.')
 
     @pubsub.command(name='set', aliases=['s'])
     async def pubsub_set(self, ctx, setting):

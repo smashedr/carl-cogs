@@ -22,7 +22,6 @@ Cog | Description
 ------------ | -------------
 **[autochannels](autochannels/autochannels.py)** | Creates duplicate channels on the fly and cleans up when done.
 **[autoroles](autoroles/autoroles.py)** | Adds roles to new members on join.
-**[createroles](createroles/createroles.py)** | Create pre-defined or user-defined role sets.
 **[liverole](liverole/liverole.py)** | Give members a role when they go live in Discord.
 **[stickyroles](stickyroles/stickyroles.py)** | Remembers users roles and adds them back on rejoin.
 **[userchannels](userchannels/userchannels.py)** | Creates custom user rooms on the fly and cleans up when done.
@@ -34,5 +33,6 @@ Cog | Description
 Cog | Description
 ------------ | -------------
 **carlcog** | Custom Cog for Carl, has useful functions but may not stay here.
+**[createthings](createthings/createthings.py)** | WIP: Create pre-defined role and emoji sets.
 **pubsub** | Custom Redis Pub/Sub for Carl Bot and Carl's website.
-**reactroles** | WIP: React Roles cog; working but not yet finished.
+**reactroles** | WIP: React Roles Cog; Working but not yet finished.

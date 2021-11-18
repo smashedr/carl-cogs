@@ -1,9 +1,9 @@
 {
-  "name": "Createroles",
+  "name": "Createthings",
   "author": ["Shane#0816"],
-  "short": "Carl's Createroles Module.",
-  "description": "Create pre-defined or user-defined role sets.",
-  "install_msg": "Get started with `[p]createroles list`",
+  "short": "Carl's Createthings Module.",
+  "description": "Create pre-defined or user-defined role/emoji sets.",
+  "install_msg": "Get started with `[p]createroles` and `[p]createemoji`",
   "end_user_data_statement": "Caveat Emptor.",
   "required_cogs": {},
   "requirements": [],
