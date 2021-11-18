@@ -59,11 +59,11 @@ class Carlcog(commands.Cog):
                            f'{channel.name}.', delete_after=15)
             return
 
-        await ctx.send(f'Stand by, moving {len(source.members)} members to '
-                       f'**{channel.name}**', delete_after=60)
-        await ctx.trigger_typing()
-        for member in await AsyncIter(source.members, delay=0.2):
-            await member.move_to(channel)
+        await ctx.send(f'Stand by, moving **{len(source.members)}** members '
+                       f'to **{channel.name}**', delete_after=60)
+        async with ctx.channel.typing():
+            for member in await AsyncIter(source.members):
+                await member.move_to(channel)
         await ctx.send('All done, enjoy =)', delete_after=60)
 
     @commands.command(name='bitrateall', aliases=['bra'])
@@ -79,10 +79,11 @@ class Carlcog(commands.Cog):
                            f'and `360000` or leave blank for the guild max of '
                            f'`{limit}`')
             return
+
         new_rate = bitrate or limit
         updated = []
-        for channel in await AsyncIter(ctx.guild.channels):
-            if str(channel.type) == 'voice':
+        async with ctx.channel.typing():
+            for channel in await AsyncIter(ctx.guild.voice_channels):
                 if channel.bitrate != new_rate:
                     updated.append(channel.name)
                     reason = f'{ctx.author} used bitrateall {new_rate}'
@@ -96,6 +97,7 @@ class Carlcog(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def carl_roleaddmulti(self, ctx, role: discord.Role, *, members: str):
         """Attempts to add a `role` to multiple `users`, space separated..."""
+        await ctx.trigger_typing()
         members = members.split()
         logger.debug(members)
         num_members = len(ctx.guild.members)
