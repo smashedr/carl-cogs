@@ -45,8 +45,9 @@ class Activerole(commands.Cog):
             for guild_id, data in await AsyncIter(all_guilds.items()):
                 guild = self.bot.get_guild(guild_id)
                 role = guild.get_role(data['role'])
-                for member in role.members:
-                    if not await self.client.exists(member.id):
+                for member in await AsyncIter(role.members):
+                    key = f'{guild.id}-{member.id}'
+                    if not await self.client.exists(key):
                         logger.debug('Inactive Remove Role: "%s"', member.name)
                         reason = f'Activerole user inactive.'
                         await member.remove_roles(role, reason=reason)
@@ -89,7 +90,8 @@ class Activerole(commands.Cog):
             if active_role.id == role.id:
                 needs_role = False
 
-        await self.client.setex(member.id, datetime.timedelta(minutes=10), True)
+        key = f'{member.guild.id}-{member.id}'
+        await self.client.setex(key, datetime.timedelta(minutes=10), True)
         if needs_role:
             logger.debug('Applying Role "%s" to "%s"',
                          active_role.name, member.name)
