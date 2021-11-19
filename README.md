@@ -32,6 +32,7 @@ Cog | Description
 
 Cog | Description
 ------------ | -------------
+**[activerole](activerole/activerole.py)** | **WIP: Requires Redis**. Adds a role to active chatters.
 **carlcog** | Custom Cog for Carl, has useful functions but may not stay here.
 **[createthings](createthings/createthings.py)** | WIP: Create pre-defined role and emoji sets.
 **pubsub** | Custom Redis Pub/Sub for Carl Bot and Carl's website.

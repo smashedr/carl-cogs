@@ -54,7 +54,7 @@ class Createthings(commands.Cog):
             logger.debug(f'{name} - {color}')
             match = [r async for r in AsyncIter(ctx.guild.roles) if r.name == name]
             if match:
-                results.append(f'@{name} - Already Exist ⛔')
+                results.append(f'{match[0].mention} - Already Exist ⛔')
                 logger.debug('Role %s already exists.', name)
                 continue
 
@@ -63,7 +63,7 @@ class Createthings(commands.Cog):
                 name=name, color=int(color),
                 reason=f'Carl createroles command used by {ctx.author.name}',
             )
-            results.append(f'@{role.name} - Created Role ✅')
+            results.append(f'{role.mention} - Created Role ✅')
 
         return results
 
@@ -74,7 +74,7 @@ class Createthings(commands.Cog):
             logger.debug(f'{name} - {url}')
             match = [e async for e in AsyncIter(ctx.guild.emojis) if e.name == name]
             if match:
-                results.append(f'{name}  - Already Exist ⛔')
+                results.append(f'{match[0]}  - Already Exist ⛔')
                 logger.debug('Emoji name exists: %s', name)
                 continue
 
@@ -83,7 +83,7 @@ class Createthings(commands.Cog):
                 name=name, image=get_discord_image_data(url),
                 reason=f'Carl createemoji command used by {ctx.author.name}',
             )
-            results.append(f'{emoji.name} - Creation Success ✅')
+            results.append(f'{emoji} - Creation Success ✅')
 
         return results
 
@@ -95,11 +95,15 @@ class Createthings(commands.Cog):
 
     @createroles.command(name='list', aliases=["l"])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def createroles_list(self, ctx):
+    async def createroles_list(self, ctx, name: str = None):
         """List configured role sets that can be created."""
         await ctx.trigger_typing()
-        role_sets = list(ROLE_SETS.keys())
-        await ctx.send(f'Available role sets:\n{role_sets}')
+        if name and name in ROLE_SETS:
+            role_sets = list(ROLE_SETS[name].keys())
+            await ctx.send(f'Roles in set `{name}`:\n```{role_sets}```')
+        else:
+            role_sets = list(ROLE_SETS.keys())
+            await ctx.send(f'Available role sets:\n```{role_sets}```')
 
     @createroles.command(name='create', aliases=["c"])
     @commands.max_concurrency(1, commands.BucketType.guild)
@@ -116,7 +120,6 @@ class Createthings(commands.Cog):
         await ctx.send(f'Creating role set: {name}')
         async with ctx.channel.typing():
             results = await self.create_role_set(ctx, ROLE_SETS[name])
-            results = ['```' + '\n'.join(results) + '```']
             out = [f'Role Creation Complete. Results:'] + results
         await ctx.send('\n'.join(out))
 
@@ -128,11 +131,15 @@ class Createthings(commands.Cog):
 
     @createemoji.command(name='list', aliases=["l"])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def createemoji_list(self, ctx):
+    async def createemoji_list(self, ctx, name: str = None):
         """List configured emoji sets that can be created."""
         await ctx.trigger_typing()
-        emoji_sets = list(EMOJI_SETS.keys())
-        await ctx.send(f'Available emoji sets:\n{emoji_sets}')
+        if name and name in EMOJI_SETS:
+            emoji_sets = list(EMOJI_SETS[name].keys())
+            await ctx.send(f'Emoji in set `{name}`:\n```{emoji_sets}```')
+        else:
+            emoji_sets = list(EMOJI_SETS.keys())
+            await ctx.send(f'Available emoji sets:\n```{emoji_sets}```')
 
     @createemoji.command(name='create', aliases=["c"])
     @commands.max_concurrency(1, commands.BucketType.guild)
@@ -155,7 +162,6 @@ class Createthings(commands.Cog):
         await ctx.send(f'Creating emoji set: **{name}**')
         async with ctx.channel.typing():
             results = await self.create_emoji_set(ctx, EMOJI_SETS[name])
-            results = ['```' + '\n'.join(results) + '```']
             out = [f'Emoji Creation Complete. Results:'] + results
         await ctx.send('\n'.join(out))
 
