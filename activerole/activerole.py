@@ -10,7 +10,7 @@ from redbot.core.utils.predicates import MessagePredicate
 logger = logging.getLogger('red.activerole')
 
 ACTIVE_MINUTES = 1
-LOOP_SLEEP_SECONDS = 60
+LOOP_SLEEP_SECONDS = 30
 
 
 class Activerole(commands.Cog):
@@ -49,13 +49,13 @@ class Activerole(commands.Cog):
         while self is self.bot.get_cog('Activerole'):
             for guild_id, data in await AsyncIter(all_guilds.items()):
                 guild = self.bot.get_guild(guild_id)
-                role = guild.get_role(data['role'])
-                logger.info(f'{guild} - {role}')
+                role = guild.get_role(data['active_role'])
+                logger.debug(f'{guild} - {role}')
                 for member in role.members:
                     key = f'{guild.id}-{member.id}'
-                    logger.info(key)
+                    logger.debug(key)
                     if not await self.client.exists(key):
-                        logger.info('Inactive Remove Role: "%s"', member.name)
+                        logger.debug('Inactive Remove Role: "%s"', member.name)
                         reason = f'Activerole user inactive.'
                         await member.remove_roles(role, reason=reason)
             await asyncio.sleep(LOOP_SLEEP_SECONDS)
@@ -98,13 +98,13 @@ class Activerole(commands.Cog):
                 needs_role = False
 
         key = f'{member.guild.id}-{member.id}'
-        logger.info(key)
+        logger.debug(key)
         expire = datetime.timedelta(minutes=ACTIVE_MINUTES)
         logger.debug(expire)
         await self.client.setex(key, expire, True)
         if needs_role:
-            logger.info('Applying Role "%s" to "%s"',
-                        active_role.name, member.name)
+            logger.debug('Applying Role "%s" to "%s"',
+                         active_role.name, member.name)
             reason = f'Activerole user active.'
             await member.add_roles(active_role, reason=reason)
 
