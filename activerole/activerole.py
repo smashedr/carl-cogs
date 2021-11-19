@@ -35,25 +35,27 @@ class Activerole(commands.Cog):
         self.host = await self.config.host()
         self.password = await self.config.password()
         self.client = aredis.StrictRedis(
-            host=self.host, port=6379, db=3, password=self.password
+            host=self.host, port=6379, db=3, password=self.password,
+            retry_on_timeout=True,
         )
         if await self.config.enabled():
             self.loop = asyncio.create_task(self.cleanup_loop())
         logger.info('Initializing Activerole Cog Finished')
 
     async def cleanup_loop(self):
-        logger.info('Starting Cleanup Loop')
+        logger.info('Starting Cleanup Loop in 10 seconds...')
+        await asyncio.sleep(10)
         all_guilds = await self.config.all_guilds()
         while self is self.bot.get_cog('Activerole'):
             for guild_id, data in await AsyncIter(all_guilds.items()):
                 guild = self.bot.get_guild(guild_id)
                 role = guild.get_role(data['role'])
-                logger.debug(f'{guild} - {role}')
+                logger.info(f'{guild} - {role}')
                 for member in role.members:
                     key = f'{guild.id}-{member.id}'
-                    logger.debug(key)
+                    logger.info(key)
                     if not await self.client.exists(key):
-                        logger.debug('Inactive Remove Role: "%s"', member.name)
+                        logger.info('Inactive Remove Role: "%s"', member.name)
                         reason = f'Activerole user inactive.'
                         await member.remove_roles(role, reason=reason)
             await asyncio.sleep(LOOP_SLEEP_SECONDS)
@@ -96,13 +98,13 @@ class Activerole(commands.Cog):
                 needs_role = False
 
         key = f'{member.guild.id}-{member.id}'
-        logger.debug(key)
+        logger.info(key)
         expire = datetime.timedelta(minutes=ACTIVE_MINUTES)
         logger.debug(expire)
         await self.client.setex(key, expire, True)
         if needs_role:
-            logger.debug('Applying Role "%s" to "%s"',
-                         active_role.name, member.name)
+            logger.info('Applying Role "%s" to "%s"',
+                        active_role.name, member.name)
             reason = f'Activerole user active.'
             await member.add_roles(active_role, reason=reason)
 
@@ -219,8 +221,8 @@ class Activerole(commands.Cog):
         if self.loop and not self.loop.cancelled():
             await ctx.send('Activerole loop already running.')
             return
-        self.loop = asyncio.create_task(self.cleanup_loop())
         await self.config.enabled.set(True)
+        self.loop = asyncio.create_task(self.cleanup_loop())
         await ctx.send('Activerole loop started.')
 
     @activeroleconfig.command(name='stop', aliases=['off'])
