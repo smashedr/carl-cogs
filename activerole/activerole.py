@@ -16,7 +16,7 @@ class Activerole(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_global(host='redis', password=None, enabled=False)
-        self.config.register_guild(role=None, excludes=[])
+        self.config.register_guild(active_role=None, roles=[], channels=[])
         self.host = None
         self.password = None
         self.loop = None
@@ -43,7 +43,6 @@ class Activerole(commands.Cog):
         logger.debug('Executing Loop')
         all_guilds = await self.config.all_guilds()
         while self is self.bot.get_cog('Activerole'):
-            # logger.debug('Starting Loop')
             for guild_id, data in await AsyncIter(all_guilds.items()):
                 guild = self.bot.get_guild(guild_id)
                 role = guild.get_role(data['role'])
@@ -52,37 +51,41 @@ class Activerole(commands.Cog):
                         logger.debug('Inactive Member: "%s"', member.name)
                         reason = f'Activerole user inactive.'
                         await member.remove_roles(role, reason=reason)
-
-            # logger.debug('Finished Loop - Sleeping 120')
             await asyncio.sleep(120)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        await self.process_update(message.author)
+        await self.process_update(message)
 
     @commands.Cog.listener()
-    async def on_message_edit(self, before, message: discord.Message):
-        await self.process_update(message.author)
+    async def on_message_edit(self, before, after: discord.Message):
+        await self.process_update(after)
 
-    async def process_update(self, member: discord.Member):
+    async def process_update(self, message: discord.Message):
+        member = message.author
         if member.bot:
             return
         if not await self.config.enabled():
             return
-        if not await self.config.guild(member.guild).role():
+        if not await self.config.guild(member.guild).active_role():
             return
 
-        role_id = await self.config.guild(member.guild).role()
+        role_id = await self.config.guild(member.guild).active_role()
         active_role = member.guild.get_role(role_id)
         if not active_role:
             # maybe disable it here?
             logger.warning('Role Not Found: %s', role_id)
             return
 
-        excludes = await self.config.guild(member.guild).excludes()
+        exclude_channels = await self.config.guild(member.guild).channels()
+        if message.channel.id in exclude_channels:
+            logger.debug('Excluded Channel: %s', message.channel.id)
+            return
+
+        exclude_roles = await self.config.guild(member.guild).roles()
         needs_role = True
         for role in await AsyncIter(member.roles):
-            if role.id in excludes:
+            if role.id in exclude_roles:
                 logger.debug('Member "%s" has excluded role "%s".',
                              member.name, role.name)
                 return
@@ -90,7 +93,8 @@ class Activerole(commands.Cog):
                 needs_role = False
 
         if needs_role:
-            logger.debug('Applying Role: "%s"', active_role.name)
+            logger.debug('Applying Role "%s" to "%s"',
+                         active_role.name, member.name)
             reason = f'Activerole user active.'
             await member.add_roles(active_role, reason=reason)
         await self.client.setex(member.id, datetime.timedelta(minutes=10), True)
@@ -104,41 +108,75 @@ class Activerole(commands.Cog):
     async def activerole_role(self, ctx, *, role: discord.Role):
         """Set the role to apply to active members and enables Activerole."""
         logger.debug(role)
-        await self.config.guild(ctx.guild).role.set(role.id)
+        await self.config.guild(ctx.guild).active_role.set(role.id)
         await ctx.send(f'✅ Activerole set to role {role.mention}')
 
-    @activerole.command(name='exclude', aliases=['e'])
-    async def activerole_exclude(self, ctx, *roles: discord.Role):
+    @activerole.group(name='exclude', aliases=['e'])
+    @commands.admin()
+    async def acr_exclude(self, ctx):
+        """Options for configuring Activerole."""
+
+    @acr_exclude.command(name='role', aliases=['r', 'roles'])
+    async def acr_exclude_role(self, ctx, *roles: discord.Role):
         """
-        List of Discord Roles to exclude from Activerole. No spaces in names.
-        [p]activerole exclude role1
-        [p]activerole exclude role1 role2 another-role
+        Exclude a role(s) from Activeroles. No spaces in role names.
+        [p]activerole exclude role role1
+        [p]activerole exclude roles role1 role2 another-role
         """
-        logger.debug(roles)
+        log = ctx
+        logger.debug(dir(log))
+        logger.debug(type(log))
+        logger.debug(log)
         if not roles:
             await ctx.send_help()
             return
 
         role_ids = [r.id for r in roles]
         logger.debug(role_ids)
-        async with self.config.guild(ctx.guild).excludes() as excludes:
+        async with self.config.guild(ctx.guild).roles() as exclude_roles:
             for role_id in role_ids:
-                if role_id not in excludes:
-                    excludes.append(role_id)
-        excludes = await self.config.guild(ctx.guild).excludes()
-        await ctx.send(f'✅ Excluded Roles: ```{excludes}```')
+                if role_id not in exclude_roles:
+                    exclude_roles.append(role_id)
+        exclude_roles = await self.config.guild(ctx.guild).roles()
+        await ctx.send(f'✅ Excluded Roles: ```{exclude_roles}```')
+
+    @acr_exclude.command(name='channel', aliases=['c', 'channels'])
+    async def acr_exclude_channel(self, ctx, *channels: discord.TextChannel):
+        """
+        Exclude a channel(s) from Activeroles.
+        [p]activerole exclude channel channel1
+        [p]activerole exclude channels channel1 channel2
+        """
+        logger.debug(channels)
+        if not channels:
+            await ctx.send_help()
+            return
+
+        channel_ids = [r.id for r in channels]
+        logger.debug(channel_ids)
+        async with self.config.guild(ctx.guild).channels() as exclude_channels:
+            for channel_id in channel_ids:
+                if channel_id not in exclude_channels:
+                    exclude_channels.append(channel_id)
+        exclude_channels = await self.config.guild(ctx.guild).channels()
+        await ctx.send(f'✅ Excluded Roles: ```{exclude_channels}```')
 
     @activerole.command(name='reset')
-    async def activerole_reset(self, ctx):
+    async def activerole_reset(self, ctx, setting: str):
         """Reset all excluded roles for Activerole."""
-        await self.config.guild(ctx.guild).excludes.set([])
+        setting = setting.lower()
+        logger.debug(setting)
+        if setting in ['channels', 'chann', 'chan', 'all']:
+            await self.config.guild(ctx.guild).channels.set([])
+        if setting in ['roles', 'role', 'all']:
+            await self.config.guild(ctx.guild).roles.set([])
         await ctx.send(f'✅ Excludes have been painfully exterminated.')
 
     @activerole.command(name='disable', aliases=['d'])
     async def activerole_disable(self, ctx, *, role: discord.Role):
         """Disables Activerole, set a new role to re-enable it."""
         logger.debug(role)
-        await self.config.guild(ctx.guild).role.set(None)
+        await self.config.guild(ctx.guild).active_role.set(None)
         await ctx.send(f'⛔ Activerole disabled in guild...')
 
     @commands.group(name='activeroleconfig', aliases=['arc'])
