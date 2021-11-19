@@ -39,7 +39,7 @@ class Activerole(commands.Cog):
         logger.info('Initializing Activerole Cog Finished')
 
     async def cleanup_loop(self):
-        logger.debug('Starting Cleanup Loop')
+        logger.info('Starting Cleanup Loop')
         all_guilds = await self.config.all_guilds()
         while self is self.bot.get_cog('Activerole'):
             for guild_id, data in await AsyncIter(all_guilds.items()):
