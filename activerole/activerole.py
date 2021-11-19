@@ -93,7 +93,8 @@ class Activerole(commands.Cog):
                 needs_role = False
 
         key = f'{member.guild.id}-{member.id}'
-        await self.client.setex(key, datetime.timedelta(minutes=10), True)
+        logger.debug(key)
+        await self.client.setex(key, datetime.timedelta(minutes=5), True)
         if needs_role:
             logger.debug('Applying Role "%s" to "%s"',
                          active_role.name, member.name)
