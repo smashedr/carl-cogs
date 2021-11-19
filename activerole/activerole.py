@@ -50,10 +50,10 @@ class Activerole(commands.Cog):
             for guild_id, data in await AsyncIter(all_guilds.items()):
                 guild = self.bot.get_guild(guild_id)
                 role = guild.get_role(data['active_role'])
-                logger.debug(f'{guild} - {role}')
+                # logger.debug(f'{guild} - {role}')
                 for member in role.members:
                     key = f'{guild.id}-{member.id}'
-                    logger.debug(key)
+                    # logger.debug(key)
                     if not await self.client.exists(key):
                         logger.debug('Inactive Remove Role: "%s"', member.name)
                         reason = f'Activerole user inactive.'
@@ -64,9 +64,9 @@ class Activerole(commands.Cog):
     async def on_message(self, message: discord.Message):
         await self.process_update(message)
 
-    @commands.Cog.listener()
-    async def on_message_edit(self, before, after: discord.Message):
-        await self.process_update(after)
+    # @commands.Cog.listener()
+    # async def on_message_edit(self, before, after: discord.Message):
+    #     await self.process_update(after)
 
     async def process_update(self, message: discord.Message):
         member = message.author
