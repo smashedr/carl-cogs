@@ -92,12 +92,12 @@ class Activerole(commands.Cog):
             if active_role.id == role.id:
                 needs_role = False
 
+        await self.client.setex(member.id, datetime.timedelta(minutes=10), True)
         if needs_role:
             logger.debug('Applying Role "%s" to "%s"',
                          active_role.name, member.name)
             reason = f'Activerole user active.'
             await member.add_roles(active_role, reason=reason)
-        await self.client.setex(member.id, datetime.timedelta(minutes=10), True)
 
     @commands.group(name='activerole', aliases=['acr'])
     @commands.admin()
@@ -107,9 +107,46 @@ class Activerole(commands.Cog):
     @activerole.command(name='role', aliases=['r'])
     async def activerole_role(self, ctx, *, role: discord.Role):
         """Set the role to apply to active members and enables Activerole."""
+        await ctx.trigger_typing()
         logger.debug(role)
         await self.config.guild(ctx.guild).active_role.set(role.id)
         await ctx.send(f'✅ Activerole set to role {role.mention}')
+
+    @activerole.command(name='reset')
+    async def activerole_reset(self, ctx, setting: str):
+        """Reset all excluded roles for Activerole."""
+        await ctx.trigger_typing()
+        setting = setting.lower()
+        logger.debug(setting)
+        if setting in ['channels', 'chann', 'chan', 'all']:
+            await self.config.guild(ctx.guild).channels.set([])
+        elif setting in ['roles', 'role', 'all']:
+            await self.config.guild(ctx.guild).roles.set([])
+        else:
+            await ctx.send(f'Setting "{setting}" not found. Available: '
+                           f'`channels` or `roles` or `all`')
+            return
+        await ctx.send(f'✅ Excludes have been painfully exterminated.')
+
+    @activerole.command(name='disable', aliases=['d'])
+    async def activerole_disable(self, ctx):
+        """Disables Activerole, set a new role to re-enable it."""
+        await ctx.trigger_typing()
+        await self.config.guild(ctx.guild).active_role.set(None)
+        await ctx.send(f'⛔ Activerole disabled in guild...')
+
+    @activerole.command(name='status', aliases=['s', 'settings'])
+    async def activerole_status(self, ctx):
+        """Get Activerole status."""
+        await ctx.trigger_typing()
+        config = await self.config.guild(ctx.guild).all()
+        out = [
+            'Activerole Settings:',
+            f'Active User Role: {config["active_role"]}',
+            f'Excluded Channels: {config["channels"]}',
+            f'Excluded Roles: {config["roles"]}',
+        ]
+        await ctx.send('\n'.join(out))
 
     @activerole.group(name='exclude', aliases=['e'])
     @commands.admin()
@@ -123,10 +160,7 @@ class Activerole(commands.Cog):
         [p]activerole exclude role role1
         [p]activerole exclude roles role1 role2 another-role
         """
-        log = ctx
-        logger.debug(dir(log))
-        logger.debug(type(log))
-        logger.debug(log)
+        await ctx.trigger_typing()
         if not roles:
             await ctx.send_help()
             return
@@ -147,6 +181,7 @@ class Activerole(commands.Cog):
         [p]activerole exclude channel channel1
         [p]activerole exclude channels channel1 channel2
         """
+        await ctx.trigger_typing()
         logger.debug(channels)
         if not channels:
             await ctx.send_help()
@@ -161,24 +196,6 @@ class Activerole(commands.Cog):
         exclude_channels = await self.config.guild(ctx.guild).channels()
         await ctx.send(f'✅ Excluded Roles: ```{exclude_channels}```')
 
-    @activerole.command(name='reset')
-    async def activerole_reset(self, ctx, setting: str):
-        """Reset all excluded roles for Activerole."""
-        setting = setting.lower()
-        logger.debug(setting)
-        if setting in ['channels', 'chann', 'chan', 'all']:
-            await self.config.guild(ctx.guild).channels.set([])
-        if setting in ['roles', 'role', 'all']:
-            await self.config.guild(ctx.guild).roles.set([])
-        await ctx.send(f'✅ Excludes have been painfully exterminated.')
-
-    @activerole.command(name='disable', aliases=['d'])
-    async def activerole_disable(self, ctx, *, role: discord.Role):
-        """Disables Activerole, set a new role to re-enable it."""
-        logger.debug(role)
-        await self.config.guild(ctx.guild).active_role.set(None)
-        await ctx.send(f'⛔ Activerole disabled in guild...')
-
     @commands.group(name='activeroleconfig', aliases=['arc'])
     @commands.is_owner()
     async def activeroleconfig(self, ctx):
@@ -188,6 +205,7 @@ class Activerole(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.default)
     async def activeroleconfig_start(self, ctx):
         """Starts Activerole loop."""
+        await ctx.trigger_typing()
         if self.loop:
             await ctx.send('Activerole loop already running.')
             return
@@ -199,6 +217,7 @@ class Activerole(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.default)
     async def activeroleconfig_stop(self, ctx):
         """Stops Activerole loop."""
+        await ctx.trigger_typing()
         await self.config.enabled.set(False)
         if not self.loop:
             await ctx.send('Activerole loop not running.')
