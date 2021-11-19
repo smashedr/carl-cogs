@@ -9,6 +9,9 @@ from redbot.core.utils.predicates import MessagePredicate
 
 logger = logging.getLogger('red.activerole')
 
+ACTIVE_MINUTES = 1
+LOOP_SLEEP_SECONDS = 60
+
 
 class Activerole(commands.Cog):
     """Carl's Activerole Cog"""
@@ -53,7 +56,7 @@ class Activerole(commands.Cog):
                         logger.debug('Inactive Remove Role: "%s"', member.name)
                         reason = f'Activerole user inactive.'
                         await member.remove_roles(role, reason=reason)
-            await asyncio.sleep(120)
+            await asyncio.sleep(LOOP_SLEEP_SECONDS)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -94,7 +97,9 @@ class Activerole(commands.Cog):
 
         key = f'{member.guild.id}-{member.id}'
         logger.debug(key)
-        await self.client.setex(key, datetime.timedelta(minutes=5), True)
+        expire = datetime.timedelta(minutes=ACTIVE_MINUTES)
+        logger.debug(expire)
+        await self.client.setex(key, expire, True)
         if needs_role:
             logger.debug('Applying Role "%s" to "%s"',
                          active_role.name, member.name)
