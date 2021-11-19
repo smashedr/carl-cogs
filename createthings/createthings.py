@@ -45,7 +45,7 @@ class Createthings(commands.Cog):
         self.bot = bot
 
     async def initialize(self) -> None:
-        logger.debug('Initializing Createthings Cog')
+        logger.info('Initializing Createthings Cog')
 
     @staticmethod
     async def create_role_set(ctx, role_set):

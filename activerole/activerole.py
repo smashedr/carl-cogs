@@ -45,8 +45,10 @@ class Activerole(commands.Cog):
             for guild_id, data in await AsyncIter(all_guilds.items()):
                 guild = self.bot.get_guild(guild_id)
                 role = guild.get_role(data['role'])
-                for member in await AsyncIter(role.members):
+                logger.debug(f'{guild} - {role}')
+                for member in role.members:
                     key = f'{guild.id}-{member.id}'
+                    logger.debug(key)
                     if not await self.client.exists(key):
                         logger.debug('Inactive Remove Role: "%s"', member.name)
                         reason = f'Activerole user inactive.'

@@ -25,15 +25,13 @@ class PubSub(commands.Cog):
         self.loop.cancel()
 
     async def initialize(self):
-        logger.debug("Initializing PubSub Cog Start")
+        logger.info("Initializing PubSub Cog Start")
         self.host = await self.config.host()
         self.password = await self.config.password()
-        logger.debug(self.host)
-        logger.debug(self.password)
         self.client = aredis.StrictRedis(host=self.host, port=6379, db=0, password=self.password)
         self.pubsub = self.client.pubsub(ignore_subscribe_messages=True)
         self.loop = asyncio.create_task(self.my_main_loop())
-        logger.debug("Initializing PubSub Cog Finished")
+        logger.info("Initializing PubSub Cog Finished")
 
     async def my_main_loop(self) -> None:
         logger.debug('my_main_loop')

@@ -20,7 +20,7 @@ class Reactroles(commands.Cog):
         self.config.register_guild(rr={}, at={})
 
     async def initialize(self) -> None:
-        logger.debug('Initializing Reactroles Cog')
+        logger.info('Initializing Reactroles Cog')
 
     async def get_rr(self, guild, name):
         config = await self.config.guild(guild).rr()
