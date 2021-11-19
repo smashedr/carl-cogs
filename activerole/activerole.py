@@ -23,24 +23,23 @@ class Activerole(commands.Cog):
         self.client = None
 
     def cog_unload(self):
-        if self.loop:
+        if self.loop and not self.loop.cancelled():
+            logger.debug('Unload Cog - Stopping Loop')
             self.loop.cancel()
 
     async def initialize(self):
-        logger.debug("Initializing Activerole Cog Start")
+        logger.debug('Initializing Activerole Cog Start')
         self.host = await self.config.host()
         self.password = await self.config.password()
-        logger.debug(self.host)
-        logger.debug(self.password)
         self.client = aredis.StrictRedis(
             host=self.host, port=6379, db=3, password=self.password
         )
         if await self.config.enabled():
             self.loop = asyncio.create_task(self.cleanup_loop())
-        logger.debug("Initializing Activerole Cog Finished")
+        logger.debug('Initializing Activerole Cog Finished')
 
     async def cleanup_loop(self):
-        logger.debug('Executing Loop')
+        logger.debug('Starting Cleanup Loop')
         all_guilds = await self.config.all_guilds()
         while self is self.bot.get_cog('Activerole'):
             for guild_id, data in await AsyncIter(all_guilds.items()):
@@ -48,7 +47,7 @@ class Activerole(commands.Cog):
                 role = guild.get_role(data['role'])
                 for member in role.members:
                     if not await self.client.exists(member.id):
-                        logger.debug('Inactive Member: "%s"', member.name)
+                        logger.debug('Inactive Remove Role: "%s"', member.name)
                         reason = f'Activerole user inactive.'
                         await member.remove_roles(role, reason=reason)
             await asyncio.sleep(120)
@@ -73,21 +72,19 @@ class Activerole(commands.Cog):
         role_id = await self.config.guild(member.guild).active_role()
         active_role = member.guild.get_role(role_id)
         if not active_role:
-            # maybe disable it here?
             logger.warning('Role Not Found: %s', role_id)
+            await self.config.guild(member.guild).active_role.set(None)
+            logger.warning('Disabled Activerole in guild: %s', member.guild.id)
             return
 
         exclude_channels = await self.config.guild(member.guild).channels()
         if message.channel.id in exclude_channels:
-            logger.debug('Excluded Channel: %s', message.channel.id)
             return
 
         exclude_roles = await self.config.guild(member.guild).roles()
         needs_role = True
         for role in await AsyncIter(member.roles):
             if role.id in exclude_roles:
-                logger.debug('Member "%s" has excluded role "%s".',
-                             member.name, role.name)
                 return
             if active_role.id == role.id:
                 needs_role = False
@@ -140,11 +137,13 @@ class Activerole(commands.Cog):
         """Get Activerole status."""
         await ctx.trigger_typing()
         config = await self.config.guild(ctx.guild).all()
+        status = 'Enabled' if await self.config.enabled() else 'DISABLED'
         out = [
             'Activerole Settings:',
-            f'Active User Role: {config["active_role"]}',
-            f'Excluded Channels: {config["channels"]}',
-            f'Excluded Roles: {config["roles"]}',
+            f'Global Status (bot owner): **{status}**',
+            f'Active User Role: `{config["active_role"]}`',
+            f'Excluded Channels: `{config["channels"]}`',
+            f'Excluded Roles: `{config["roles"]}`',
         ]
         await ctx.send('\n'.join(out))
 
@@ -161,6 +160,7 @@ class Activerole(commands.Cog):
         [p]activerole exclude roles role1 role2 another-role
         """
         await ctx.trigger_typing()
+        logger.debug(roles)
         if not roles:
             await ctx.send_help()
             return
@@ -172,7 +172,7 @@ class Activerole(commands.Cog):
                 if role_id not in exclude_roles:
                     exclude_roles.append(role_id)
         exclude_roles = await self.config.guild(ctx.guild).roles()
-        await ctx.send(f'✅ Excluded Roles: ```{exclude_roles}```')
+        await ctx.send(f'Excluded Roles: ```{exclude_roles}```')
 
     @acr_exclude.command(name='channel', aliases=['c', 'channels'])
     async def acr_exclude_channel(self, ctx, *channels: discord.TextChannel):
@@ -194,7 +194,7 @@ class Activerole(commands.Cog):
                 if channel_id not in exclude_channels:
                     exclude_channels.append(channel_id)
         exclude_channels = await self.config.guild(ctx.guild).channels()
-        await ctx.send(f'✅ Excluded Roles: ```{exclude_channels}```')
+        await ctx.send(f'Excluded Channels: ```{exclude_channels}```')
 
     @commands.group(name='activeroleconfig', aliases=['arc'])
     @commands.is_owner()
@@ -206,7 +206,7 @@ class Activerole(commands.Cog):
     async def activeroleconfig_start(self, ctx):
         """Starts Activerole loop."""
         await ctx.trigger_typing()
-        if self.loop:
+        if self.loop and not self.loop.cancelled():
             await ctx.send('Activerole loop already running.')
             return
         self.loop = asyncio.create_task(self.cleanup_loop())
@@ -219,8 +219,8 @@ class Activerole(commands.Cog):
         """Stops Activerole loop."""
         await ctx.trigger_typing()
         await self.config.enabled.set(False)
-        if not self.loop:
-            await ctx.send('Activerole loop not running.')
+        if not self.loop or self.loop.cancelled():
+            await ctx.send('Activerole loop not running or stopped.')
             return
         self.loop.cancel()
         await ctx.send('Activerole loop stopped.')
@@ -229,6 +229,7 @@ class Activerole(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.default)
     async def activeroleconfig_set(self, ctx, setting):
         """Set optional Activerole settings."""
+        await ctx.trigger_typing()
         if setting.lower() in ['password', 'pass']:
             await ctx.send('Check your DM.')
             channel = await ctx.author.create_dm()
@@ -264,10 +265,12 @@ class Activerole(commands.Cog):
                 host = response.content
                 await ctx.channel.send('Hostname recorded successfully.')
             else:
-                logger.debug('Error like wtf yo...')
-                logger.debug(pred.result)
-                logger.debug(response.content)
+                logger.warning('response is None')
+                logger.info(response)
+                logger.info(pred.result)
                 return
             logger.debug('SUCCESS hostname')
             logger.debug(host)
             await self.config.host.set(host)
+        else:
+            await ctx.send('Unknown setting. Try `hostname` or `password`.')
