@@ -55,8 +55,8 @@ class Activerole(commands.Cog):
                         reason = f'Activerole user inactive.'
                         await member.remove_roles(role, reason=reason)
 
-            logger.debug('Finished Loop - Sleeping 30')
-            await asyncio.sleep(30)
+            logger.debug('Finished Loop - Sleeping 120')
+            await asyncio.sleep(120)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -97,7 +97,7 @@ class Activerole(commands.Cog):
             logger.debug('Applying Role: "%s"', active_role.name)
             reason = f'Activerole user active.'
             await member.add_roles(active_role, reason=reason)
-        await self.client.setex(member.id, datetime.timedelta(minutes=2), True)
+        await self.client.setex(member.id, datetime.timedelta(minutes=10), True)
 
     @commands.group(name='activerole', aliases=['acr'])
     @commands.admin()
