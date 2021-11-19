@@ -28,7 +28,7 @@ class Activerole(commands.Cog):
             self.loop.cancel()
 
     async def initialize(self):
-        logger.debug('Initializing Activerole Cog Start')
+        logger.info('Initializing Activerole Cog Start')
         self.host = await self.config.host()
         self.password = await self.config.password()
         self.client = aredis.StrictRedis(
@@ -36,7 +36,7 @@ class Activerole(commands.Cog):
         )
         if await self.config.enabled():
             self.loop = asyncio.create_task(self.cleanup_loop())
-        logger.debug('Initializing Activerole Cog Finished')
+        logger.info('Initializing Activerole Cog Finished')
 
     async def cleanup_loop(self):
         logger.debug('Starting Cleanup Loop')
