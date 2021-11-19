@@ -9,8 +9,8 @@ from redbot.core.utils.predicates import MessagePredicate
 
 logger = logging.getLogger('red.activerole')
 
-ACTIVE_MINUTES = 1
-LOOP_SLEEP_SECONDS = 30
+ACTIVE_MINUTES = 10
+LOOP_SLEEP_SECONDS = 120
 
 
 class Activerole(commands.Cog):
