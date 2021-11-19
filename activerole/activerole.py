@@ -43,10 +43,8 @@ class Activerole(commands.Cog):
         logger.debug('Executing Loop')
         all_guilds = await self.config.all_guilds()
         while self is self.bot.get_cog('Activerole'):
-            logger.debug('Starting Loop')
+            # logger.debug('Starting Loop')
             for guild_id, data in await AsyncIter(all_guilds.items()):
-                # logger.debug(guild_id)
-                # logger.debug(data)
                 guild = self.bot.get_guild(guild_id)
                 role = guild.get_role(data['role'])
                 for member in role.members:
@@ -55,7 +53,7 @@ class Activerole(commands.Cog):
                         reason = f'Activerole user inactive.'
                         await member.remove_roles(role, reason=reason)
 
-            logger.debug('Finished Loop - Sleeping 120')
+            # logger.debug('Finished Loop - Sleeping 120')
             await asyncio.sleep(120)
 
     @commands.Cog.listener()
@@ -67,7 +65,6 @@ class Activerole(commands.Cog):
         await self.process_update(message.author)
 
     async def process_update(self, member: discord.Member):
-        logger.debug(member)
         if member.bot:
             return
         if not await self.config.enabled():
@@ -92,7 +89,6 @@ class Activerole(commands.Cog):
             if active_role.id == role.id:
                 needs_role = False
 
-        logger.debug('Active Member: "%s"', member.name)
         if needs_role:
             logger.debug('Applying Role: "%s"', active_role.name)
             reason = f'Activerole user active.'
