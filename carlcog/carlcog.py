@@ -22,19 +22,11 @@ class Carlcog(commands.Cog):
     async def initialize(self) -> None:
         logger.info('Initializing Carlcog Cog')
 
-    @commands.group(name='prefix')
+    @commands.command(name='prefix')
     @commands.admin()
     @commands.guild_only()
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def carl_prefix(self, ctx):
-        """Sets the prefix on a per-guild basis. You may provide multiple."""
-
-    @carl_prefix.command(name='set', aliases=['s'])
-    @commands.admin()
-    @commands.guild_only()
-    @commands.max_concurrency(1, commands.BucketType.guild)
-    async def carl_setprefix(self, ctx, *, prefix: str = None):
-        """Sets the prefix on a per-guild basis. You may provide multiple."""
+    async def cc_setprefix(self, ctx, *, prefix: str = None):
         await ctx.trigger_typing()
         if not prefix:
             await self.bot.set_prefixes([], ctx.guild)
@@ -48,12 +40,12 @@ class Carlcog(commands.Cog):
 
     @commands.command(name='checksite', aliases=['cs'])
     @commands.cooldown(2, 15, commands.BucketType.user)
-    async def checksite(self, ctx, url: str):
+    async def cc_checksite(self, ctx, url: str):
         """Check the status of a site at given url."""
-        url = url.strip('<>')
-        logger.debug(url)
         async with ctx.channel.typing():
             try:
+                url = url.strip('<>')
+                logger.debug(url)
                 browser = await launch(
                     executablePath=self.chrome, args=['--no-sandbox'])
                 page = await browser.newPage()
@@ -74,8 +66,9 @@ class Carlcog(commands.Cog):
     @commands.admin_or_permissions(move_members=True)
     @commands.guild_only()
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def carl_moveusto(self, ctx, *, channel: discord.VoiceChannel):
+    async def cc_moveusto(self, ctx, *, channel: discord.VoiceChannel):
         """Moves all users from your current channel to `channel`"""
+        await ctx.trigger_typing()
         if not ctx.author.voice or not ctx.author.voice.channel:
             await ctx.send('You are not in a Voice channel.', delete_after=15)
             return
@@ -97,7 +90,7 @@ class Carlcog(commands.Cog):
     @commands.admin()
     @commands.guild_only()
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def carl_bitrateall(self, ctx, bitrate: int = 0):
+    async def cc_bitrateall(self, ctx, bitrate: int = 0):
         """Set the bitrate for ALL channels to Guild Max or bitrate."""
         await ctx.trigger_typing()
         limit = ctx.guild.bitrate_limit
@@ -122,7 +115,7 @@ class Carlcog(commands.Cog):
     @commands.admin()
     @commands.guild_only()
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def carl_roleaddmulti(self, ctx, role: discord.Role, *, members: str):
+    async def cc_roleaddmulti(self, ctx, role: discord.Role, *, members: str):
         """Attempts to add a `role` to multiple `users`, space separated..."""
         await ctx.trigger_typing()
         members = members.split()
