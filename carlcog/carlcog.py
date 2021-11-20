@@ -54,8 +54,7 @@ class Carlcog(commands.Cog):
         logger.debug(url)
         async with ctx.channel.typing():
             try:
-                pass
-                browser = await launch(executablePath=self.chrome)
+                browser = await launch(executablePath=self.chrome, args=['--no-sandbox'])
                 page = await browser.newPage()
                 await page.setViewport({'width': 1280, 'height': 960})
                 await page.goto(url, timeout=1000 * 12)
