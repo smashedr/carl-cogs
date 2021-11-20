@@ -55,7 +55,7 @@ class Carlcog(commands.Cog):
         async with ctx.channel.typing():
             try:
                 pass
-                browser = await launch(headless=True, executablePath=self.chrome)
+                browser = await launch(executablePath=self.chrome)
                 page = await browser.newPage()
                 await page.setViewport({'width': 1280, 'height': 960})
                 await page.goto(url, timeout=1000 * 12)
@@ -67,6 +67,7 @@ class Carlcog(commands.Cog):
                 file = discord.File(data, filename='screenshot.png')
                 await ctx.send(f'Results for: `{url}`', files=[file])
             except Exception as error:
+                logger.exception(error)
                 await ctx.send(error)
 
     @commands.command(name='moveusto', aliases=['mut'])
