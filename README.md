@@ -1,3 +1,4 @@
+![](https://repository-images.githubusercontent.com/422749366/8a92ff8a-5567-4af8-9804-af254b34f5c0)
 # Carl-Cogs
 
 Cogs for Carl Bot.
