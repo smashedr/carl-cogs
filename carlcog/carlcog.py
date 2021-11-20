@@ -1,6 +1,8 @@
 import asyncio
 import discord
 import logging
+from io import BytesIO
+from pyppeteer import launch
 
 from redbot.core import commands
 from redbot.core.utils import AsyncIter
@@ -15,6 +17,7 @@ class Carlcog(commands.Cog):
     """Carl's Carlcog Cog"""
     def __init__(self, bot):
         self.bot = bot
+        self.chrome = '/data/local-chromium/588429/chrome-linux/chrome'
 
     async def initialize(self) -> None:
         logger.info('Initializing Carlcog Cog')
@@ -42,6 +45,29 @@ class Carlcog(commands.Cog):
             logger.debug(prefixes)
             await self.bot.set_prefixes(prefixes, ctx.guild)
             await ctx.send(f'Prefixes for guild set to: ```{prefixes}```')
+
+    @commands.command(name='checksite', aliases=['cs'])
+    @commands.cooldown(2, 15, commands.BucketType.user)
+    async def checksite(self, ctx, url: str):
+        """Check the status of a site at given url."""
+        url = url.strip('<>')
+        logger.debug(url)
+        async with ctx.channel.typing():
+            try:
+                pass
+                browser = await launch(executablePath=self.chrome)
+                page = await browser.newPage()
+                await page.setViewport({'width': 1280, 'height': 960})
+                await page.goto(url, timeout=1000 * 12)
+                result = await page.screenshot()
+                await browser.close()
+                data = BytesIO()
+                data.write(result)
+                data.seek(0)
+                file = discord.File(data, filename='screenshot.png')
+                await ctx.send(f'Results for: `{url}`', files=[file])
+            except Exception as error:
+                await ctx.send(error)
 
     @commands.command(name='moveusto', aliases=['mut'])
     @commands.admin_or_permissions(move_members=True)
@@ -71,7 +97,7 @@ class Carlcog(commands.Cog):
     @commands.guild_only()
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def carl_bitrateall(self, ctx, bitrate: int = 0):
-        """Set the bitrate for ALL channels to Guild Max or `bitrate`."""
+        """Set the bitrate for ALL channels to Guild Max or bitrate."""
         await ctx.trigger_typing()
         limit = ctx.guild.bitrate_limit
         if bitrate and not (8000 > bitrate > 360000) or bitrate > limit:
