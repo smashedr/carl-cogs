@@ -3,7 +3,7 @@
   "author": ["Shane#0816"],
   "short": "Carl's Createthings Module.",
   "description": "Create pre-defined or user-defined role/emoji sets.",
-  "install_msg": "Get started with `[p]createroles` and `[p]createemoji`",
+  "install_msg": "Get started with `[p]help Createthings`",
   "end_user_data_statement": "Caveat Emptor.",
   "required_cogs": {},
   "requirements": [],

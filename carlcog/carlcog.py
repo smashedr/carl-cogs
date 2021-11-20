@@ -27,6 +27,7 @@ class Carlcog(commands.Cog):
     @commands.guild_only()
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def cc_setprefix(self, ctx, *, prefix: str = None):
+        """Sets the <prefix(s)> for the server. Leave blank to reset."""
         await ctx.trigger_typing()
         if not prefix:
             await self.bot.set_prefixes([], ctx.guild)
@@ -41,7 +42,7 @@ class Carlcog(commands.Cog):
     @commands.command(name='checksite', aliases=['cs'])
     @commands.cooldown(2, 15, commands.BucketType.user)
     async def cc_checksite(self, ctx, url: str):
-        """Check the status of a site at given url."""
+        """Check the status of a site at given <url>"""
         async with ctx.channel.typing():
             try:
                 url = url.strip('<>')
@@ -67,7 +68,7 @@ class Carlcog(commands.Cog):
     @commands.guild_only()
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def cc_moveusto(self, ctx, *, channel: discord.VoiceChannel):
-        """Moves all users from your current channel to `channel`"""
+        """Moves all users from your current channel to <channel>"""
         await ctx.trigger_typing()
         if not ctx.author.voice or not ctx.author.voice.channel:
             await ctx.send('You are not in a Voice channel.', delete_after=15)
@@ -91,7 +92,7 @@ class Carlcog(commands.Cog):
     @commands.guild_only()
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def cc_bitrateall(self, ctx, bitrate: int = 0):
-        """Set the bitrate for ALL channels to Guild Max or bitrate."""
+        """Set the bitrate for ALL channels to Guild Max or <bitrate>."""
         await ctx.trigger_typing()
         limit = ctx.guild.bitrate_limit
         if bitrate and not (8000 > bitrate > 360000) or bitrate > limit:
@@ -116,7 +117,7 @@ class Carlcog(commands.Cog):
     @commands.guild_only()
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def cc_roleaddmulti(self, ctx, role: discord.Role, *, members: str):
-        """Attempts to add a `role` to multiple `users`, space separated..."""
+        """Attempts to add a <role> to multiple <users>, space separated..."""
         await ctx.trigger_typing()
         members = members.split()
         logger.debug(members)
@@ -150,5 +151,5 @@ class Carlcog(commands.Cog):
                         if role not in member.roles:
                             await member.add_roles(role, reason=f'{ctx.author} roleaddmulti')
                             users.append(member.name)
-        await ctx.send(f'Done! Added `@{role.name}` to:\n{users}')
+        await ctx.send(f'Done! Added @{role.mention} to:\n{users}')
         await message.delete()

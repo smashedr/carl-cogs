@@ -3,7 +3,7 @@
   "author": ["Shane#0816"],
   "short": "Carl's Carlcog Module.",
   "description": "Custom commands for Carl Bot that could end up in their own module.",
-  "install_msg": "There are some useful functions, might need to look under the hood...",
+  "install_msg": "Has some useful commands. Get started with `[p]help Carlcog`",
   "end_user_data_statement": "Caveat Emptor.",
   "required_cogs": {},
   "requirements": ["pyppeteer"],
