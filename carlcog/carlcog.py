@@ -22,6 +22,9 @@ class Carlcog(commands.Cog):
     async def initialize(self) -> None:
         logger.info('Initializing Carlcog Cog')
 
+    def cog_unload(self):
+        logger.info('Unload Carlcog Cog')
+
     @commands.command(name='prefix')
     @commands.admin()
     @commands.guild_only()
@@ -153,3 +156,35 @@ class Carlcog(commands.Cog):
                             users.append(member.name)
         await ctx.send(f'Done! Added @{role.mention} to:\n{users}')
         await message.delete()
+
+    # @commands.command(name='serverinfo', aliases=['guildinfo'])
+    # @commands.guild_only()
+    # async def cc_serverinfo(self, ctx, guild=None):
+    #     """Shows server information."""
+    #     if guild is None:
+    #         guild = ctx.guild
+    #     else:
+    #         try:
+    #             guild = self.bot.get_guild(int(guild))
+    #         except ValueError:
+    #             return await ctx.send("Not a valid guild id.")
+    #     online = str(len([m.status for m in guild.members if str(m.status) == "online" or str(m.status) == "idle"]))
+    #     total_users = str(len(guild.members))
+    #     text_channels = [x for x in guild.channels if isinstance(x, discord.TextChannel)]
+    #     voice_channels = [x for x in guild.channels if isinstance(x, discord.VoiceChannel)]
+    #
+    #     load = "```\nLoading guild info...```"
+    #     waiting = await ctx.send(load)
+    #
+    #     data = "```ini\n"
+    #     data += "[Name]:     {}\n".format(guild.name)
+    #     data += "[ID]:       {}\n".format(guild.id)
+    #     data += "[Region]:   {}\n".format(guild.region)
+    #     data += "[Owner]:    {}\n".format(guild.owner)
+    #     data += "[Users]:    {}/{}\n".format(online, total_users)
+    #     data += "[Text]:     {} channels\n".format(len(text_channels))
+    #     data += "[Voice]:    {} channels\n".format(len(voice_channels))
+    #     data += "[Emojis]:   {}\n".format(len(guild.emojis))
+    #     data += "[Roles]:    {} \n```".format(len(guild.roles))
+    #     await asyncio.sleep(1)
+    #     await waiting.edit(content=data)

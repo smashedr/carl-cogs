@@ -80,7 +80,7 @@ class Stickyroles(commands.Cog):
     async def sync_roles(self, ctx):
         steps = 2
         members = ctx.guild.members
-        seconds = len(members)//steps
+        seconds = len(members) // steps
         msg = f'Sync all members roles now? ETA {seconds} seconds.'
         message = await ctx.send(msg, delete_after=60)
         pred = ReactionPredicate.yes_or_no(message, ctx.author)
