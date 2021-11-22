@@ -38,7 +38,6 @@ class Botutils(commands.Cog):
     @commands.guild_only()
     async def emoji_id(self, ctx, emoji: discord.Emoji):
         """Get the ID for an <emoji>."""
-        logger.debug(emoji)
         await ctx.trigger_typing()
         await ctx.send(f'**{emoji}** ID: `{emoji.id}`')
 
@@ -46,7 +45,6 @@ class Botutils(commands.Cog):
     @commands.guild_only()
     async def role_id(self, ctx, *, role: Union[CarlRoleConverter, discord.Role]):
         """Get the ID for a <role>."""
-        logger.debug(role)
         await ctx.trigger_typing()
         await ctx.send(f'{role.mention} ID: `{role.id}`')
 
@@ -59,7 +57,6 @@ class Botutils(commands.Cog):
                                                  discord.CategoryChannel,
                                                  discord.StageChannel]]):
         """Get the ID for a <channel>."""
-        logger.debug(channel)
         await ctx.trigger_typing()
         if len(ctx.message.content.split()) == 1:
             channel = channel or ctx.channel
@@ -81,7 +78,6 @@ class Botutils(commands.Cog):
     @commands.guild_only()
     async def user_id(self, ctx, user: Optional[FuzzyMember], first: Optional[Union[bool, str]]):
         """Get the ID(s) for a <user>. Defaults to current user or a FuzzyMatch."""
-        logger.debug(user)
         await ctx.trigger_typing()
         if len(ctx.message.content.split()) == 1:
             user = user or [ctx.author]
@@ -264,7 +260,6 @@ class Botutils(commands.Cog):
     async def channel_info(self, ctx, *, channel: CarlChannelConverter = None):
         """Shows channel information. Defaults to current text channel."""
         channel = channel or ctx.channel
-        logger.debug(channel)
         await self.show_channel_info(ctx, channel)
 
     @classmethod
@@ -344,7 +339,6 @@ class Botutils(commands.Cog):
 
     @classmethod
     def time_since(cls, time: str):
-        logger.debug(time)
         try:
             date_time = datetime.datetime.strptime(str(time), '%Y-%m-%d %H:%M:%S.%f')
         except ValueError:
@@ -368,7 +362,6 @@ class Botutils(commands.Cog):
 
     @staticmethod
     def count_months(days: int):
-        logger.debug(days)
         lens = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
         cy = itertools.cycle(lens)
         months = 0
