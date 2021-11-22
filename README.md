@@ -25,6 +25,7 @@ Cog | Description
 ------------ | -------------
 **[autochannels](autochannels/autochannels.py)** | Creates duplicate channels on the fly and cleans up when done.
 **[autoroles](autoroles/autoroles.py)** | Adds roles to new members on join.
+**[botutils](botutils/botutils.py)** | Additional bot utilities, mostly information about things.
 **[liverole](liverole/liverole.py)** | Give members a role when they go live in Discord.
 **[stickyroles](stickyroles/stickyroles.py)** | Remembers users roles and adds them back on rejoin.
 **[userchannels](userchannels/userchannels.py)** | Creates custom user rooms on the fly and cleans up when done.
