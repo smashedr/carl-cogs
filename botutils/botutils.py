@@ -250,7 +250,7 @@ class Botutils(commands.Cog):
             data += '[In Voice]:      {}\n'.format(user.voice.channel if user.voice else None)
             data += '[AFK]:           {}\n'.format(user.voice.afk if user.voice else False)
             data += '[Roles]:         {}\n'.format(', '.join(roles))
-            data += '[Avatar URL]:\n{}\n'.format(icon_url)
+        data += '[Avatar URL]:\n{}\n'.format(icon_url)
         data += '```'
 
         await msg.edit(content=data)
