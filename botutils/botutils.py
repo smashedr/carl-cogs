@@ -135,38 +135,38 @@ class Botutils(commands.Cog):
 
         await self.show_guild_info(ctx, guild)
 
-    @classmethod
-    async def show_guild_info(cls, ctx, guild: discord.Guild):
+    async def show_guild_info(self, ctx, guild: discord.Guild):
         msg = await ctx.send('**Guild**```\nLoading guild info...```')
 
-        online = str(len([m.status for m in guild.members if str(m.status) == 'online' or str(m.status) == 'idle']))
-        text_channels = [x for x in guild.channels if isinstance(x, discord.TextChannel)]
-        voice_channels = [x for x in guild.channels if isinstance(x, discord.VoiceChannel)]
-        if guild.is_icon_animated():
-            icon_url = guild.icon_url_as(format='gif')
-        else:
-            icon_url = guild.icon_url_as(format='png')
-        banner_url = guild.banner_url_as(format='jpeg')
-        splash_url = guild.splash_url_as(format='jpeg')
+        # online = str(len([m.status for m in guild.members if str(m.status) == 'online' or str(m.status) == 'idle']))
+        # text_channels = [x for x in guild.channels if isinstance(x, discord.TextChannel)]
+        # voice_channels = [x for x in guild.channels if isinstance(x, discord.VoiceChannel)]
+        # if guild.is_icon_animated():
+        #     icon_url = guild.icon_url_as(format='gif')
+        # else:
+        #     icon_url = guild.icon_url_as(format='png')
+        # banner_url = guild.banner_url_as(format='jpeg')
+        # splash_url = guild.splash_url_as(format='jpeg')
+        #
+        # data = f'**Guild**```ini\n'
+        # data += f'[Name]:       {guild.name}\n'
+        # data += f'[ID]:         {guild.id}\n'
+        # data += f'[Owner]:      {guild.owner}\n'
+        # data += f'[Users]:      {online}/{len(guild.members)}\n'
+        # data += f'[Text]:       {len(text_channels)}\n'
+        # data += f'[Voice]:      {len(voice_channels)}\n'
+        # data += f'[Emojis]:     {len(guild.emojis)}\n'
+        # data += f'[Roles]:      {len(guild.roles)}\n'
+        # data += f'[Created]:    {cls.time_since(guild.created_at)}\n'
+        # data += f'[Avatar URL]:\n{icon_url}\n'
+        # if banner_url:
+        #     data += f'[Banner URL]:\n{banner_url}\n'
+        # if splash_url:
+        #     data += f'[Splash URL]:\n{splash_url}\n'
+        # data += '```'
+        embed = await self.guild_embed(guild)
 
-        data = f'**Guild**```ini\n'
-        data += f'[Name]:       {guild.name}\n'
-        data += f'[ID]:         {guild.id}\n'
-        data += f'[Owner]:      {guild.owner}\n'
-        data += f'[Users]:      {online}/{len(guild.members)}\n'
-        data += f'[Text]:       {len(text_channels)}\n'
-        data += f'[Voice]:      {len(voice_channels)}\n'
-        data += f'[Emojis]:     {len(guild.emojis)}\n'
-        data += f'[Roles]:      {len(guild.roles)}\n'
-        data += f'[Created]:    {cls.time_since(guild.created_at)}\n'
-        data += f'[Avatar URL]:\n{icon_url}\n'
-        if banner_url:
-            data += f'[Banner URL]:\n{banner_url}\n'
-        if splash_url:
-            data += f'[Splash URL]:\n{splash_url}\n'
-        data += '```'
-
-        await msg.edit(content=data)
+        await msg.edit(content='**Guild**', embed=embed)
 
     @commands.command(name='roleinfo', aliases=['rinfo'])
     @commands.guild_only()
@@ -383,7 +383,7 @@ class Botutils(commands.Cog):
     def channel_type_emoji(channel):
         if getattr(channel, 'type', False):
             if str(channel.type) == 'text':
-                return f'\U0001F4DD'  # {MEMO}
+                return f'\U0001F4AC'  # {SPEECH BALLOON}
             elif str(channel.type) == 'voice':
                 return f'\U0001F50A'  # :loud_sound:
             elif str(channel.type) == 'category':
@@ -391,3 +391,199 @@ class Botutils(commands.Cog):
             elif str(channel.type) == 'stage_voice':
                 return f'\U0001F3A7'  # :headphones:
         return f'\U00002753'  # {BLACK QUESTION MARK ORNAMENT}
+
+    async def guild_embed(self, guild: discord.Guild) -> discord.Embed:
+        """Builds a guild embed."""
+
+        def _size(number):
+            for unit in ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]:
+                if abs(number) < 1024.0:
+                    return "{0:.1f}{1}".format(number, unit)
+                number /= 1024.0
+            return "{0:.1f}{1}".format(number, "YB")
+
+        def _bitsize(number):
+            for unit in ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]:
+                if abs(number) < 1000.0:
+                    return "{0:.1f}{1}".format(number, unit)
+                number /= 1000.0
+            return "{0:.1f}{1}".format(number, "YB")
+
+        created_at = "Created on {date}. That's over {num}!".format(
+            date=f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>",
+            num=f"<t:{int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>",
+        )
+        total_users = guild.member_count
+        try:
+            joined_at = guild.me.joined_at
+        except AttributeError:
+            joined_at = datetime.datetime.utcnow()
+        bot_joined = f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+        since_joined = f"<t:{int(joined_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
+        joined_on = (
+            "{bot} joined this server on **{bot_join}**.\n"
+            "That's over **{since_join}**!"
+        ).format(
+            bot=self.bot.user.mention,
+            bot_join=bot_joined,
+            since_join=since_joined,
+        )
+        shard = (
+            "\nShard ID: **{shard_id}/{shard_count}**".format(
+                shard_id=guild.shard_id + 1,
+                shard_count=self.bot.shard_count,
+            )
+            if self.bot.shard_count > 1
+            else ""
+        )
+        colour = guild.roles[-1].colour
+
+        member_msg = "Total Users: **{}**\n".format(total_users)
+        online_stats = {
+            "Humans: ": lambda x: not x.bot,
+            " • Bots: ": lambda x: x.bot,
+            "\N{LARGE GREEN CIRCLE}": lambda x: x.status is discord.Status.online,
+            "\N{LARGE ORANGE CIRCLE}": lambda x: x.status is discord.Status.idle,
+            "\N{LARGE RED CIRCLE}": lambda x: x.status is discord.Status.do_not_disturb,
+            "\N{MEDIUM WHITE CIRCLE}": lambda x: x.status is discord.Status.offline,
+            "\N{LARGE PURPLE CIRCLE}": lambda x: (
+                x.activity is not None and x.activity.type is discord.ActivityType.streaming
+            ),
+        }
+        count = 1
+        for emoji, value in online_stats.items():
+            try:
+                num = len([m for m in guild.members if value(m)])
+            except Exception as error:
+                print(error)
+                continue
+            else:
+                member_msg += f"{emoji} **{num}** " + (
+                    "\n" if count % 2 == 0 else ""
+                )
+            count += 1
+
+        text_channels = len(guild.text_channels)
+        nsfw_channels = len([c for c in guild.text_channels if c.is_nsfw()])
+        voice_channels = len(guild.voice_channels)
+
+        verif = {
+            "none": "0 - None",
+            "low": "1 - Low",
+            "medium": "2 - Medium",
+            "high": "3 - High",
+            "extreme": "4 - Extreme",
+        }
+
+        features = {
+            "ANIMATED_ICON": "Animated Icon",
+            "BANNER": "Banner Image",
+            "COMMERCE": "Commerce",
+            "COMMUNITY": "Community",
+            "DISCOVERABLE": "Server Discovery",
+            "FEATURABLE": "Featurable",
+            "INVITE_SPLASH": "Splash Invite",
+            "MEMBER_LIST_DISABLED": "Member list disabled",
+            "MEMBER_VERIFICATION_GATE_ENABLED": "Membership Screening enabled",
+            "MORE_EMOJI": "More Emojis",
+            "NEWS": "News Channels",
+            "PARTNERED": "Partnered",
+            "PREVIEW_ENABLED": "Preview enabled",
+            "PUBLIC_DISABLED": "Public disabled",
+            "VANITY_URL": "Vanity URL",
+            "VERIFIED": "Verified",
+            "VIP_REGIONS": "VIP Voice Servers",
+            "WELCOME_SCREEN_ENABLED": "Welcome Screen enabled",
+        }
+        guild_features_list = [
+            f"✅ {name}" for feature, name in features.items() if feature in guild.features
+        ]
+
+        em = discord.Embed(
+            description=(f"{guild.description}\n\n" if guild.description else "")
+            + f"{created_at}\n{joined_on}",
+            colour=colour,
+        )
+        em.set_author(
+            name=guild.name,
+            icon_url="https://cdn.discordapp.com/emojis/457879292152381443.png"
+            if "VERIFIED" in guild.features
+            else "https://cdn.discordapp.com/emojis/508929941610430464.png"
+            if "PARTNERED" in guild.features
+            else discord.Embed.Empty,
+            url=guild.icon_url
+            if guild.icon_url
+            else "https://cdn.discordapp.com/embed/avatars/1.png",
+        )
+        em.set_thumbnail(
+            url=guild.icon_url
+            if guild.icon_url
+            else "https://cdn.discordapp.com/embed/avatars/1.png"
+        )
+        em.add_field(name="Members:", value=member_msg)
+        em.add_field(
+            name="Channels:",
+            value=(
+                "\N{SPEECH BALLOON} Text: **{text}**\n{nsfw}"
+                "\N{SPEAKER WITH THREE SOUND WAVES} Voice: {voice}"
+            ).format(
+                text=text_channels,
+                nsfw="\N{NO ONE UNDER EIGHTEEN SYMBOL} Nsfw: {}\n".format(
+                    nsfw_channels
+                )
+                if nsfw_channels
+                else "",
+                voice=voice_channels,
+            ),
+        )
+        owner = guild.owner if guild.owner else await self.bot.get_or_fetch_user(guild.owner_id)
+        em.add_field(
+            name="Utility:",
+            value=(
+                "Owner: {owner_mention}\n"
+                "{owner}\n"
+                "Level: **{verif}**\n"
+                "Server ID: **{id}{shard}**"
+            ).format(
+                owner_mention=str(owner.mention),
+                owner=str(owner),
+                verif=verif[str(guild.verification_level)],
+                id=str(guild.id),
+                shard=shard,
+            ),
+            inline=False,
+        )
+        em.add_field(
+            name="Misc:",
+            value=(
+                "AFK channel: **{afk_chan}**\n"
+                "AFK timeout: **{afk_timeout}**\n"
+                "Custom emojis: **{emojis}**\n"
+                "Roles: **{roles}**"
+            ).format(
+                afk_chan=str(guild.afk_channel) if guild.afk_channel else "Not set",
+                afk_timeout=guild.afk_timeout,
+                emojis=len(guild.emojis),
+                roles=len(guild.roles),
+            ),
+            inline=False,
+        )
+        if guild_features_list:
+            em.add_field(name="Server features:", value="\n".join(guild_features_list))
+        if guild.premium_tier != 0:
+            nitro_boost = (
+                "Tier **{boostlevel}** with **{nitroboosters}** boosters\n"
+                "File size limit: **{filelimit}**\n"
+                "Emoji limit: **{emojis_limit}**\n"
+                "VCs max bitrate: **{bitrate}**"
+            ).format(
+                boostlevel=str(guild.premium_tier),
+                nitroboosters=guild.premium_subscription_count,
+                filelimit=_size(guild.filesize_limit),
+                emojis_limit=str(guild.emoji_limit),
+                bitrate=_bitsize(guild.bitrate_limit),
+            )
+            em.add_field(name="Nitro Boost:", value=nitro_boost)
+        if guild.splash:
+            em.set_image(url=guild.splash_url_as(format="png"))
+        return em
