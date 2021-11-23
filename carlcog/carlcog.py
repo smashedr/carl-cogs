@@ -2,12 +2,14 @@ import asyncio
 import datetime
 import discord
 import logging
+import traceback
 from io import BytesIO
 from pyppeteer import launch
 
 from redbot.core import Config, commands
+from redbot.core.utils import chat_formatting as cf
 
-logger = logging.getLogger('red.carlcog')
+log = logging.getLogger('red.carlcog')
 
 
 class Carlcog(commands.Cog):
@@ -20,31 +22,32 @@ class Carlcog(commands.Cog):
         self.config.register_global(alert_channel=None)
 
     async def cog_load(self) -> None:
-        logger.info('Initializing Carlcog Cog')
+        log.info('Initializing Carlcog Cog')
 
     def cog_unload(self):
-        logger.info('Unload Carlcog Cog')
+        log.info('Unload Carlcog Cog')
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild):
         """Notify a channel when the bot leaves a server."""
-        logger.debug(guild)
+        log.debug(guild)
         await self.process_guild_join_leave(guild)
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
         """Notify a channel when the bot joins a server."""
-        logger.debug(guild)
+        log.debug(guild)
         await self.process_guild_join_leave(guild, join=True)
 
     async def process_guild_join_leave(self, guild: discord.Guild, join=False):
         """Notify a channel when the bot joins a server."""
         channel_id = await self.config.alert_channel()
         if not channel_id:
-            logger.debug('No channel_id')
             return
-
         channel = self.bot.get_channel(channel_id)
+        if not channel:
+            log.warning('Channel %s not found.', channel_id)
+            return
 
         if guild.is_icon_animated():
             icon_url = guild.icon_url_as(format='gif')
@@ -57,8 +60,8 @@ class Carlcog(commands.Cog):
             created_at = int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())
             description = (
                 f'{self.bot.user.mention} joined a new server \U0001F4E5 \n\n'
-                f"Created on **<t:{created_at}:D>** "
-                f"over **<t:{created_at}:R>**"
+                f'Created on **<t:{created_at}:D>** '
+                f'over **<t:{created_at}:R>**'
             )
             em.colour = discord.Colour.green()
         else:  # Parted
@@ -76,16 +79,59 @@ class Carlcog(commands.Cog):
         em.timestamp = datetime.datetime.now(datetime.timezone.utc)
         await channel.send(embed=em)
 
+    @commands.Cog.listener(name='on_command_error')
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
+        """Logs errors to the alert_channel."""
+        log.debug(error)
+        if isinstance(error, (
+            commands.UserInputError,
+            commands.DisabledCommand,
+            commands.CommandNotFound,
+            commands.CheckFailure,
+            commands.NoPrivateMessage,
+            commands.CommandOnCooldown,
+            commands.MaxConcurrencyReached,
+        )):
+            return
+        channel_id = await self.config.alert_channel()
+        if not channel_id:
+            return
+        channel = self.bot.get_channel(channel_id)
+        if not channel:
+            log.warning('Channel %s not found.', channel_id)
+            return
+
+        em = discord.Embed()
+        em.colour = discord.Colour.red()
+        em.title = f'Exception in command `{ctx.command.qualified_name}`'
+        em.set_author(name='Jump to message', url=ctx.message.jump_url)
+        em.description = ctx.message.content
+        em.timestamp = ctx.message.created_at
+        em.add_field(name='Invoker', value=ctx.author.mention)
+        em.add_field(name='Channel', value=ctx.channel.mention or ctx.channel)
+        if ctx.guild:
+            em.add_field(name='Server', value=ctx.guild.name)
+            em.set_thumbnail(url=ctx.guild.icon_url)
+        else:
+            em.set_thumbnail(url=self.bot.user.avatar_url)
+        em.set_footer(text=f'ID: {ctx.author.id}', icon_url=ctx.author.avatar_url)
+        await channel.send(embed=em)
+        logs = ''.join(
+            traceback.format_exception(type(error), error, error.__traceback__)
+        )
+        for page in cf.pagify(logs):
+            await channel.send(cf.box(page, lang='py'))
+
     @commands.command(name='setalertchannel', aliases=['sac'])
     @commands.is_owner()
     async def cc_set_alert_channel(self, ctx, channel: discord.TextChannel):
         """Sets the alert channel for various internal alerts."""
         try:
-            await channel.send('Testing Write Access.', delete_after=15)
+            await channel.send('Testing write access.', delete_after=15)
             await self.config.alert_channel.set(channel.id)
             await ctx.send(f'Updated alert channel to: {channel.mention}')
         except Exception as error:
-            logger.exception(error)
+            log.exception(error)
             await ctx.send(f'Error setting channel to {channel}: {error}')
 
     @commands.command(name='prefix')
@@ -101,7 +147,7 @@ class Carlcog(commands.Cog):
             await ctx.send(f'Custom prefix reset to default: **{prefixes}**')
         else:
             prefixes = prefix.split()
-            logger.debug(prefixes)
+            log.debug(prefixes)
             await self.bot.set_prefixes(prefixes, ctx.guild)
             await ctx.send(f'Prefixes for guild set to: **{prefixes}**')
 
@@ -112,7 +158,7 @@ class Carlcog(commands.Cog):
         async with ctx.channel.typing():
             try:
                 url = url.strip('<>')
-                logger.debug(url)
+                log.debug(url)
                 browser = await launch(
                     executablePath=self.chrome, args=['--no-sandbox'])
                 page = await browser.newPage()
@@ -126,5 +172,5 @@ class Carlcog(commands.Cog):
                 file = discord.File(data, filename='screenshot.png')
                 await ctx.send(f'Results for: `{url}`', files=[file])
             except Exception as error:
-                logger.exception(error)
+                log.exception(error)
                 await ctx.send(error)
