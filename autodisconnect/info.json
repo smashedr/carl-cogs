@@ -1,0 +1,15 @@
+{
+  "name": "Autodisconnect",
+  "author": ["Shane#0816"],
+  "short": "Carl's Autodisconnect Module.",
+  "description": "Automatically disconnects users from the AFK channel.",
+  "install_msg": "Enable and set timeout with `[p]autodisconnect <minutes>`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "required_cogs": {},
+  "requirements": [],
+  "min_bot_version": "3.4.0",
+  "min_python_version" : [3,8,0],
+  "disabled": false,
+  "hidden": false,
+  "type": "COG"
+}

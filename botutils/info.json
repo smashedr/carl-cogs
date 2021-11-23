@@ -2,7 +2,7 @@
   "name": "Botutils",
   "author": ["Shane#0816"],
   "short": "Carl's Botutils Module.",
-  "description": "Custom bot utilities for Carl Bot but useful for anyone.",
+  "description": "Custom stateless bot utilities for Carl Bot but useful for anyone.",
   "install_msg": "Has some useful commands. Get started with `[p]help Botutils`",
   "end_user_data_statement": "Caveat Emptor.",
   "required_cogs": {},

@@ -24,12 +24,13 @@ If you run a bot compatible with Red Cogs:
 Cog | Description
 ------------ | -------------
 **[autochannels](autochannels/autochannels.py)** | Creates duplicate channels on the fly and cleans up when done.
+**[autodisconnect](autodisconnect/autodisconnect.py)** | Automatically disconnects users from the AFK channel.
 **[autoroles](autoroles/autoroles.py)** | Adds roles to new members on join.
-**[botutils](botutils/botutils.py)** | Additional bot utilities, mostly information about things.
-**[liverole](liverole/liverole.py)** | Give members a role when they go live in Discord.
-**[stickyroles](stickyroles/stickyroles.py)** | Remembers users roles and adds them back on rejoin.
+**[botutils](botutils/botutils.py)** | Custom stateless bot utilities for Carl Bot but useful for anyone.
+**[liverole](liverole/liverole.py)** | Give a role to users when they go live in Discord.
+**[stickyroles](stickyroles/stickyroles.py)** | Remembers users roles and adds them on rejoin.
 **[userchannels](userchannels/userchannels.py)** | Creates custom user rooms on the fly and cleans up when done.
-**[warcraftlogs](warcraftlogs/warcraftlogs.py)** | Splits Warcraftlogs into multiple channels based on filters.
+**[warcraftlogs](warcraftlogs/warcraftlogs.py)** | Split Warcraft Logs into multiple channels with filters.
 **[welcome](welcome/welcome.py)** | Welcomes new users to your servers on join.
 
 ### Internal/Hidden Cogs
@@ -37,7 +38,7 @@ Cog | Description
 Cog | Description
 ------------ | -------------
 **[activerole](activerole/activerole.py)** | **WIP: Requires Redis**. Adds a role to active chatters.
-**carlcog** | Custom Cog for Carl, has useful functions but may not stay here.
+**[carlcog](carlcog/carlcog.py)**  | Custom Cog for Carl, has useful functions but may not stay here.
 **[createthings](createthings/createthings.py)** | WIP: Create pre-defined role and emoji sets.
 **pubsub** | Custom Redis Pub/Sub for Carl Bot and Carl's website.
 **reactroles** | WIP: React Roles Cog; Working but not yet finished.

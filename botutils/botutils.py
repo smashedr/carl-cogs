@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import discord
 import itertools
@@ -7,8 +8,11 @@ from tabulate import tabulate
 from typing import Optional, Union
 
 from redbot.core import commands
+from redbot.core.utils import AsyncIter
 from redbot.core.utils import chat_formatting as cf
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS, close_menu
+from redbot.core.utils.menus import start_adding_reactions
+from redbot.core.utils.predicates import ReactionPredicate
 
 from .converters import CarlRoleConverter, CarlChannelConverter, FuzzyMember
 
@@ -26,6 +30,99 @@ class Botutils(commands.Cog):
 
     def cog_unload(self) -> None:
         logger.info('Unloading Botutils Cog')
+
+    @commands.command(name='bitrateall')
+    @commands.admin()
+    @commands.guild_only()
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def maxbitrateall(self, ctx, bitrate: int = 0):
+        """Set the bitrate for ALL channels to Guild Max or <bitrate>."""
+        await ctx.trigger_typing()
+        limit = ctx.guild.bitrate_limit
+        if bitrate and not (8000 > bitrate > 360000) or bitrate > limit:
+            await ctx.send(f'Invalid bitrate. Specify a number between `8000` '
+                           f'and `360000` or leave blank for the guild max of '
+                           f'`{limit}`')
+            return
+
+        new_rate = bitrate or limit
+        updated = []
+        async with ctx.channel.typing():
+            for channel in await AsyncIter(ctx.guild.voice_channels):
+                if channel.bitrate != new_rate:
+                    updated.append(channel.name)
+                    reason = f'{ctx.author} used bitrateall {new_rate}'
+                    await channel.edit(bitrate=new_rate, reason=reason)
+
+        await ctx.send(f'Done. Updated: ```{updated or "Nothing"}```')
+
+    @commands.command(name='moveusto', aliases=['moveus', 'moveall'])
+    @commands.admin_or_permissions(move_members=True)
+    @commands.guild_only()
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def moveusto(self, ctx, *, channel: discord.VoiceChannel):
+        """Moves all users from your current channel to <channel>"""
+        await ctx.trigger_typing()
+        if not ctx.author.voice or not ctx.author.voice.channel:
+            await ctx.send('You are not in a Voice channel.', delete_after=15)
+            return
+
+        source = ctx.author.voice.channel
+        if channel == source:
+            await ctx.send(f'You are already in the destination channel '
+                           f'**{channel.name}**.', delete_after=15)
+            return
+
+        await ctx.send(f'Stand by, moving **{len(source.members)}** members '
+                       f'to **{channel.name}**', delete_after=60)
+        async with ctx.channel.typing():
+            for member in await AsyncIter(source.members):
+                await member.move_to(channel)
+        await ctx.send('All done, enjoy =)', delete_after=60)
+
+    @commands.command(name='roleaddmulti', aliases=['rolemulti'])
+    @commands.admin()
+    @commands.guild_only()
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def roleaddmulti(self, ctx, role: discord.Role, *, members: str):
+        """Attempts to add a <role> to multiple <users>, space separated..."""
+        await ctx.trigger_typing()
+        members = members.split()
+        logger.debug(members)
+        num_members = len(ctx.guild.members)
+        message = await ctx.send(f'Will process **{num_members}** guild '
+                                 f'members for role `@{role.name}` \n'
+                                 f'Minimum ETA **{num_members//5}** sec. '
+                                 f'Proceed?')
+
+        pred = ReactionPredicate.yes_or_no(message, ctx.author)
+        start_adding_reactions(message, ReactionPredicate.YES_OR_NO_EMOJIS)
+        try:
+            await self.bot.wait_for('reaction_add', check=pred, timeout=60)
+        except asyncio.TimeoutError:
+            await ctx.send('Request timed out. Aborting.', delete_after=60)
+            await message.delete()
+            return
+
+        if not pred.result:
+            await ctx.send('Aborting...', delete_after=5)
+            await message.delete()
+            return
+
+        await ctx.send('Processing now. Please wait...')
+        users = []
+        async with ctx.channel.typing():
+            for member in await AsyncIter(ctx.guild.members, delay=1, steps=5):
+                for m in await AsyncIter(members):
+                    if (member.name and m.lower() == member.name.lower()) or \
+                            (member.nick and m.lower() == member.nick.lower()):
+                        if role not in member.roles:
+                            await member.add_roles(role, reason=f'{ctx.author} roleaddmulti')
+                            users.append(member.name)
+        await ctx.send(f'Done! Added @{role.mention} to:\n{users}')
+        await message.delete()
+
+    # Guild, Emoji, Role, Channel, User ID
 
     @commands.command(name='guildid', aliases=['gid', 'sid', 'serverid'])
     @commands.guild_only()
@@ -104,6 +201,8 @@ class Botutils(commands.Cog):
         else:
             await menu(ctx, pages, DEFAULT_CONTROLS, timeout=60)
 
+    # Emoji Info
+
     @commands.command(name='emojiinfo', aliases=['einfo'])
     @commands.guild_only()
     async def emoji_info(self, ctx, emoji: discord.Emoji):
@@ -119,6 +218,8 @@ class Botutils(commands.Cog):
             '```'
         )
         await ctx.send(msg)
+
+    # Guild Info
 
     @commands.command(name='guildinfo', aliases=['ginfo', 'sinfo', 'serverinfo'])
     @commands.guild_only()
@@ -168,6 +269,8 @@ class Botutils(commands.Cog):
 
         await msg.edit(content='**Guild**', embed=embed)
 
+    # Role Info
+
     @commands.command(name='roleinfo', aliases=['rinfo'])
     @commands.guild_only()
     async def role_info(self, ctx, *, role: Union[CarlRoleConverter, discord.Role]):
@@ -199,6 +302,8 @@ class Botutils(commands.Cog):
         em.add_field(name='Invalid Permissions', value='{}'.format('\n'.join(perms_no) or 'None'))
         em.set_thumbnail(url=role.guild.icon_url)
         await msg.edit(embed=em)
+
+    # User Info
 
     @commands.command(name='userinfo', aliases=['uinfo'])
     @commands.guild_only()
@@ -255,6 +360,8 @@ class Botutils(commands.Cog):
 
         await msg.edit(content=data)
 
+    # Channel Info
+
     @commands.command(name='channelinfo', aliases=['cinfo', 'chinfo'])
     @commands.guild_only()
     async def channel_info(self, ctx, *, channel: CarlChannelConverter = None):
@@ -291,6 +398,8 @@ class Botutils(commands.Cog):
         data += '```'
 
         await msg.edit(content=data)
+
+    # ID Resolver
 
     @commands.command(name='idinfo', aliases=['id', 'getid'])
     @commands.guild_only()
@@ -336,6 +445,8 @@ class Botutils(commands.Cog):
             await self.show_user_info(ctx, result)
         else:
             await ctx.send(f'Nothing found for ID: `{check_id}`')
+
+    # Helper Functions
 
     @classmethod
     def time_since(cls, time: str):
@@ -543,7 +654,7 @@ class Botutils(commands.Cog):
                 "Owner: {owner_mention}\n"
                 "{owner}\n"
                 "Level: **{verif}**\n"
-                "Server ID: **{id}{shard}**"
+                "ID: **{id}{shard}**"
             ).format(
                 owner_mention=str(owner.mention),
                 owner=str(owner),
