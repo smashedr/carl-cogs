@@ -195,7 +195,7 @@ class Carlcog(commands.Cog):
         em.title = "Bot Uptime"
         unit_details = self.format_timedelta(bot_delta)
         em.add_field(
-            name=f'Total: {cf.humanize_timedelta(seconds=int(bot_delta.seconds))}',
+            name=f'Total: {cf.humanize_timedelta(timedelta=bot_delta)}',
             value=description + cf.box(unit_details, lang="diff"),
             inline=False,
         )
