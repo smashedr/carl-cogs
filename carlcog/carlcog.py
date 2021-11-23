@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import discord
 import logging
@@ -14,6 +13,7 @@ log = logging.getLogger('red.carlcog')
 
 class Carlcog(commands.Cog):
     """Carl's Carlcog Cog"""
+    uptime_command = None
 
     def __init__(self, bot):
         self.bot = bot
@@ -21,11 +21,17 @@ class Carlcog(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_global(alert_channel=None)
 
-    async def cog_load(self) -> None:
+    def cog_load(self) -> None:
         log.info('Initializing Carlcog Cog')
+        self.uptime_command = self.bot.remove_command('uptime')
 
     def cog_unload(self):
         log.info('Unload Carlcog Cog')
+        try:
+            self.bot.remove_command('uptime')
+        except Exception as error:
+            log.debug(error)
+        self.bot.add_command(self.uptime_command)
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild):
@@ -174,3 +180,47 @@ class Carlcog(commands.Cog):
             except Exception as error:
                 log.exception(error)
                 await ctx.send(error)
+
+    @commands.command(name='uptime', aliases=['up'])
+    @commands.cooldown(2, 10, commands.BucketType.guild)
+    async def cc_uptime(self, ctx: commands.Context):
+        """Bot uptime command."""
+        bot_ts = self.bot.uptime.replace(tzinfo=datetime.timezone.utc).timestamp()
+        bot_delta = datetime.datetime.utcnow() - self.bot.uptime
+        description = f'Started <t:{int(bot_ts)}:D>. Over <t:{int(bot_ts)}:R>.'
+        em = discord.Embed()
+        em.colour = discord.Colour.green()
+        em.set_thumbnail(url=self.bot.user.avatar_url)
+        em.set_author(name=self.bot.user, url='https://carl.sapps.me/')
+        em.title = "Bot Uptime"
+        unit_details = self.format_timedelta(bot_delta)
+        em.add_field(
+            name=f'Total: {cf.humanize_timedelta(seconds=int(bot_delta.seconds))}',
+            value=description + cf.box(unit_details, lang="diff"),
+            inline=False,
+        )
+        value = "Bot latency: {}ms".format(str(round(self.bot.latency * 1000, 2)))
+        for shard, time in self.bot.latencies:
+            value += f"\nShard {shard + 1}/{len(self.bot.latencies)}: {round(time * 1000)}ms"
+
+        em.add_field(
+            name="Shard and Latency Stats",
+            value=cf.box(value, lang="yaml"),
+            inline=False,
+        )
+        em.timestamp = datetime.datetime.now(datetime.timezone.utc)
+        await ctx.send(embed=em)
+
+    @staticmethod
+    def format_timedelta(delta: datetime.timedelta):
+        def clean_format(d: datetime.timedelta, u: str):
+            mapper = {"seconds": 1, "minutes": 60, "hours": 3600, "days": 86400}
+            return cf.humanize_number(d.total_seconds() // mapper[u])
+
+        data = {}
+        units = ("seconds", "minutes", "hours", "days")
+        for unit in units:
+            data[unit] = str(clean_format(delta, unit))
+
+        unit_details = "\n".join(f"+ {data[x]} {x}" for x in units)
+        return unit_details
