@@ -1,5 +1,6 @@
 import datetime
 import discord
+import httpx
 import logging
 import traceback
 from io import BytesIO
@@ -164,19 +165,28 @@ class Carlcog(commands.Cog):
         async with ctx.channel.typing():
             try:
                 url = url.strip('<>')
+                if not url.lower().startswith('http'):
+                    url = f'https://{url}'
                 log.debug(url)
+                try:
+                    async with httpx.AsyncClient() as client:
+                        r = await client.head(url, timeout=5, follow_redirects=True)
+                except httpx.ConnectTimeout:
+                    await ctx.send(f'Request timeout after 5 seconds. ```{r.url}```')
+                    return
+
                 browser = await launch(
                     executablePath=self.chrome, args=['--no-sandbox'])
                 page = await browser.newPage()
                 await page.setViewport({'width': 1280, 'height': 960})
-                await page.goto(url, timeout=1000 * 12)
+                await page.goto(str(r.url), timeout=1000 * 12)
                 result = await page.screenshot()
                 await browser.close()
                 data = BytesIO()
                 data.write(result)
                 data.seek(0)
                 file = discord.File(data, filename='screenshot.png')
-                await ctx.send(f'Results for: `{url}`', files=[file])
+                await ctx.send(f'Response code: **{r.status_code}** ```{r.url}```', files=[file])
             except Exception as error:
                 log.exception(error)
                 await ctx.send(error)
