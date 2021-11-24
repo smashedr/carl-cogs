@@ -229,19 +229,19 @@ class Carlcog(commands.Cog):
         dpy_url = f'https://github.com/Rapptz/discord.py/tree/v{discord.__version__}'
         dpy_str = f'[{discord.__version__}]({dpy_url})'
 
-        desc_txt = 'I am a fully functional Discord Bot.'
-        web_txt = ('For more information, to add the bot to your server, '
-                   'or manage the bot settings, visit the website at '
-                   '[carl.sapps.me](https://carl.sapps.me/).')
+        desc_txt = 'My name is Carl and I am a fully functional Discord Bot.'
+        web_txt = ('For more information, to add me to your server, '
+                   'or manage my settings, visit the website at '
+                   '**[carl.sapps.me](https://carl.sapps.me/)**.')
 
         _py = '[Python](https://www.python.org/)'
         _dpy = '[discord.py](https://github.com/Rapptz/discord.py)'
         _red = '[Red Discord Bot](https://github.com/Cog-Creators/Red-DiscordBot)'
-        _cc = '[https://github.com/smashedr/carl-cogs](https://github.com/smashedr/carl-cogs)'
+        _cc = '[github.com/smashedr/carl-cogs](https://github.com/smashedr/carl-cogs)'
         source_txt = (f'I am written in {_py} and use the {_dpy} framework '
                       f'ontop of the {_red} core. All commands are broken down '
                       f'into modules called Cogs. The source code for all the '
-                      f'cogs/commands can be found at {_cc}')
+                      f'cogs/commands can be found at **{_cc}**')
 
         em = discord.Embed()
         em.colour = discord.Colour(int('6F42C1', 16))
@@ -252,14 +252,14 @@ class Carlcog(commands.Cog):
         em.add_field(name='Owner', value=ctx.author.mention)
         em.add_field(name='Python3', value=py_str)
         em.add_field(name='Discord.py', value=dpy_str)
-        em.add_field(name='Visit Website', value=web_txt, inline=False)
+        em.add_field(name='Visit Dashboard', value=web_txt, inline=False)
         em.add_field(name='View Source', value=source_txt, inline=False)
         em.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar_url)
         em.timestamp = ctx.message.created_at
 
         buttons = [
-            create_button(style=ButtonStyle.URL, label='Add to Discord Server', url=inv_url),
-            create_button(style=ButtonStyle.URL, label='Mange at Website', url='https://carl.sapps.me/'),
+            create_button(style=ButtonStyle.URL, label='Add to Server', url=inv_url),
+            create_button(style=ButtonStyle.URL, label='Open Dashboard', url='https://carl.sapps.me/'),
         ]
         action_row = create_actionrow(*buttons)
 
