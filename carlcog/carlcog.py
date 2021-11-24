@@ -1,5 +1,6 @@
 import datetime
 import discord
+import fuckit
 import httpx
 import logging
 import traceback
@@ -14,6 +15,11 @@ log = logging.getLogger('red.carlcog')
 
 class Carlcog(commands.Cog):
     """Carl's Carlcog Cog"""
+    embedset_command = None
+    forgetme_command = None
+    info_command = None
+    licenseinfo_command = None
+    mydata_command = None
     uptime_command = None
 
     def __init__(self, bot):
@@ -23,31 +29,45 @@ class Carlcog(commands.Cog):
         self.config.register_global(alert_channel=None)
 
     def cog_load(self) -> None:
-        log.info('Initializing Carlcog Cog')
+        log.info('Initializing Carlcog Cog Start')
+        self.embedset_command = self.bot.remove_command('embedset')
+        self.forgetme_command = self.bot.remove_command('forgetme')
+        self.info_command = self.bot.remove_command('info')
+        self.licenseinfo_command = self.bot.remove_command('licenseinfo')
+        self.mydata_command = self.bot.remove_command('mydata')
         self.uptime_command = self.bot.remove_command('uptime')
+        log.info('Initializing Carlcog Cog Finished')
 
     def cog_unload(self):
-        log.info('Unload Carlcog Cog')
-        try:
+        log.info('Unload Carlcog Cog Start')
+        with fuckit:
+            self.bot.remove_command('embedset')
+            self.bot.remove_command('forgetme')
+            self.bot.remove_command('info')
+            self.bot.remove_command('licenseinfo')
+            self.bot.remove_command('mydata')
             self.bot.remove_command('uptime')
-        except Exception as error:
-            log.debug(error)
+        self.bot.add_command(self.embedset_command)
+        self.bot.add_command(self.forgetme_command)
+        self.bot.add_command(self.info_command)
+        self.bot.add_command(self.licenseinfo_command)
+        self.bot.add_command(self.mydata_command)
         self.bot.add_command(self.uptime_command)
+        log.info('Unload Carlcog Cog Finish')
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild):
-        """Notify a channel when the bot leaves a server."""
+        """Notify <alert_channel> when the bot leaves a server."""
         log.debug(guild)
         await self.process_guild_join_leave(guild)
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
-        """Notify a channel when the bot joins a server."""
+        """Notify <alert_channel> when the bot joins a server."""
         log.debug(guild)
         await self.process_guild_join_leave(guild, join=True)
 
     async def process_guild_join_leave(self, guild: discord.Guild, join=False):
-        """Notify a channel when the bot joins a server."""
         channel_id = await self.config.alert_channel()
         if not channel_id:
             return
@@ -88,7 +108,7 @@ class Carlcog(commands.Cog):
 
     @commands.Cog.listener(name='on_command_error')
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
-        """Logs errors to the alert_channel."""
+        """Notify <alert_channel> when the bot catches an error."""
         log.debug(error)
         if isinstance(error, (
             commands.UserInputError,
