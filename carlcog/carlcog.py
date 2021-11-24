@@ -3,12 +3,16 @@ import discord
 import fuckit
 import httpx
 import logging
+import platform
 import traceback
 from io import BytesIO
 from pyppeteer import launch
 
 from redbot.core import Config, commands
 from redbot.core.utils import chat_formatting as cf
+
+from discord_slash.utils.manage_components import create_button, create_actionrow
+from discord_slash.model import ButtonStyle
 
 log = logging.getLogger('red.carlcog')
 
@@ -38,7 +42,7 @@ class Carlcog(commands.Cog):
         self.uptime_command = self.bot.remove_command('uptime')
         log.info('Initializing Carlcog Cog Finished')
 
-    def cog_unload(self):
+    def cog_unload(self) -> None:
         log.info('Unload Carlcog Cog Start')
         with fuckit:
             self.bot.remove_command('embedset')
@@ -81,7 +85,7 @@ class Carlcog(commands.Cog):
         else:
             icon_url = guild.icon_url_as(format='png')
 
-        em = discord.Embed(color=guild.me.color)
+        em = discord.Embed()
 
         if join:  # Joined
             created_at = int(guild.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())
@@ -211,8 +215,58 @@ class Carlcog(commands.Cog):
                 log.exception(error)
                 await ctx.send(error)
 
+    @commands.command(name='info', aliases=['about'])
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    async def cc_info(self, ctx: commands.Context):
+        """Bot uptime command."""
+        scopes = ('bot', 'applications.commands')
+        inv_url = discord.utils.oauth_url(self.bot.user.id, discord.Permissions(8), scopes=scopes)
+
+        py_ver = platform.python_version().replace('.', '')
+        py_url = f'https://www.python.org/downloads/release/python-{py_ver}/'
+        py_str = f'[{platform.python_version()}]({py_url})'
+
+        dpy_url = f'https://github.com/Rapptz/discord.py/tree/v{discord.__version__}'
+        dpy_str = f'[{discord.__version__}]({dpy_url})'
+
+        desc_txt = 'I am a fully functional Discord Bot.'
+        web_txt = ('For more information, to add the bot to your server, '
+                   'or manage the bot settings, visit the website at '
+                   '[carl.sapps.me](https://carl.sapps.me/).')
+
+        _py = '[Python](https://www.python.org/)'
+        _dpy = '[discord.py](https://github.com/Rapptz/discord.py)'
+        _red = '[Red Discord Bot](https://github.com/Cog-Creators/Red-DiscordBot)'
+        _cc = '[https://github.com/smashedr/carl-cogs](https://github.com/smashedr/carl-cogs)'
+        source_txt = (f'I am written in {_py} and use the {_dpy} framework '
+                      f'ontop of the {_red} core. All commands are broken down '
+                      f'into modules called Cogs. The source code for all the '
+                      f'cogs/commands can be found at {_cc}')
+
+        em = discord.Embed()
+        em.colour = discord.Colour(int('6F42C1', 16))
+        em.title = f'Carl Bot'
+        em.set_thumbnail(url=self.bot.user.avatar_url)
+        em.set_author(name=str(self.bot.user), url=inv_url)
+        em.description = desc_txt
+        em.add_field(name='Owner', value=ctx.author.mention)
+        em.add_field(name='Python3', value=py_str)
+        em.add_field(name='Discord.py', value=dpy_str)
+        em.add_field(name='Visit Website', value=web_txt, inline=False)
+        em.add_field(name='View Source', value=source_txt, inline=False)
+        em.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar_url)
+        em.timestamp = ctx.message.created_at
+
+        buttons = [
+            create_button(style=ButtonStyle.URL, label='Add to Discord Server', url=inv_url),
+            create_button(style=ButtonStyle.URL, label='Mange at Website', url='https://carl.sapps.me/'),
+        ]
+        action_row = create_actionrow(*buttons)
+
+        await ctx.send(embed=em, components=[action_row])
+
     @commands.command(name='uptime', aliases=['up'])
-    @commands.cooldown(2, 10, commands.BucketType.guild)
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def cc_uptime(self, ctx: commands.Context):
         """Bot uptime command."""
         bot_ts = self.bot.uptime.replace(tzinfo=datetime.timezone.utc).timestamp()
@@ -222,20 +276,20 @@ class Carlcog(commands.Cog):
         em.colour = discord.Colour.green()
         em.set_thumbnail(url=self.bot.user.avatar_url)
         em.set_author(name=self.bot.user, url='https://carl.sapps.me/')
-        em.title = "Bot Uptime"
+        em.title = 'Bot Uptime'
         unit_details = self.format_timedelta(bot_delta)
         em.add_field(
             name=f'Total: {cf.humanize_timedelta(timedelta=bot_delta)}',
-            value=description + cf.box(unit_details, lang="diff"),
+            value=description + cf.box(unit_details, lang='diff'),
             inline=False,
         )
-        value = "Bot latency: {}ms".format(str(round(self.bot.latency * 1000, 2)))
+        value = 'Bot latency: {}ms'.format(str(round(self.bot.latency * 1000, 2)))
         for shard, time in self.bot.latencies:
-            value += f"\nShard {shard + 1}/{len(self.bot.latencies)}: {round(time * 1000)}ms"
+            value += f'\nShard {shard + 1}/{len(self.bot.latencies)}: {round(time * 1000)}ms'
 
         em.add_field(
-            name="Shard and Latency Stats",
-            value=cf.box(value, lang="yaml"),
+            name='Shard and Latency Stats',
+            value=cf.box(value, lang='yaml'),
             inline=False,
         )
         em.timestamp = datetime.datetime.now(datetime.timezone.utc)
@@ -244,13 +298,13 @@ class Carlcog(commands.Cog):
     @staticmethod
     def format_timedelta(delta: datetime.timedelta):
         def clean_format(d: datetime.timedelta, u: str):
-            mapper = {"seconds": 1, "minutes": 60, "hours": 3600, "days": 86400}
+            mapper = {'seconds': 1, 'minutes': 60, 'hours': 3600, 'days': 86400}
             return cf.humanize_number(d.total_seconds() // mapper[u])
 
         data = {}
-        units = ("seconds", "minutes", "hours", "days")
+        units = ('seconds', 'minutes', 'hours', 'days')
         for unit in units:
             data[unit] = str(clean_format(delta, unit))
 
-        unit_details = "\n".join(f"+ {data[x]} {x}" for x in units)
+        unit_details = '\n'.join(f'+ {data[x]} {x}' for x in units)
         return unit_details
