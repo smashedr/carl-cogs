@@ -24,6 +24,7 @@ class Carlcog(commands.Cog):
     info_command = None
     licenseinfo_command = None
     mydata_command = None
+    ping_command = None
     uptime_command = None
 
     def __init__(self, bot):
@@ -39,6 +40,7 @@ class Carlcog(commands.Cog):
         self.info_command = self.bot.remove_command('info')
         self.licenseinfo_command = self.bot.remove_command('licenseinfo')
         self.mydata_command = self.bot.remove_command('mydata')
+        self.ping_command = self.bot.remove_command('ping')
         self.uptime_command = self.bot.remove_command('uptime')
         log.info('Initializing Carlcog Cog Finished')
 
@@ -50,12 +52,14 @@ class Carlcog(commands.Cog):
             self.bot.remove_command('info')
             self.bot.remove_command('licenseinfo')
             self.bot.remove_command('mydata')
+            self.bot.remove_command('ping')
             self.bot.remove_command('uptime')
         self.bot.add_command(self.embedset_command)
         self.bot.add_command(self.forgetme_command)
         self.bot.add_command(self.info_command)
         self.bot.add_command(self.licenseinfo_command)
         self.bot.add_command(self.mydata_command)
+        self.bot.add_command(self.ping_command)
         self.bot.add_command(self.uptime_command)
         log.info('Unload Carlcog Cog Finish')
 
@@ -265,22 +269,22 @@ class Carlcog(commands.Cog):
 
         await ctx.send(embed=em, components=[action_row])
 
-    @commands.command(name='uptime', aliases=['up'])
+    @commands.command(name='uptime', aliases=['up', 'ping'])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def cc_uptime(self, ctx: commands.Context):
         """Bot uptime command."""
         bot_ts = self.bot.uptime.replace(tzinfo=datetime.timezone.utc).timestamp()
         bot_delta = datetime.datetime.utcnow() - self.bot.uptime
-        description = f'Started <t:{int(bot_ts)}:D>. Over <t:{int(bot_ts)}:R>.'
         em = discord.Embed()
         em.colour = discord.Colour.green()
         em.set_thumbnail(url=self.bot.user.avatar_url)
         em.set_author(name=self.bot.user, url='https://carl.sapps.me/')
         em.title = 'Bot Uptime'
+        em.description = f'Started <t:{int(bot_ts)}:D>. Over <t:{int(bot_ts)}:R>.'
         unit_details = self.format_timedelta(bot_delta)
         em.add_field(
             name=f'Total: {cf.humanize_timedelta(timedelta=bot_delta)}',
-            value=description + cf.box(unit_details, lang='diff'),
+            value=cf.box(unit_details, lang='diff'),
             inline=False,
         )
         value = 'Bot latency: {}ms'.format(str(round(self.bot.latency * 1000, 2)))
