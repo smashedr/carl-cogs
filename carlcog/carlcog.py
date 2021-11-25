@@ -186,29 +186,26 @@ class Carlcog(commands.Cog):
             await self.bot.set_prefixes(prefixes, ctx.guild)
             await ctx.send(f'Prefixes for guild set to: **{prefixes}**')
 
-    @commands.command(name='checksite', aliases=['cs'])
-    @commands.cooldown(2, 15, commands.BucketType.user)
-    async def cc_check_site(self, ctx, url: str,
-                            auth: Optional[str] = None,
-                            timeout: Optional[int] = None):
+    @commands.command(name='checksite', aliases=['cs', 'check'])
+    @commands.cooldown(3, 15, commands.BucketType.user)
+    async def cc_check_site(self, ctx, url: str, auth: Optional[str] = None):
         """
         Check the status of a site at the given <url> with optional <auth>.
         Example:
             [p]checksite google.com
-            [p]checksite https://secret-site.com username:password
-            [p]checksite long-loading-site.com none 30
+            [p]checksite https://secret-site.com/ username:password
         """
+        await ctx.message.delete()
+        msg = await ctx.send(f'Processing: \U0000231B')
         await ctx.trigger_typing()
         mdn_url = 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Status'
         http_options = {
             'follow_redirects': True,
             'verify': False,
-            'timeout': timeout or 10,
+            'timeout': 10,
         }
-        log.debug(http_options)
-        if auth and auth.lower() != 'none':
-            log.debug(auth)
-            await ctx.message.delete()
+
+        if auth:
             if ':' not in auth:
                 await ctx.send('Invalid foramt for <auth>. Must be: `user:pass`')
                 return
@@ -221,15 +218,11 @@ class Carlcog(commands.Cog):
         url = url.strip('<>')
         if not url.lower().startswith('http'):
             url = f'http://{url}'
-        log.debug(url)
-
-        msg = await ctx.send(f'Processing: \U0000231B')
-        await ctx.trigger_typing()
 
         try:
-            async with httpx.AsyncClient(**http_options) as client:
+            async with httpx.AsyncClient(**http_options, **basic_auth) as client:
                 log.debug(auth)
-                r = await client.head(url, **basic_auth)
+                r = await client.head(url)
         except httpx.InvalidURL:
             await msg.delete()
             await ctx.send(f'Invalid URL: ```{r.url}```')
@@ -243,7 +236,7 @@ class Carlcog(commands.Cog):
             await ctx.send(f'HTTP Error: `{error}`')
             return
         except Exception as error:
-            log.exception(error)
+            log.info(error)
             await msg.delete()
             await ctx.send(f'Exception: `{error}`')
             return
@@ -256,15 +249,12 @@ class Carlcog(commands.Cog):
 
         try:
             browser = await launch(
-                executablePath=self.chrome, args=['--no-sandbox'])
+                executablePath=self.chrome, args=['--no-sandbox'], ignoreHTTPSErrors=True)
             page = await browser.newPage()
             await page.setViewport({'width': 1280, 'height': 960})
             if auth:
-                await page.authenticate({
-                    'username': username,
-                    'password': password,
-                })
-            await page.goto(str(r.url), timeout=1000 * 12)
+                await page.authenticate({'username': username, 'password': password})
+            await page.goto(str(r.url), timeout=1000 * 10)
             result = await page.screenshot()
             await browser.close()
             data = BytesIO()
