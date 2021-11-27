@@ -27,6 +27,7 @@ Cog | Description
 **[autodisconnect](autodisconnect/autodisconnect.py)** | Automatically disconnects users from the AFK channel.
 **[autoroles](autoroles/autoroles.py)** | Adds roles to new members on join.
 **[botutils](botutils/botutils.py)** | Custom stateless bot utilities for Carl Bot but useful for anyone.
+**[dictionary](dictionary/dictionary.py)** | Dictionary and Urban Dictionary lookups.
 **[liverole](liverole/liverole.py)** | Give a role to users when they go live in Discord.
 **[stickyroles](stickyroles/stickyroles.py)** | Remembers users roles and adds them on rejoin.
 **[userchannels](userchannels/userchannels.py)** | Creates custom user rooms on the fly and cleans up when done.
@@ -38,7 +39,8 @@ Cog | Description
 Cog | Description
 ------------ | -------------
 **[activerole](activerole/activerole.py)** | **WIP: Requires Redis**. Adds a role to active chatters.
-**[carlcog](carlcog/carlcog.py)**  | Custom Cog for Carl, has useful functions but may not stay here.
-**[createthings](createthings/createthings.py)** | WIP: Create pre-defined role and emoji sets.
-**pubsub** | Custom Redis Pub/Sub for Carl Bot and Carl's website.
-**reactroles** | WIP: React Roles Cog; Working but not yet finished.
+**[carlcog](carlcog/carlcog.py)**  | **Custom** Cog for Carl, has useful functions but may not stay here.
+**[createthings](createthings/createthings.py)** | **WIP**: Create pre-defined role and emoji sets.
+**[heartbeat](heartbeat/heartbeat.py)** | Sends a ping to a heartbeat service; **has hard coding**.
+**[pubsub](pubsub/pubsub.py)** | **Custom** Redis Pub/Sub for Carl Bot and Carl's website.
+**[reactroles](reactroles/reactroles.py)** | **WIP**: React Roles Cog; Working but not yet finished.
