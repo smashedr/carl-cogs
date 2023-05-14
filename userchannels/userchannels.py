@@ -1,9 +1,13 @@
+import asyncio
 import discord
 import logging
 import random
-from redbot.core import commands, Config
 
-logger = logging.getLogger('red.userchannels')
+from redbot.core import commands, Config
+from redbot.core.utils.menus import start_adding_reactions
+from redbot.core.utils.predicates import ReactionPredicate
+
+log = logging.getLogger('red.userchannels')
 
 ROOM_NAMES = {
     'a': ['Abode', 'Area'],
@@ -47,32 +51,37 @@ CHANNEL_SETTINGS = {
 
 class Userchannels(commands.Cog):
     """Carl's Userchannels Cog"""
+    __version__ = '1.1'
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(**GUILD_SETTINGS)
         self.config.register_channel(**CHANNEL_SETTINGS)
 
-    async def initialize(self) -> None:
-        logger.info('Initializing Userchannels Cog')
+    def cog_load(self):
+        log.info(f'{self.__cog_name__}: Cog Load')
+
+    def cog_unload(self):
+        log.info(f'{self.__cog_name__}: Cog Unload')
 
     async def process_remove(self, channel):
         if channel.members:
-            logger.debug('Channel Not Empty')
+            log.debug('Channel Not Empty')
             return
         if not await self.config.channel(channel).auto():
-            logger.debug('Channel Not Autochannel')
+            log.debug('Channel Not Autochannel')
             return
 
         try:
             channel_id = channel.id
             await channel.delete(reason='Userchannels channel empty.')
-            logger.debug('Removed Channel %s', channel_id)
+            log.debug('Removed Channel %s', channel_id)
         except discord.NotFound:
-            logger.debug('Channel Not Found')
+            log.debug('Channel Not Found')
 
         await self.config.channel(channel).clear()
-        logger.debug('Database Cleared')
+        log.debug('Database Cleared')
 
     async def process_user_create(self, channel, member):
         config = await self.config.guild(member.guild).all()
@@ -85,7 +94,7 @@ class Userchannels(commands.Cog):
         if member.display_name[0].lower() in ROOM_NAMES:
             suffix = random.choice(ROOM_NAMES[member.display_name[0].lower()])
         channel_name = f"{member.display_name}'s {suffix}"
-        logger.debug(channel_name)
+        log.debug(channel_name)
 
         # create channel
         voice_channel = await member.guild.create_voice_channel(
@@ -96,7 +105,7 @@ class Userchannels(commands.Cog):
             bitrate=member.guild.bitrate_limit,
         )
         await self.config.channel(voice_channel).auto.set(True)
-        logger.debug('Created Channel')
+        log.debug('Created Channel')
 
         # set permissions
         permissions = {
@@ -117,27 +126,27 @@ class Userchannels(commands.Cog):
 
         # move member
         await member.move_to(voice_channel, reason='Userchannels moving user.')
-        logger.debug('Moved Member')
+        log.debug('Moved Member')
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, part, join):
         if member.bot:
-            logger.debug('bot')
+            log.debug('bot')
             return
 
         config = await self.config.guild(member.guild).all()
         if not config['enabled']:
-            logger.debug('disabled')
+            log.debug('disabled')
             return
 
         if join.channel:
             if config['channel'] == join.channel.id:
-                logger.debug('user channel join')
+                log.debug('user channel join')
                 await self.process_user_create(join.channel, member)
 
         if part.channel:
             if await self.config.channel(part.channel).auto():
-                logger.debug('auto channel part')
+                log.debug('auto channel part')
                 await self.process_remove(part.channel)
 
     @commands.group(name='userchannels', aliases=['uc'])
@@ -145,6 +154,53 @@ class Userchannels(commands.Cog):
     @commands.admin()
     async def userchannels(self, ctx):
         """Options for managing Userchannels."""
+
+    @userchannels.command(name='setup', aliases=['auto', 'a'])
+    async def userchannels_setup(self, ctx):
+        """AUTO Setup of Userchannels!"""
+        message = await ctx.send('This will automatically create the '
+                                 'Userchannels category, channel, and enable '
+                                 'the module.\nProceed?',
+                                 delete_after=30)
+        pred = ReactionPredicate.yes_or_no(message, ctx.author)
+        start_adding_reactions(message, ReactionPredicate.YES_OR_NO_EMOJIS)
+        try:
+            await self.bot.wait_for('reaction_add', check=pred, timeout=30)
+        except asyncio.TimeoutError:
+            await ctx.send('Request timed out. Aborting.', delete_after=5)
+            await message.delete()
+            return
+
+        if not pred.result:
+            await ctx.send('Aborting.', delete_after=5)
+            await message.delete()
+            return
+
+        await message.clear_reactions()
+        await message.edit(content='Creating Userchannels now...')
+
+        await asyncio.sleep(3.0)
+        await message.delete()
+        await ctx.send('✅ All Done.', delete_after=5)
+
+        await self.config.guild(ctx.guild).enabled.set(True)
+        category = await ctx.guild.create_category('USER ROOMS')
+        log.debug(category)
+        log.debug(category.id)
+        await self.config.guild(ctx.guild).category.set(category.id)
+        channel = await ctx.guild.create_voice_channel(
+            name='👪 Get a Room',
+            category=category,
+            reason='Userchannels primary room.',
+        )
+        log.debug(channel)
+        log.debug(channel.id)
+        await self.config.guild(ctx.guild).channel.set(channel.id)
+        await self.userchannels_status(ctx)
+        await ctx.send('User category and channel created and enabled!\n'
+                       'It should appear at the bottom of the list. You '
+                       'should drag the category towards the top so '
+                       'members can see it...')
 
     @userchannels.command(name='enable', aliases=['e', 'on'])
     async def userchannels_enable(self, ctx):
@@ -170,7 +226,7 @@ class Userchannels(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def userchannels_channel(self, ctx, *, channel: discord.VoiceChannel):
         """Set Userchannels channel."""
-        logger.debug(channel.id)
+        log.debug(channel.id)
         await self.config.guild(ctx.guild).channel.set(channel.id)
         await ctx.send(f'Userchannels Userchannels Channel set to:\n'
                        f'**{channel.name}** - {channel.id}')
@@ -179,7 +235,7 @@ class Userchannels(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def userchannels_category(self, ctx, *, category: discord.CategoryChannel):
         """Set Userchannels category."""
-        logger.debug(category.id)
+        log.debug(category.id)
         await self.config.guild(ctx.guild).category.set(category.id)
         await ctx.send(f'Userchannels Userchannels Category set to:\n'
                        f'**{category.name}** - {category.id}')
@@ -188,12 +244,12 @@ class Userchannels(commands.Cog):
     async def userchannels_status(self, ctx):
         """Get Userchannels status."""
         config = await self.config.guild(ctx.guild).all()
-        logger.debug(config)
+        log.debug(config)
         status = '**Enabled**' if config['enabled'] else '**NOT ENABLED**'
         channel = ctx.guild.get_channel(config['channel'])
         category = ctx.guild.get_channel(config['category'])
-        out = f'Userchannels Userchannels Settings:\n' \
-              f'Global Enabled: {status}\n' \
-              f'Users Channel: {channel}\n' \
-              f'Users Category: {category}'
+        out = ('Userchannels Userchannels Settings:\n'
+               f'Global Enabled: {status}\n'
+               f'Users Category: {category}'
+               f'Users Channel: {channel}\n')
         await ctx.send(out)

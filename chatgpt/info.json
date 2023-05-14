@@ -1,0 +1,15 @@
+{
+  "name": "ChatGPT",
+  "author": ["Shane#0816"],
+  "short": "Carl's ChatGPT Module.",
+  "description": "ChatGPT lookups.",
+  "install_msg": "Get started with `[p]chatgpt`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "required_cogs": {},
+  "requirements": ["httpx"],
+  "min_bot_version": "3.5.0",
+  "min_python_version" : [3,10,0],
+  "disabled": false,
+  "hidden": false,
+  "type": "COG"
+}

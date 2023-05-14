@@ -27,7 +27,7 @@ class Autochannels(commands.Cog):
         self.config.register_guild(**GUILD_SETTINGS)
         self.config.register_channel(**CHANNEL_SETTINGS)
 
-    async def initialize(self) -> None:
+    async def cog_load(self) -> None:
         logger.info('Initializing Autochannels Cog')
 
     async def process_create(self, channel, member):
@@ -125,7 +125,7 @@ class Autochannels(commands.Cog):
                 return
             try:
                 channel_id = channel.id
-                await channel.delete(reason='Userchannels channel empty.')
+                await channel.delete(reason='Autochannels channel empty.')
                 logger.debug('Removed Channel %s', channel_id)
             except discord.NotFound:
                 logger.debug('Channel Not Found')

@@ -12,7 +12,7 @@ class Autoroles(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(enabled=False, roles=None)
 
-    async def initialize(self) -> None:
+    async def cog_load(self) -> None:
         logger.info('Initializing Autoroles Cog')
 
     @commands.Cog.listener()

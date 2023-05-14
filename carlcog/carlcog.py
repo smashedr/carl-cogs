@@ -11,14 +11,16 @@ from typing import Optional
 from redbot.core import Config, commands
 from redbot.core.utils import chat_formatting as cf
 
-from discord_slash.utils.manage_components import create_button, create_actionrow
-from discord_slash.model import ButtonStyle
+# from discord_slash.utils.manage_components import create_button, create_actionrow
+# from discord_slash.model import ButtonStyle
 
 log = logging.getLogger('red.carlcog')
 
 
 class Carlcog(commands.Cog):
     """Carl's Carlcog Cog"""
+    __version__ = '1.1'
+
     embedset_command = None
     forgetme_command = None
     info_command = None
@@ -34,7 +36,7 @@ class Carlcog(commands.Cog):
         self.config.register_global(alert_channel=None)
 
     def cog_load(self) -> None:
-        log.info('Initializing Carlcog Cog Start')
+        log.info(f'{self.__cog_name__}: Cog Load Start')
         self.embedset_command = self.bot.remove_command('embedset')
         self.forgetme_command = self.bot.remove_command('forgetme')
         self.info_command = self.bot.remove_command('info')
@@ -42,10 +44,10 @@ class Carlcog(commands.Cog):
         self.mydata_command = self.bot.remove_command('mydata')
         self.ping_command = self.bot.remove_command('ping')
         self.uptime_command = self.bot.remove_command('uptime')
-        log.info('Initializing Carlcog Cog Finished')
+        log.info(f'{self.__cog_name__}: Cog Load Finish')
 
     def cog_unload(self) -> None:
-        log.info('Unload Carlcog Cog Start')
+        log.info(f'{self.__cog_name__}: Cog Unload Start')
         with fuckit:
             self.bot.remove_command('embedset')
             self.bot.remove_command('forgetme')
@@ -61,7 +63,6 @@ class Carlcog(commands.Cog):
         self.bot.add_command(self.mydata_command)
         self.bot.add_command(self.ping_command)
         self.bot.add_command(self.uptime_command)
-        log.info('Unload Carlcog Cog Finish')
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild):
@@ -76,6 +77,7 @@ class Carlcog(commands.Cog):
         await self.process_guild_join_leave(guild, join=True)
 
     async def process_guild_join_leave(self, guild: discord.Guild, join=False):
+        """TODO: This function may not work in 2+/3.5+"""
         channel_id = await self.config.alert_channel()
         if not channel_id:
             return
@@ -148,8 +150,8 @@ class Carlcog(commands.Cog):
             em.add_field(name='Server', value=ctx.guild.name)
             em.set_thumbnail(url=ctx.guild.icon_url)
         else:
-            em.set_thumbnail(url=self.bot.user.avatar_url)
-        em.set_footer(text=f'ID: {ctx.author.id}', icon_url=ctx.author.avatar_url)
+            em.set_thumbnail(url=self.bot.user.avatar.url)
+        em.set_footer(text=f'ID: {ctx.author.id}', icon_url=ctx.author.avatar.url)
         await channel.send(embed=em)
         logs = ''.join(
             traceback.format_exception(type(error), error, error.__traceback__)
@@ -175,7 +177,7 @@ class Carlcog(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def cc_set_prefix(self, ctx, *, prefix: str = None):
         """Sets the <prefix(s)> for the server. Leave blank to reset."""
-        await ctx.trigger_typing()
+        await ctx.typing()
         if not prefix:
             await self.bot.set_prefixes([], ctx.guild)
             prefixes = await self.bot.get_valid_prefixes(ctx.guild)
@@ -197,7 +199,7 @@ class Carlcog(commands.Cog):
         """
         await ctx.message.delete()
         msg = await ctx.send(f'Processing: \U0000231B')
-        await ctx.trigger_typing()
+        await ctx.typing()
         mdn_url = 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Status'
         http_options = {
             'follow_redirects': True,
@@ -262,7 +264,7 @@ class Carlcog(commands.Cog):
             data.seek(0)
             file = discord.File(data, filename='screenshot.png')
             await msg.delete()
-            await ctx.trigger_typing()
+            await ctx.typing()
             await ctx.send(f'Response code: **{r.status_code}** ```{r.url}```', files=[file])
         except Exception as error:
             log.exception(error)
@@ -274,7 +276,7 @@ class Carlcog(commands.Cog):
     async def cc_info(self, ctx: commands.Context):
         """Bot uptime command."""
         scopes = ('bot', 'applications.commands')
-        inv_url = discord.utils.oauth_url(self.bot.user.id, discord.Permissions(8), scopes=scopes)
+        inv_url = discord.utils.oauth_url(self.bot.user.id, permissions=discord.Permissions(8), scopes=scopes)
 
         py_ver = platform.python_version().replace('.', '')
         py_url = f'https://www.python.org/downloads/release/python-{py_ver}/'
@@ -300,7 +302,7 @@ class Carlcog(commands.Cog):
         em = discord.Embed()
         em.colour = discord.Colour(int('6F42C1', 16))
         em.title = f'Carl Bot'
-        em.set_thumbnail(url=self.bot.user.avatar_url)
+        em.set_thumbnail(url=self.bot.user.avatar.url)
         em.set_author(name=str(self.bot.user), url=inv_url)
         em.description = desc_txt
         em.add_field(name='Owner', value=ctx.author.mention)
@@ -308,16 +310,17 @@ class Carlcog(commands.Cog):
         em.add_field(name='Discord.py', value=dpy_str)
         em.add_field(name='Visit Dashboard', value=web_txt, inline=False)
         em.add_field(name='View Source', value=source_txt, inline=False)
-        em.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar_url)
+        em.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar.url)
         em.timestamp = ctx.message.created_at
 
-        buttons = [
-            create_button(style=ButtonStyle.URL, label='Add to Server', url=inv_url),
-            create_button(style=ButtonStyle.URL, label='Open Dashboard', url='https://carl.sapps.me/'),
-        ]
-        action_row = create_actionrow(*buttons)
+        # buttons = [
+        #     create_button(style=ButtonStyle.URL, label='Add to Server', url=inv_url),
+        #     create_button(style=ButtonStyle.URL, label='Open Dashboard', url='https://carl.sapps.me/'),
+        # ]
+        # action_row = create_actionrow(*buttons)
 
-        await ctx.send(embed=em, components=[action_row])
+        # await ctx.send(embed=em, components=[action_row])
+        await ctx.send(embed=em)
 
     @commands.command(name='uptime', aliases=['up', 'ping', 'latency'])
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -327,7 +330,7 @@ class Carlcog(commands.Cog):
         bot_delta = datetime.datetime.utcnow() - self.bot.uptime
         em = discord.Embed()
         em.colour = discord.Colour.green()
-        em.set_thumbnail(url=self.bot.user.avatar_url)
+        em.set_thumbnail(url=self.bot.user.avatar.url)
         em.set_author(name=self.bot.user, url='https://carl.sapps.me/')
         em.title = 'Bot Uptime'
         em.description = f'Started <t:{int(bot_ts)}:D>. Over <t:{int(bot_ts)}:R>.'

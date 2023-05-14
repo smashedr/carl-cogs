@@ -20,9 +20,6 @@ class Dictionary(commands.Cog):
         self.bot = bot
         self.loop = None
 
-    def post_init(self):
-        log.info('Initializing Dictionary Cog')
-
     @commands.command(name='dictionary', aliases=['lookup', 'definition'])
     async def dictionary(self, ctx, *, word):
         """Get the Dictionary definition for provided <word>."""

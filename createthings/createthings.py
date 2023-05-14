@@ -97,7 +97,7 @@ class Createthings(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def createroles_list(self, ctx, name: str = None):
         """List configured role sets that can be created."""
-        await ctx.trigger_typing()
+        await ctx.typing()
         if name and name in ROLE_SETS:
             role_sets = list(ROLE_SETS[name].keys())
             await ctx.send(f'Roles in set `{name}`:\n```{role_sets}```')
@@ -109,7 +109,7 @@ class Createthings(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def createroles_create(self, ctx, *, name: str):
         """Create a Role set with the given name. View sets with `list`."""
-        await ctx.trigger_typing()
+        await ctx.typing()
         name = name.lower()
         logger.debug(name)
         if name not in ROLE_SETS:
@@ -133,7 +133,7 @@ class Createthings(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def createemoji_list(self, ctx, name: str = None):
         """List configured emoji sets that can be created."""
-        await ctx.trigger_typing()
+        await ctx.typing()
         if name and name in EMOJI_SETS:
             emoji_sets = list(EMOJI_SETS[name].keys())
             await ctx.send(f'Emoji in set `{name}`:\n```{emoji_sets}```')

@@ -178,6 +178,8 @@ class PubSub(commands.Cog):
                 logger.debug(response.content)
                 return
             logger.debug('SUCCESS password')
+            if password == 'none':
+                password = None
             logger.debug(password)
             await self.config.password.set(password)
 

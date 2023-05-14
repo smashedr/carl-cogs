@@ -15,7 +15,7 @@ class Autodisconnect(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(timeout=-1)
 
-    async def initialize(self) -> None:
+    async def cog_load(self) -> None:
         logger.info('Initializing Autodisconnect Cog')
 
     @commands.Cog.listener(name='on_voice_state_update')
