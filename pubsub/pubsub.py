@@ -23,7 +23,7 @@ class PubSub(commands.Cog):
         self.host = None
         self.password = None
 
-    async def cog_load(self):
+    async def cog_load(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Load Start')
         self.host = await self.config.host()
         self.password = await self.config.password()
@@ -32,7 +32,7 @@ class PubSub(commands.Cog):
         self.loop = asyncio.create_task(self.my_main_loop())
         log.info(f'{self.__cog_name__}: Cog Load Finished')
 
-    async def cog_unload(self):
+    async def cog_unload(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Unload')
         self.loop.cancel()
 

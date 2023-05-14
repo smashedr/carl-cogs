@@ -25,11 +25,11 @@ class Heartbeat(commands.Cog):
         self.bot = bot
         self.loop = None
 
-    async def cog_load(self):
+    async def cog_load(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Load')
         self.loop = asyncio.create_task(self.heartbeat_loop())
 
-    async def cog_unload(self):
+    async def cog_unload(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Unload')
         if self.loop and not self.loop.cancelled():
             log.info('Stopping Loop')

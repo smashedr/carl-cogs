@@ -45,10 +45,10 @@ class Createthings(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def cog_load(self):
+    async def cog_load(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Load')
 
-    async def cog_unload(self):
+    async def cog_unload(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Unload')
 
     @staticmethod

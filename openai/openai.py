@@ -36,7 +36,7 @@ class Openai(commands.Cog):
         self.bot = bot
         self.redis = redis.Redis
 
-    async def cog_load(self):
+    async def cog_load(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Load Start')
         self.redis = redis.Redis(
             host=REDIS_CONFIG['host'],
@@ -46,7 +46,7 @@ class Openai(commands.Cog):
         )
         log.info(f'{self.__cog_name__}: Cog Load Finish')
 
-    async def cog_unload(self):
+    async def cog_unload(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Unload')
 
     @commands.Cog.listener(name='on_message_without_command')

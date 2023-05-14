@@ -23,10 +23,10 @@ class Welcome(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(**DEFAULT_SETTINGS)
 
-    async def cog_load(self):
+    async def cog_load(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Load')
 
-    async def cog_unload(self):
+    async def cog_unload(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Unload')
 
     @commands.Cog.listener()

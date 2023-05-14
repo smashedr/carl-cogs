@@ -20,12 +20,12 @@ REDIS_CONFIG = {
     'password': None,
 }
 
-GLOBAL_SETTINGS = {
-    'host': 'redis',
-    'password': None,
-    'enabled': False,
-    'db': 0,
-}
+# GLOBAL_SETTINGS = {
+#     'host': 'redis',
+#     'password': None,
+#     'enabled': False,
+#     'db': 0,
+# }
 
 GUILD_SETTINGS = {
     'active_role': None,
@@ -40,12 +40,12 @@ class Activerole(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
-        self.config.register_global(**GLOBAL_SETTINGS)
+        # self.config.register_global(**GLOBAL_SETTINGS)
         self.config.register_guild(**GUILD_SETTINGS)
-        self.loop = None
         self.redis = redis.Redis
+        self.loop = None
 
-    async def cog_load(self):
+    async def cog_load(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Load Start')
         if await self.config.enabled():
             log.info(f'{self.__cog_name__}: Activerole Enabled')
@@ -58,7 +58,7 @@ class Activerole(commands.Cog):
             self.loop = asyncio.create_task(self.cleanup_loop())
         log.info(f'{self.__cog_name__}: Cog Load Finish')
 
-    async def cog_unload(self):
+    async def cog_unload(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Unload')
         if self.loop and not self.loop.cancelled():
             log.info('Stopping Loop')
@@ -66,6 +66,7 @@ class Activerole(commands.Cog):
 
     async def cleanup_loop(self):
         # TODO: Determine why this is looping through ALL GUILDS!
+        # Best I can tell is that I only run one of these loops...
         log.info('Starting Cleanup Loop in 10 seconds...')
         await asyncio.sleep(10)
         all_guilds = await self.config.all_guilds()
@@ -73,10 +74,10 @@ class Activerole(commands.Cog):
             for guild_id, data in await AsyncIter(all_guilds.items()):
                 guild = self.bot.get_guild(guild_id)
                 role = guild.get_role(data['active_role'])
-                log.debug(f'{guild} - {role}')
+                # log.debug(f'{guild} - {role}')
                 for member in role.members:
                     key = f'{guild.id}-{member.id}'
-                    log.debug(key)
+                    # log.debug(key)
                     if not await self.redis.exists(key):
                         log.debug('Inactive Remove Role: "%s"', member.name)
                         reason = f'Activerole user inactive.'
@@ -131,7 +132,7 @@ class Activerole(commands.Cog):
             reason = f'Activerole user active.'
             await member.add_roles(active_role, reason=reason)
 
-    @commands.group(name='activerole', aliases=['actr'])
+    @commands.group(name='activerole', aliases=['acr'])
     @commands.admin()
     async def activerole(self, ctx):
         """Options for configuring Activerole."""
@@ -231,7 +232,7 @@ class Activerole(commands.Cog):
         exclude_channels = await self.config.guild(ctx.guild).channels()
         await ctx.send(f'Excluded Channels: ```{exclude_channels}```')
 
-    @commands.group(name='activeroleconfig', aliases=['actrcfg'])
+    @commands.group(name='activeroleconfig', aliases=['acrc'])
     @commands.is_owner()
     async def activeroleconfig(self, ctx):
         """Options for configuring Activerole."""

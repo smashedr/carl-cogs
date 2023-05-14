@@ -13,10 +13,10 @@ class Lmgtfy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def cog_load(self):
+    async def cog_load(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Load')
 
-    async def cog_unload(self):
+    async def cog_unload(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Unload')
 
     @commands.Cog.listener(name='on_message_without_command')

@@ -46,7 +46,7 @@ class Carlcog(commands.Cog):
         log.info(f'{self.__cog_name__}: Cog Load Finish')
 
     async def cog_unload(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Unload Start')
+        log.info(f'{self.__cog_name__}: Cog Unload')
         with fuckit:
             self.bot.remove_command('embedset')
             self.bot.remove_command('forgetme')

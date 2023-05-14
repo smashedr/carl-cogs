@@ -58,10 +58,10 @@ class Userchannels(commands.Cog):
         self.config.register_guild(**GUILD_SETTINGS)
         self.config.register_channel(**CHANNEL_SETTINGS)
 
-    async def cog_load(self):
+    async def cog_load(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Load')
 
-    async def cog_unload(self):
+    async def cog_unload(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Unload')
 
     async def process_remove(self, channel):
