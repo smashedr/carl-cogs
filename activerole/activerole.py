@@ -65,6 +65,7 @@ class Activerole(commands.Cog):
             self.loop.cancel()
 
     async def cleanup_loop(self):
+        # TODO: Determine why this is looping through ALL GUILDS!
         log.info('Starting Cleanup Loop in 10 seconds...')
         await asyncio.sleep(10)
         all_guilds = await self.config.all_guilds()
@@ -91,7 +92,6 @@ class Activerole(commands.Cog):
     #     await self.process_update(after)
 
     async def process_update(self, message: discord.Message):
-        log.info(0)
         member = message.author
         if member.bot:
             return
@@ -99,7 +99,6 @@ class Activerole(commands.Cog):
             return
         if not await self.config.guild(member.guild).active_role():
             return
-        log.info(1)
 
         role_id = await self.config.guild(member.guild).active_role()
         active_role = member.guild.get_role(role_id)
@@ -108,12 +107,10 @@ class Activerole(commands.Cog):
             await self.config.guild(member.guild).active_role.set(None)
             log.warning('Disabled Activerole in guild: %s', member.guild.id)
             return
-        log.info(2)
 
         exclude_channels = await self.config.guild(member.guild).channels()
         if message.channel.id in exclude_channels:
             return
-        log.info(3)
 
         exclude_roles = await self.config.guild(member.guild).roles()
         needs_role = True
@@ -122,20 +119,16 @@ class Activerole(commands.Cog):
                 return
             if active_role.id == role.id:
                 needs_role = False
-        log.info(4)
 
         key = f'{member.guild.id}-{member.id}'
         log.debug(key)
         expire = timedelta(minutes=ACTIVE_MINUTES)
         log.debug(expire)
-        log.info(5)
-        await self.redis.setex(key, expire, True)
-        log.info(6)
+        await self.redis.setex(key, expire, 1)
         if needs_role:
             log.debug('Applying Role "%s" to "%s"',
                       active_role.name, member.name)
             reason = f'Activerole user active.'
-            log.info(7)
             await member.add_roles(active_role, reason=reason)
 
     @commands.group(name='activerole', aliases=['actr'])
