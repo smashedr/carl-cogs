@@ -11,6 +11,7 @@ log = logging.getLogger('red.dictionary')
 
 class Dictionary(commands.Cog):
     """Carl's Dictionary Cog"""
+
     http_options = {
         'follow_redirects': True,
         'timeout': 10,
@@ -19,6 +20,12 @@ class Dictionary(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.loop = None
+
+    async def cog_load(self):
+        log.info(f'{self.__cog_name__}: Cog Load')
+
+    async def cog_unload(self):
+        log.info(f'{self.__cog_name__}: Cog Unload')
 
     @commands.command(name='dictionary', aliases=['lookup', 'definition'])
     async def dictionary(self, ctx, *, word):

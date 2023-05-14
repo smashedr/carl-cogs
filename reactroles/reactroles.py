@@ -9,18 +9,22 @@ from redbot.core.utils import AsyncIter
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import MessagePredicate
 
-logger = logging.getLogger('red.reactroles')
+log = logging.getLogger('red.reactroles')
 
 
 class Reactroles(commands.Cog):
     """Carl's Reactroles Cog"""
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(rr={}, at={})
 
-    async def initialize(self) -> None:
-        logger.info('Initializing Reactroles Cog')
+    async def cog_load(self):
+        log.info(f'{self.__cog_name__}: Cog Load')
+
+    async def cog_unload(self):
+        log.info(f'{self.__cog_name__}: Cog Unload')
 
     async def get_rr(self, guild, name):
         config = await self.config.guild(guild).rr()
@@ -53,57 +57,57 @@ class Reactroles(commands.Cog):
     async def process_reaction(self, payload: discord.RawReactionActionEvent):
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
-            logger.debug('No guild')
+            log.debug('No guild')
             return
         if await self.bot.cog_disabled_in_guild(self, guild):
-            logger.debug('Cog disabled in guild')
+            log.debug('Cog disabled in guild')
             return
         if payload.member and payload.member.bot:
-            logger.debug('Bot')
+            log.debug('Bot')
             return
         if payload.member:
             member = payload.member
         else:
             member = guild.get_member(payload.user_id)
         if member.bot:
-            logger.debug('Bot')
+            log.debug('Bot')
             return
 
         cm_id = f'{payload.channel_id}-{payload.message_id}'
         attach_name = await self.get_at(guild, cm_id)
         if not attach_name:
-            logger.debug('NO attach_name')
+            log.debug('NO attach_name')
             return
-        logger.debug(attach_name)
+        log.debug(attach_name)
 
         emoji_string = str(payload.emoji).strip("\N{VARIATION SELECTOR-16}")
-        logger.debug(emoji_string)
+        log.debug(emoji_string)
         emoji = await self.verify_emoji(payload.emoji.id or emoji_string)
-        logger.debug(emoji)
+        log.debug(emoji)
 
         rr = await self.get_rr(guild, attach_name)
         if not rr:
-            logger.debug('NO role_id')
+            log.debug('NO role_id')
             return
-        logger.debug(rr)
+        log.debug(rr)
         if str(emoji) not in rr:
-            logger.warning('React Role attached but non-matched emoji used.')
+            log.warning('React Role attached but non-matched emoji used.')
             return
 
         role_id = rr[str(emoji)]
-        logger.debug(role_id)
+        log.debug(role_id)
 
         if role_id in [r.id for r in member.roles]:
-            logger.info('Removing Role')
+            log.info('Removing Role')
             role = guild.get_role(int(role_id))
             await member.remove_roles(role)
         else:
-            logger.info('Adding Role')
+            log.info('Adding Role')
             role = guild.get_role(int(role_id))
             await member.add_roles(role)
 
     async def verify_emoji(self, emoji_input: str, encode=False):
-        # logger.debug('emoji_input: %s', emoji_input)
+        # log.debug('emoji_input: %s', emoji_input)
         if isinstance(emoji_input, discord.Emoji):
             return emoji_input
         if isinstance(emoji_input, str):
@@ -112,10 +116,10 @@ class Reactroles(commands.Cog):
                     return emojis.encode(emoji_input)
             else:
                 if emojis.count(emoji_input) > 0:
-                    logger.debug('emojis.count > 0')
+                    log.debug('emojis.count > 0')
                     return emojis.decode(emoji_input)
                 if emojis.count(emojis.encode(emoji_input)) > 0:
-                    logger.debug('emojis.encode emojis.count > 0')
+                    log.debug('emojis.encode emojis.count > 0')
                     return emojis.decode(emoji_input)
 
             re_find = re.findall(r'\d{18}', emoji_input)
@@ -173,13 +177,13 @@ class Reactroles(commands.Cog):
                 return
 
             if message.content.lower().strip() in ['abort', 'cancel', 'stop']:
-                logger.debug('abort')
+                log.debug('abort')
                 await org_msg.delete()
                 await init_msg.delete()
                 await message.delete()
                 break
             if message.content.lower().strip() in ['done', 'complete']:
-                logger.debug('done')
+                log.debug('done')
                 await message.delete()
                 break
 
@@ -191,15 +195,15 @@ class Reactroles(commands.Cog):
 
             emoji_name = resp.pop(0)
             role_name = ' '.join(resp).strip()
-            # logger.debug('"%s"', emoji_name.encode('unicode_escape'))
+            # log.debug('"%s"', emoji_name.encode('unicode_escape'))
 
             emoji = await self.verify_emoji(emoji_name)
             if not emoji:
                 await ctx.send('Invalid emoji in input.', delete_after=5)
                 await message.delete()
                 continue
-            logger.debug(emoji)
-            logger.debug(str(emoji))
+            log.debug(emoji)
+            log.debug(str(emoji))
 
             # role = ctx.guild.get_role(name=role_name)
             role = discord.utils.get(ctx.guild.roles, name=role_name)
@@ -211,18 +215,18 @@ class Reactroles(commands.Cog):
                 await ctx.send(f"Can not give out `@{role}` because it is higher "
                                f"than all the bot's current roles. ", delete_after=10)
                 continue
-            logger.debug(role)
+            log.debug(role)
 
             if str(emoji) not in roles:
                 roles.update({str(emoji): role.id})
                 update = init_msg.content + f'\n{emoji} - `@{role.name}`'
                 await init_msg.edit(content=update)
                 await message.delete()
-                logger.debug(roles)
+                log.debug(roles)
             else:
                 await ctx.send('Already added emoji.', delete_after=5)
 
-        logger.debug('name: %s', name)
+        log.debug('name: %s', name)
         await self.put_rr(ctx.guild, name, roles)
         await ctx.send('React Role Creation Finished. You may now attach this '
                        'role to a message with the [p]rr attach command.')
@@ -236,9 +240,9 @@ class Reactroles(commands.Cog):
         User Settings -> Advanced -> Developer Mode
         `<name>` The name of a previouly created Reaction Role.
         """
-        logger.debug(message.channel.id)
-        logger.debug(message.id)
-        logger.debug(name)
+        log.debug(message.channel.id)
+        log.debug(message.id)
+        log.debug(name)
         if not message.guild or message.guild.id != ctx.guild.id:
             await ctx.send('Can not add a Reaction Role to a message not in this guild.')
             return
@@ -247,14 +251,14 @@ class Reactroles(commands.Cog):
         if not rr:
             await ctx.send(f'React Role {name} was not found.')
             return
-        logger.debug(rr)
+        log.debug(rr)
 
         raw_emoji_list = list(rr.keys())
         emoji_list = []
         for emoji in raw_emoji_list:
             e = await self.verify_emoji(emoji, encode=True)
             emoji_list.append(e)
-        logger.debug(emoji_list)
+        log.debug(emoji_list)
 
         await message.clear_reactions()
         await start_adding_reactions(message, emoji_list)
@@ -269,8 +273,8 @@ class Reactroles(commands.Cog):
     #     `<emoji>` The emoji you want people to react with.
     #     `<role>` The role you want people to receive.
     #     """
-    #     logger.debug(emoji)
-    #     logger.debug(role)
+    #     log.debug(emoji)
+    #     log.debug(role)
     #     # if not message.guild or message.guild.id != ctx.guild.id:
     #     #     await ctx.send(_("You cannot add a Reaction Role to a message not in this guild."))
     #     #     return

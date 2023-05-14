@@ -1,10 +1,11 @@
 import asyncio
 import discord
 import logging
-from redbot.core import commands, Config
 from typing import Union
 
-logger = logging.getLogger('red.autodisconnect')
+from redbot.core import commands, Config
+
+log = logging.getLogger('red.autodisconnect')
 
 
 class Autodisconnect(commands.Cog):
@@ -15,8 +16,11 @@ class Autodisconnect(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(timeout=-1)
 
-    async def cog_load(self) -> None:
-        logger.info('Initializing Autodisconnect Cog')
+    async def cog_load(self):
+        log.info(f'{self.__cog_name__}: Cog Load')
+
+    async def cog_unload(self):
+        log.info(f'{self.__cog_name__}: Cog Unload')
 
     @commands.Cog.listener(name='on_voice_state_update')
     async def on_voice_state_update(self, member: discord.Member, before, after):
@@ -57,5 +61,5 @@ class Autodisconnect(commands.Cog):
             await self.config.guild(ctx.guild).timeout.set(minutes)
             await ctx.send(f'Autodisconnect timeout set to **{minutes}** minutes.')
         except Exception as error:
-            logger.error(error)
+            log.error(error)
             await ctx.send(f"I don't know what to do with: **{minutes}**")

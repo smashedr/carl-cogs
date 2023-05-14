@@ -12,6 +12,7 @@ log = logging.getLogger('red.heartbeat')
 
 class Heartbeat(commands.Cog):
     """Carl's Heartbeat Cog"""
+
     sleep = 60
     url = 'https://intranet-proxy.cssnr.com/api/push/0EzRBO5tb3?msg={msg}&ping={ping}'
     http_options = {
@@ -24,14 +25,14 @@ class Heartbeat(commands.Cog):
         self.bot = bot
         self.loop = None
 
-    def post_init(self):
-        log.info('Initializing Heartbeat Cog Start')
+    async def cog_load(self):
+        log.info(f'{self.__cog_name__}: Cog Load')
         self.loop = asyncio.create_task(self.heartbeat_loop())
-        log.info('Initializing Heartbeat Cog Finished')
 
-    def cog_unload(self):
+    async def cog_unload(self):
+        log.info(f'{self.__cog_name__}: Cog Unload')
         if self.loop and not self.loop.cancelled():
-            log.info('Unload Cog - Stopping Loop')
+            log.info('Stopping Loop')
             self.loop.cancel()
 
     async def heartbeat_loop(self):

@@ -1,10 +1,10 @@
 import logging
-import requests
+import httpx
 
 from redbot.core import commands
 from redbot.core.utils import AsyncIter
 
-logger = logging.getLogger('red.createroles')
+log = logging.getLogger('red.createroles')
 
 ROLE_WOW_CLASSES = {
     'Druid': '16743434',
@@ -41,24 +41,28 @@ EMOJI_SETS = {
 
 class Createthings(commands.Cog):
     """Carl's Createthings Cog"""
+
     def __init__(self, bot):
         self.bot = bot
 
-    async def initialize(self) -> None:
-        logger.info('Initializing Createthings Cog')
+    async def cog_load(self):
+        log.info(f'{self.__cog_name__}: Cog Load')
+
+    async def cog_unload(self):
+        log.info(f'{self.__cog_name__}: Cog Unload')
 
     @staticmethod
     async def create_role_set(ctx, role_set):
         results = []
         async for name, color in AsyncIter(role_set.items()):
-            logger.debug(f'{name} - {color}')
+            log.debug(f'{name} - {color}')
             match = [r async for r in AsyncIter(ctx.guild.roles) if r.name == name]
             if match:
                 results.append(f'{match[0].mention} - Already Exist ⛔')
-                logger.debug('Role %s already exists.', name)
+                log.debug('Role %s already exists.', name)
                 continue
 
-            logger.debug('Creating Role: %s', name)
+            log.debug('Creating Role: %s', name)
             role = await ctx.guild.create_role(
                 name=name, color=int(color),
                 reason=f'Carl createroles command used by {ctx.author.name}',
@@ -71,14 +75,14 @@ class Createthings(commands.Cog):
     async def create_emoji_set(ctx, emoji_set):
         results = []
         async for name, url in AsyncIter(emoji_set.items()):
-            logger.debug(f'{name} - {url}')
+            log.debug(f'{name} - {url}')
             match = [e async for e in AsyncIter(ctx.guild.emojis) if e.name == name]
             if match:
                 results.append(f'{match[0]}  - Already Exist ⛔')
-                logger.debug('Emoji name exists: %s', name)
+                log.debug('Emoji name exists: %s', name)
                 continue
 
-            logger.debug('Creating emoji: %s', name)
+            log.debug('Creating emoji: %s', name)
             emoji = await ctx.guild.create_custom_emoji(
                 name=name, image=get_discord_image_data(url),
                 reason=f'Carl createemoji command used by {ctx.author.name}',
@@ -111,7 +115,7 @@ class Createthings(commands.Cog):
         """Create a Role set with the given name. View sets with `list`."""
         await ctx.typing()
         name = name.lower()
-        logger.debug(name)
+        log.debug(name)
         if name not in ROLE_SETS:
             await ctx.send(f'Role set not found: {name}\n'
                            f'Use `{ctx.prefix}createroles list`')
@@ -146,7 +150,7 @@ class Createthings(commands.Cog):
     async def createemoji_create(self, ctx, *, name: str):
         """Create an Emoji set with the given name. View sets with `list`."""
         name = name.lower()
-        logger.debug(name)
+        log.debug(name)
         if name not in EMOJI_SETS:
             await ctx.send(f'Emoji set not found: **{name}**\n'
                            f'Use `{ctx.prefix}createemoji list`')
@@ -169,8 +173,17 @@ class Createthings(commands.Cog):
 def get_discord_image_data(url=None, content=None):
     if not url and content:
         raise ValueError('url or content required')
-    if url:
-        logger.debug('fetching url: %s', url)
-        r = requests.get(url, timeout=10)
-        content = r.content
-    return content
+
+    if not url:
+        return content
+
+    log.debug('fetching url: %s', url)
+    http_options = {
+        'follow_redirects': True,
+        'timeout': 10,
+    }
+    async with httpx.AsyncClient(**http_options) as client:
+        r = await client.get(url)
+    if not r.is_success:
+        r.raise_for_status()
+    return r.content

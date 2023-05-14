@@ -1,24 +1,29 @@
 import asyncio
 import discord
 import logging
+
 from redbot.core import commands, Config
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
 
-logger = logging.getLogger('red.stickyroles')
+log = logging.getLogger('red.stickyroles')
 
 
 class Stickyroles(commands.Cog):
     """Carl's Stickyroles Cog"""
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(enabled=False, roles=None)
         self.config.register_member(roles=None)
 
-    async def initialize(self) -> None:
-        logger.info('Initializing Stickyroles Cog')
+    async def cog_load(self):
+        log.info(f'{self.__cog_name__}: Cog Load')
+
+    async def cog_unload(self):
+        log.info(f'{self.__cog_name__}: Cog Unload')
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -34,11 +39,11 @@ class Stickyroles(commands.Cog):
             return
         role_ids = await self.config.member(member).roles()
         try:
-            logger.debug(f'Updating roles for {member.name}')
+            log.debug(f'Updating roles for {member.name}')
             roles = [member.guild.get_role(r) for r in role_ids]
             await member.add_roles(*roles)
         except discord.Forbidden:
-            logger.warning('Error adding roles to {member.id} on rejoin.')
+            log.warning('Error adding roles to {member.id} on rejoin.')
 
     @commands.group(name='stickyroles', aliases=['stickyrole', 'sr'])
     @commands.guild_only()
@@ -100,7 +105,7 @@ class Stickyroles(commands.Cog):
         await message.edit(content='Role sync in progress now...')
         async for member in AsyncIter(members, delay=1, steps=steps):
             if not member.bot:
-                logger.debug(member)
+                log.debug(member)
                 role_ids = [r.id for r in member.roles]
                 role_ids.remove(member.guild.id)
                 await self.config.member(member).roles.set(role_ids)

@@ -1,8 +1,9 @@
 import discord
 import logging
+
 from redbot.core import commands, Config
 
-logger = logging.getLogger('red.warcraftlogs')
+log = logging.getLogger('red.warcraftlogs')
 
 
 class Warcraftlogs(commands.Cog):
@@ -12,25 +13,28 @@ class Warcraftlogs(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(enabled=False, splits={})
 
-    async def initialize(self) -> None:
-        logger.info('Initializing Warcraftlogs Cog')
+    async def cog_load(self):
+        log.info(f'{self.__cog_name__}: Cog Load')
+
+    async def cog_unload(self):
+        log.info(f'{self.__cog_name__}: Cog Unload')
 
     @commands.Cog.listener()
     async def on_message_without_command(self, message: discord.Message):
         if not message.webhook_id or not message.embeds:
-            logger.debug('not webhook or embed')
+            log.debug('not webhook or embed')
             return
 
         embed: discord.Embed = message.embeds[0]
-        logger.debug(embed)
+        log.debug(embed)
 
         if 'url' not in embed or 'warcraftlogs.com' not in embed.url:
-            logger.debug('no url or not wcl')
+            log.debug('no url or not wcl')
             return
 
         config = await self.config.guild(message.guild).all()
         if not config['enabled'] or not config['splits']:
-            logger.debug('disabled or no splits')
+            log.debug('disabled or no splits')
             return
 
         em = discord.Embed(colour=int('00FF00', 16))
@@ -42,11 +46,11 @@ class Warcraftlogs(commands.Cog):
         em.set_footer(text=embed.author.name.split()[0],
                       icon_url=embed.thumbnail.url)
 
-        logger.debug('Matching: "%s"', embed.description.lower())
+        log.debug('Matching: "%s"', embed.description.lower())
         for split, channel in config['splits'].items():
-            logger.debug(f'"{split}" - #{channel}')
+            log.debug(f'"{split}" - #{channel}')
             if split in embed.description.lower():
-                logger.debug('MATCHED SPLIT')
+                log.debug('MATCHED SPLIT')
                 channel = message.guild.get_channel(channel)
                 if channel:
                     await channel.send(embed=em)
@@ -107,9 +111,9 @@ class Warcraftlogs(commands.Cog):
     @wcl.command(name='status', aliases=['s', 'settings'])
     async def wcl_status(self, ctx):
         """Get Warcraftlogs status."""
-        logger.debug(ctx.guild)
+        log.debug(ctx.guild)
         config = await self.config.guild(ctx.guild).all()
-        logger.debug(config)
+        log.debug(config)
         out = f'Warcraftlogs Settings:\n' \
               f'Status: **{config["enabled"]}**\n' \
               f'Splits: {config["splits"]}'

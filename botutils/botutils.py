@@ -3,7 +3,6 @@ import datetime
 import discord
 import itertools
 import logging
-
 from tabulate import tabulate
 from typing import Optional, Union
 
@@ -16,7 +15,7 @@ from redbot.core.utils.predicates import ReactionPredicate
 
 from .converters import CarlRoleConverter, CarlChannelConverter, FuzzyMember
 
-logger = logging.getLogger('red.botutils')
+log = logging.getLogger('red.botutils')
 
 
 class Botutils(commands.Cog):
@@ -25,11 +24,11 @@ class Botutils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def cog_load(self) -> None:
-        logger.info('Loading Botutils Cog')
+    async def cog_load(self):
+        log.info(f'{self.__cog_name__}: Cog Load')
 
-    def cog_unload(self) -> None:
-        logger.info('Unloading Botutils Cog')
+    async def cog_unload(self):
+        log.info(f'{self.__cog_name__}: Cog Unload')
 
     @commands.command(name='bitrateall')
     @commands.admin()
@@ -37,7 +36,7 @@ class Botutils(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def maxbitrateall(self, ctx, bitrate: int = 0):
         """Set the bitrate for ALL channels to Guild Max or <bitrate>."""
-        await ctx.trigger_typing()
+        await ctx.typing()
         limit = ctx.guild.bitrate_limit
         if bitrate and not (8000 > bitrate > 360000) or bitrate > limit:
             await ctx.send(f'Invalid bitrate. Specify a number between `8000` '
@@ -62,7 +61,7 @@ class Botutils(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def moveusto(self, ctx, *, channel: discord.VoiceChannel):
         """Moves all users from your current channel to <channel>"""
-        await ctx.trigger_typing()
+        await ctx.typing()
         if not ctx.author.voice or not ctx.author.voice.channel:
             await ctx.send('You are not in a Voice channel.', delete_after=15)
             return
@@ -86,9 +85,9 @@ class Botutils(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def roleaddmulti(self, ctx, role: discord.Role, *, members: str):
         """Attempts to add a <role> to multiple <users>, space separated..."""
-        await ctx.trigger_typing()
+        await ctx.typing()
         members = members.split()
-        logger.debug(members)
+        log.debug(members)
         num_members = len(ctx.guild.members)
         message = await ctx.send(f'Will process **{num_members}** guild '
                                  f'members for role `@{role.name}` \n'
@@ -128,21 +127,21 @@ class Botutils(commands.Cog):
     @commands.guild_only()
     async def guild_id(self, ctx):
         """Get the ID for the guild."""
-        await ctx.trigger_typing()
+        await ctx.typing()
         await ctx.send(f'\U0000269C **{ctx.guild.name}** ID: `{ctx.guild.id}`')
 
     @commands.command(name='emojiid', aliases=['eid'])
     @commands.guild_only()
     async def emoji_id(self, ctx, emoji: discord.Emoji):
         """Get the ID for an <emoji>."""
-        await ctx.trigger_typing()
+        await ctx.typing()
         await ctx.send(f'**{emoji}** ID: `{emoji.id}`')
 
     @commands.command(name='roleid', aliases=['rid'])
     @commands.guild_only()
     async def role_id(self, ctx, *, role: Union[CarlRoleConverter, discord.Role]):
         """Get the ID for a <role>."""
-        await ctx.trigger_typing()
+        await ctx.typing()
         await ctx.send(f'{role.mention} ID: `{role.id}`')
 
     @commands.command(name='channelid', aliases=['cid'])
@@ -154,7 +153,7 @@ class Botutils(commands.Cog):
                                                  discord.CategoryChannel,
                                                  discord.StageChannel]]):
         """Get the ID for a <channel>."""
-        await ctx.trigger_typing()
+        await ctx.typing()
         if len(ctx.message.content.split()) == 1:
             channel = channel or ctx.channel
         if not channel:
@@ -175,7 +174,7 @@ class Botutils(commands.Cog):
     @commands.guild_only()
     async def user_id(self, ctx, user: Optional[FuzzyMember], first: Optional[Union[bool, str]]):
         """Get the ID(s) for a <user>. Defaults to current user or a FuzzyMatch."""
-        await ctx.trigger_typing()
+        await ctx.typing()
         if len(ctx.message.content.split()) == 1:
             user = user or [ctx.author]
         if not user:
@@ -238,35 +237,7 @@ class Botutils(commands.Cog):
 
     async def show_guild_info(self, ctx, guild: discord.Guild):
         msg = await ctx.send('**Guild**```\nLoading guild info...```')
-
-        # online = str(len([m.status for m in guild.members if str(m.status) == 'online' or str(m.status) == 'idle']))
-        # text_channels = [x for x in guild.channels if isinstance(x, discord.TextChannel)]
-        # voice_channels = [x for x in guild.channels if isinstance(x, discord.VoiceChannel)]
-        # if guild.is_icon_animated():
-        #     icon_url = guild.icon_url_as(format='gif')
-        # else:
-        #     icon_url = guild.icon_url_as(format='png')
-        # banner_url = guild.banner_url_as(format='jpeg')
-        # splash_url = guild.splash_url_as(format='jpeg')
-        #
-        # data = f'**Guild**```ini\n'
-        # data += f'[Name]:       {guild.name}\n'
-        # data += f'[ID]:         {guild.id}\n'
-        # data += f'[Owner]:      {guild.owner}\n'
-        # data += f'[Users]:      {online}/{len(guild.members)}\n'
-        # data += f'[Text]:       {len(text_channels)}\n'
-        # data += f'[Voice]:      {len(voice_channels)}\n'
-        # data += f'[Emojis]:     {len(guild.emojis)}\n'
-        # data += f'[Roles]:      {len(guild.roles)}\n'
-        # data += f'[Created]:    {cls.time_since(guild.created_at)}\n'
-        # data += f'[Avatar URL]:\n{icon_url}\n'
-        # if banner_url:
-        #     data += f'[Banner URL]:\n{banner_url}\n'
-        # if splash_url:
-        #     data += f'[Splash URL]:\n{splash_url}\n'
-        # data += '```'
         embed = await self.guild_embed(guild)
-
         await msg.edit(content='**Guild**', embed=embed)
 
     # Role Info
@@ -321,17 +292,28 @@ class Botutils(commands.Cog):
     async def show_user_info(self, ctx, user: Union[discord.Member, discord.User]):
         msg = await ctx.send('**User**```\nLoading user info...```')
 
-        seen = str(len(set([member.guild.name for member in self.bot.get_all_members() if member.id == user.id])))
-        if user.is_avatar_animated():
-            icon_url = user.avatar_url_as(format='gif')
-        else:
-            icon_url = user.avatar_url_as(format='png')
+        all_guilds = [member.guild.name for member in self.bot.get_all_members() if member.id == user.id]
+        shared_guilds = str(len(set(all_guilds)))
+        # if user.is_avatar_animated():
+        #     icon_url = user.avatar_url_as(format='gif')
+        # else:
+        #     icon_url = user.avatar_url_as(format='png')
+
+        # em = discord.Embed()
+        # em.colour = user.color
+        # em.set_thumbnail(url=user.avatar_url)
+        # em.set_author(name=str(user), url=ctx.message.jump_url)
+        # em.title = user.display_name
+        # em.description = f'Discord Member for {self.time_since(user.created_at)}'
+        # em.add_field(name='Invoker', value=ctx.author.mention)
+        # em.set_footer(text=f'ID: {ctx.author.id}', icon_url=ctx.author.avatar_url)
+        # em.timestamp = ctx.message.created_at
 
         data = '**User**```ini\n'
         data += '[Name]:          {}\n'.format(cf.escape(str(user)))
         data += '[ID]:            {}\n'.format(user.id)
         data += '[Created]:       {}\n'.format(self.time_since(user.created_at))
-        data += '[Servers]:       {} shared\n'.format(seen)
+        data += '[Servers]:       {} shared\n'.format(len(shared_guilds))
         if isinstance(user, discord.Member):
             if actplay := discord.utils.get(user.activities, type=discord.ActivityType.playing):
                 data += '[Playing]:       {}\n'.format(cf.escape(str(actplay.name)))
@@ -347,7 +329,7 @@ class Botutils(commands.Cog):
                 data += '[Streaming]: [{}]({})\n'.format(cf.escape(str(actstream.name)), cf.escape(actstream.url))
             if actcustom := discord.utils.get(user.activities, type=discord.ActivityType.custom):
                 if actcustom.name is not None:
-                    data += '[Custom status]: {}\n'.format(cf.escape(str(actcustom.name)))
+                    data += '[Custom status]: {}\n'.format(cfche.escape(str(actcustom.name)))
             roles = [r.name for r in user.roles if r.name != '@everyone']
             data += '[Status]:        {}\n'.format(user.status)
             data += '[Guild]:         {}\n'.format(user.guild)
@@ -355,7 +337,7 @@ class Botutils(commands.Cog):
             data += '[In Voice]:      {}\n'.format(user.voice.channel if user.voice else None)
             data += '[AFK]:           {}\n'.format(user.voice.afk if user.voice else False)
             data += '[Roles]:         {}\n'.format(', '.join(roles))
-        data += '[Avatar URL]:\n{}\n'.format(icon_url)
+        data += '[Avatar URL]:\n{}\n'.format(user.avatar_url)
         data += '```'
 
         await msg.edit(content=data)
@@ -405,7 +387,7 @@ class Botutils(commands.Cog):
     @commands.guild_only()
     async def id_info(self, ctx, check_id: int):
         """Resolve any ID to a Channel, Emoji, Guild, Role or User."""
-        await ctx.trigger_typing()
+        await ctx.typing()
         result = None
         if ctx.guild.id == check_id:
             result = ctx.guild

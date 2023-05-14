@@ -9,15 +9,14 @@ log = logging.getLogger('red.lmgtfy')
 
 class Lmgtfy(commands.Cog):
     """Carl's LMGTFY Cog"""
-    __version__ = '1.0'
 
     def __init__(self, bot):
         self.bot = bot
 
-    def cog_load(self):
+    async def cog_load(self):
         log.info(f'{self.__cog_name__}: Cog Load')
 
-    def cog_unload(self):
+    async def cog_unload(self):
         log.info(f'{self.__cog_name__}: Cog Unload')
 
     @commands.Cog.listener(name='on_message_without_command')

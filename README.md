@@ -40,8 +40,9 @@ Cog | Description
 ------------ | -------------
 **[activerole](activerole/activerole.py)** | **WIP: Requires Redis**. Adds a role to active chatters.
 **[carlcog](carlcog/carlcog.py)**  | **Custom** Cog for Carl, has useful functions but may not stay here.
-**[chatgpt](chatgpt/chatgpt.py)**  | **WIP** Query ChatGPT and query off others previous questions.
+**[openai](openai/openai.py)**  | **WIP** Query OpenAI/ChatGPT and query off others previous questions.
 **[createthings](createthings/createthings.py)** | **WIP**: Create pre-defined role and emoji sets.
 **[heartbeat](heartbeat/heartbeat.py)** | Sends a ping to a heartbeat service; **has hard coding**.
+**[lmgtfy](lmgtfy/lmgtfy.py)** | **WIP** Replies to the last query in chat with a real google link.
 **[pubsub](pubsub/pubsub.py)** | **Custom** Redis Pub/Sub for Carl Bot and Carl's website.
 **[reactroles](reactroles/reactroles.py)** | **WIP**: React Roles Cog; Working but not yet finished.

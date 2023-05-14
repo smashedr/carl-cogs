@@ -1,23 +1,28 @@
 import discord
 import logging
+
 from redbot.core import commands, Config
 
-logger = logging.getLogger('red.autoroles')
+log = logging.getLogger('red.autoroles')
 
 
 class Autoroles(commands.Cog):
     """Carl's Autoroles Cog"""
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(enabled=False, roles=None)
 
-    async def cog_load(self) -> None:
-        logger.info('Initializing Autoroles Cog')
+    async def cog_load(self):
+        log.info(f'{self.__cog_name__}: Cog Load')
+
+    async def cog_unload(self):
+        log.info(f'{self.__cog_name__}: Cog Unload')
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
-        logger.debug('member: %s', member)
+        log.debug('member: %s', member)
         config = await self.config.guild(member.guild).all()
         if config and config['enabled'] and config['roles']:
             roles = [member.guild.get_role(role) for role in config['roles']]
@@ -54,7 +59,7 @@ class Autoroles(commands.Cog):
     async def autoroles_add(self, ctx, *, role: discord.Role):
         """Add a role to autoroles."""
         roles = await self.config.guild(ctx.guild).roles() or []
-        logger.debug(roles)
+        log.debug(roles)
         if role.id not in roles:
             if role >= ctx.guild.me.top_role:
                 await ctx.send(f"Can not give out `@{role}` because it is "
@@ -74,7 +79,7 @@ class Autoroles(commands.Cog):
     async def autoroles_remove(self, ctx, role: discord.Role):
         """Removes a role from autoroles."""
         roles = await self.config.guild(ctx.guild).roles() or []
-        logger.debug(roles)
+        log.debug(roles)
         if role.id in roles:
             roles.remove(role.id)
             await self.config.guild(ctx.guild).roles.set(roles)
@@ -87,7 +92,7 @@ class Autoroles(commands.Cog):
         """Get Autoroles status."""
         config = await self.config.guild(ctx.guild).all()
         status = '**Enabled**' if config['enabled'] else '**NOT ENABLED**'
-        logger.debug(config)
+        log.debug(config)
         if not config['roles']:
             await ctx.send(f'Status: {status}\nNo configured Autoroles...')
             return

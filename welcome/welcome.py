@@ -1,10 +1,11 @@
 import discord
 import logging
-from redbot.core import commands, Config
-from redbot.core.utils.chat_formatting import Optional
 from typing import cast
 
-logger = logging.getLogger('red.welcome')
+from redbot.core import commands, Config
+from redbot.core.utils.chat_formatting import Optional
+
+log = logging.getLogger('red.welcome')
 
 DEFAULT_SETTINGS = {
     'message': 'Everyone welcome {user.mention} to {guild}!',
@@ -16,13 +17,17 @@ DEFAULT_SETTINGS = {
 
 class Welcome(commands.Cog):
     """Carl's Welcome Cog"""
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(**DEFAULT_SETTINGS)
 
-    async def initialize(self) -> None:
-        logger.info('Initializing Welcome Cog')
+    async def cog_load(self):
+        log.info(f'{self.__cog_name__}: Cog Load')
+
+    async def cog_unload(self):
+        log.info(f'{self.__cog_name__}: Cog Unload')
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
@@ -31,7 +36,7 @@ class Welcome(commands.Cog):
             return
         channel = cast(discord.TextChannel, member.guild.get_channel(config['channel']))
         if not channel:
-            logger.warning('Channel set but not found! Was it deleted?')
+            log.warning('Channel set but not found! Was it deleted?')
             return
         message = config['message'].format(user=member, guild=member.guild)
         await channel.send(message, delete_after=config['delete_after'])
@@ -57,7 +62,7 @@ class Welcome(commands.Cog):
         Example format:
             Everyone welcome {user.mention} to {guild}!
         """
-        logger.debug('welcome_message: %s', message)
+        log.debug('welcome_message: %s', message)
         if message:
             await self.config.guild(ctx.guild).message.set(message)
             await ctx.send('Welcome message updated.')
@@ -101,7 +106,7 @@ class Welcome(commands.Cog):
         config = await self.config.guild(ctx.guild).all()
         channel_id = cast(discord.TextChannel, config['channel'])
         channel = discord.utils.get(ctx.guild.channels, id=channel_id)
-        logger.debug(channel)
+        log.debug(channel)
         enabled = str(bool(config['enabled']))
         out = f"Welcome Message Status:\n```Enabled: {enabled}\n"
         out += f"Delete After: {config['delete_after']}\n"

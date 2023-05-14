@@ -8,9 +8,9 @@ import traceback
 from io import BytesIO
 from pyppeteer import launch
 from typing import Optional
+
 from redbot.core import Config, commands
 from redbot.core.utils import chat_formatting as cf
-
 # from discord_slash.utils.manage_components import create_button, create_actionrow
 # from discord_slash.model import ButtonStyle
 
@@ -19,7 +19,6 @@ log = logging.getLogger('red.carlcog')
 
 class Carlcog(commands.Cog):
     """Carl's Carlcog Cog"""
-    __version__ = '1.1'
 
     embedset_command = None
     forgetme_command = None
@@ -35,7 +34,7 @@ class Carlcog(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_global(alert_channel=None)
 
-    def cog_load(self) -> None:
+    async def cog_load(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Load Start')
         self.embedset_command = self.bot.remove_command('embedset')
         self.forgetme_command = self.bot.remove_command('forgetme')
@@ -46,7 +45,7 @@ class Carlcog(commands.Cog):
         self.uptime_command = self.bot.remove_command('uptime')
         log.info(f'{self.__cog_name__}: Cog Load Finish')
 
-    def cog_unload(self) -> None:
+    async def cog_unload(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Unload Start')
         with fuckit:
             self.bot.remove_command('embedset')

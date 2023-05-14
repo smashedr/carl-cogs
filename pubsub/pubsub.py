@@ -3,14 +3,16 @@ import asyncio
 import json
 import logging
 import time
+
 from redbot.core import commands, Config
 from redbot.core.utils.predicates import MessagePredicate
 
-logger = logging.getLogger('red.pubsub')
+log = logging.getLogger('red.pubsub')
 
 
 class PubSub(commands.Cog):
     """Carl's PubSub Cog"""
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
@@ -21,30 +23,31 @@ class PubSub(commands.Cog):
         self.host = None
         self.password = None
 
-    def cog_unload(self):
-        self.loop.cancel()
-
-    async def initialize(self):
-        logger.info("Initializing PubSub Cog Start")
+    async def cog_load(self):
+        log.info(f'{self.__cog_name__}: Cog Load Start')
         self.host = await self.config.host()
         self.password = await self.config.password()
         self.client = aredis.StrictRedis(host=self.host, port=6379, db=0, password=self.password)
         self.pubsub = self.client.pubsub(ignore_subscribe_messages=True)
         self.loop = asyncio.create_task(self.my_main_loop())
-        logger.info("Initializing PubSub Cog Finished")
+        log.info(f'{self.__cog_name__}: Cog Load Finished')
+
+    async def cog_unload(self):
+        log.info(f'{self.__cog_name__}: Cog Unload')
+        self.loop.cancel()
 
     async def my_main_loop(self) -> None:
-        logger.debug('my_main_loop')
+        log.debug('my_main_loop')
         await self.pubsub.subscribe('loop')
         while self is self.bot.get_cog('PubSub'):
-            # logger.debug('looping: my_main_loop')
+            # log.debug('looping: my_main_loop')
             message = await self.wait_for_message(self.pubsub)
             if message:
                 await self.process_message(message)
             await asyncio.sleep(0.01)
 
     async def wait_for_message(self, pubsub, timeout=3):
-        # logger.debug('wait_for_message:timeout=1')
+        # log.debug('wait_for_message:timeout=1')
         now = time.time()
         timeout = now + timeout
         while now < timeout:
@@ -58,9 +61,9 @@ class PubSub(commands.Cog):
     async def process_message(self, raw_message):
         try:
             message = json.loads(raw_message['data'].decode('utf-8'))
-            logger.debug('message: %s', message)
+            log.debug('message: %s', message)
             channel = message['channel']
-            logger.debug('channel: %s', channel)
+            log.debug('channel: %s', channel)
             guild = self.bot.get_guild(message['guild'])
             data = {}
             if 'roles' in message['requests']:
@@ -69,11 +72,11 @@ class PubSub(commands.Cog):
                 data['channels'] = self.process_channels(guild.channels)
             if 'members' in message['requests']:
                 data['members'] = self.process_members(guild.members)
-            logger.debug(data)
+            log.debug(data)
             await self.client.publish(channel, json.dumps(data, default=str))
         except Exception as error:
-            logger.exception(error)
-            logger.warning('Exception processing message.')
+            log.exception(error)
+            log.warning('Exception processing message.')
 
     @staticmethod
     def process_roles(roles):
@@ -173,14 +176,14 @@ class PubSub(commands.Cog):
                 await channel.send('Password recorded successfully. You can delete '
                                    'the message containing the password now!')
             else:
-                logger.debug('Error like wtf yo...')
-                logger.debug(pred.result)
-                logger.debug(response.content)
+                log.debug('Error like wtf yo...')
+                log.debug(pred.result)
+                log.debug(response.content)
                 return
-            logger.debug('SUCCESS password')
+            log.debug('SUCCESS password')
             if password == 'none':
                 password = None
-            logger.debug(password)
+            log.debug(password)
             await self.config.password.set(password)
 
         elif setting.lower() in ['hostname', 'host']:
@@ -195,10 +198,10 @@ class PubSub(commands.Cog):
                 host = response.content
                 await ctx.channel.send('Hostname recorded successfully.')
             else:
-                logger.debug('Error like wtf yo...')
-                logger.debug(pred.result)
-                logger.debug(response.content)
+                log.debug('Error like wtf yo...')
+                log.debug(pred.result)
+                log.debug(response.content)
                 return
-            logger.debug('SUCCESS hostname')
-            logger.debug(host)
+            log.debug('SUCCESS hostname')
+            log.debug(host)
             await self.config.host.set(host)
