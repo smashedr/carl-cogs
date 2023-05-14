@@ -2,8 +2,10 @@ import discord
 import httpx
 import json
 import logging
+import re
 import redis.asyncio as redis
 from datetime import timedelta
+from io import BytesIO
 
 from redbot.core import commands
 
@@ -92,8 +94,9 @@ class Openai(commands.Cog):
     @commands.command(name='chatgpt', aliases=['newchat'])
     async def chatgpt_new(self, ctx, *, question: str):
         """Start a new ChatGPT with: <question>"""
-        bot_msg = await ctx.send('Querying ChatGPT Now...',
+        bot_msg = await ctx.send('Starting a new ChatGPT...',
                                  delete_after=self.http_options['timeout'])
+        await ctx.typing()
         try:
             messages = [
                 {'role': 'system', 'content': 'You are a helpful assistant.'},
@@ -118,8 +121,9 @@ class Openai(commands.Cog):
             await ctx.send(f'No chats in the last {CHAT_EXPIRE_MIN} minutes.')
             return
 
-        bot_msg = await ctx.send('Querying ChatGPT Now...',
+        bot_msg = await ctx.send('Continuing ChatGPT chat...',
                                  delete_after=self.http_options['timeout'])
+        await ctx.typing()
         try:
             messages.append({'role': 'user', 'content': question})
             chat_response = self.query_n_save(ctx, messages)
@@ -147,6 +151,64 @@ class Openai(commands.Cog):
     async def openai_completions(self, messages):
         url = 'https://api.openai.com/v1/chat/completions'
         data = {'model': 'gpt-3.5-turbo', 'messages': messages}
+        async with httpx.AsyncClient(**self.http_options) as client:
+            r = await client.post(url=url, headers=self.headers, json=data)
+        if not r.is_success:
+            r.raise_for_status()
+        return r.json()
+
+    @commands.command(name='aimage', aliases=['aiimage'])
+    async def openai_image(self, ctx, *, query: str):
+        """Request an Image from OpenAI: <size> <query>"""
+        size = '1024x1024'
+        sizes = ['256x256', '512x512', '1024x1024']
+        m = re.search('[0-9]{3,4}x[0-9]{3,4}', query)
+        if m and m.group(0):
+            if m.group(0) in sizes:
+                size = m.group(0)
+                query = query.replace(size, '').strip()
+            else:
+                await ctx.send(f'Valid sizes: {sizes}')
+                return
+
+        bot_msg = await ctx.send(f'Generating Image at size {size} now...',
+                                 delete_after=self.http_options['timeout'])
+        await ctx.typing()
+        try:
+            img_response = await self.openai_image_gen(query, size)
+            log.debug(img_response)
+            if not img_response['data']:
+                await ctx.send('Error: No data returned...')
+                return
+
+            url = img_response['data'][0]['url']
+            async with httpx.AsyncClient(**self.http_options) as client:
+                r = await client.get(url=url)
+            if not r.is_success:
+                r.raise_for_status()
+
+            data = BytesIO()
+            data.write(r.content)
+            data.seek(0)
+            file_name = '-'.join(query.split()[:3]).lower() + '.png'
+            file = discord.File(data, filename=file_name)
+            chat_response = f'**{query}** `{size}`:'
+            await ctx.send(chat_response, file=file)
+
+        except Exception as error:
+            log.exception(error)
+            await ctx.send(f'Error performing lookup: `{error}`')
+
+        finally:
+            await bot_msg.delete()
+
+    async def openai_image_gen(self, query, size='1024x1024', n=1):
+        url = 'https://api.openai.com/v1/images/generations'
+        data = {
+            'prompt': query,
+            'size': size,
+            'n': n,
+        }
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.post(url=url, headers=self.headers, json=data)
         if not r.is_success:
