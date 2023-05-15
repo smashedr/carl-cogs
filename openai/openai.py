@@ -33,7 +33,6 @@ class Openai(commands.Cog):
     }
     headers = {
         'Authorization': f'Bearer {key}',
-        # 'Content-Type': 'application/json',
     }
 
     def __init__(self, bot):
@@ -183,7 +182,7 @@ class Openai(commands.Cog):
             img_response = await self.openai_generations(query, size)
             log.debug(img_response)
             if not img_response['data']:
-                await ctx.send('Error: No data returned...')
+                await ctx.send('Error: No data returned!')
                 return
 
             url = img_response['data'][0]['url']
@@ -295,44 +294,39 @@ class Openai(commands.Cog):
         log.debug(data)
         chat_response = data['choices'][0]['message']['content']
         messages.append({'role': 'assistant', 'content': chat_response})
+        # log.debug(messages)
         await self.redis.setex(
             f'chatgpt-{ctx.author.id}',
             timedelta(minutes=CHAT_EXPIRE_MIN),
-            json.dumps(messages),
+            json.dumps(messages[10:]),
         )
         return chat_response
 
     async def openai_completions(self, messages: list):
         url = 'https://api.openai.com/v1/chat/completions'
         data = {'model': 'gpt-3.5-turbo', 'messages': messages}
-        headers = {'Content-Type': 'application/json'}
-        headers.update(self.headers)
-        log.debug('headers: %s', headers)
-        async with httpx.AsyncClient(**self.http_options) as client:
-            r = await client.post(url=url, headers=headers, json=data)
-        if not r.is_success:
-            r.raise_for_status()
-        return r.json()
-
-    async def openai_generations(self, query: str, size='1024x1024', n=1):
-        url = 'https://api.openai.com/v1/images/generations'
-        data = {
-            'prompt': query,
-            'size': size,
-            'n': n,
-        }
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.post(url=url, headers=self.headers, json=data)
         if not r.is_success:
             r.raise_for_status()
         return r.json()
 
-    async def openai_variations(self, file: io.BytesIO = None, size='1024x1024'):
-        url = 'https://api.openai.com/v1/images/variations'
-        data = {'size': size, 'n': 1}
+    async def openai_generations(self, query: str, size='1024x1024', n=1):
+        url = 'https://api.openai.com/v1/images/generations'
+        data = {'prompt': query, 'size': size, 'n': n}
         async with httpx.AsyncClient(**self.http_options) as client:
-            r = await client.post(url=url, headers=self.headers,
-                                  data=data, files={'image': file})
+            r = await client.post(url=url, headers=self.headers, json=data)
+        if not r.is_success:
+            r.raise_for_status()
+        return r.json()
+
+    async def openai_variations(self, file: io.BytesIO = None,
+                                size='1024x1024', n=1):
+        url = 'https://api.openai.com/v1/images/variations'
+        data = {'size': size, 'n': n}
+        async with httpx.AsyncClient(**self.http_options) as client:
+            r = await client.post(url=url, headers=self.headers, data=data,
+                                  files={'image': file})
         if not r.is_success:
             r.raise_for_status()
         return r.json()
@@ -341,17 +335,13 @@ class Openai(commands.Cog):
     def determine_best_size(image: Image):
         sizes = ['256x256', '512x512', '1024x1024']
         width, height = image.size
-
         best_size = None
         best_diff = float('inf')
-
         for size in sizes:
             target_width, target_height = map(int, size.split('x'))
             diff = abs(target_width - width) + abs(target_height - height)
-
             if diff < best_diff:
                 best_size = size
                 best_diff = diff
-
         log.debug('best_size: %s', best_size)
         return best_size
