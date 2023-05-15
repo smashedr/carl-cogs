@@ -58,9 +58,31 @@ class Openai(commands.Cog):
             return
         if message.content.lower() == 'chatgpt':
             await self.process_chatgpt(message)
+        if message.content.lower() == 'fuck':
+            await self.process_fuck(message)
+
+    async def process_fuck(self, message: discord.Message) -> None:
+        """Listens for fuck."""
+        channel = message.channel
+        await message.delete()
+        match = None
+        async for m in message.channel.history(limit=10):
+            if message.id == m.id:
+                continue
+            if message.author.id == m.author.id:
+                match = m
+                break
+
+        if not match:
+            await channel.send('No messages by you out of the last 10...')
+            return
+
+        data = await self.openai_edits(match.content)
+        if data['choices']:
+            await match.reply(data['choices'][0]['text'])
 
     async def process_chatgpt(self, message: discord.Message) -> None:
-        """Processes chatgpt."""
+        """Listens for chatgpt."""
         channel = message.channel
         await message.delete()
         match = None
@@ -305,6 +327,17 @@ class Openai(commands.Cog):
     async def openai_completions(self, messages: list):
         url = 'https://api.openai.com/v1/chat/completions'
         data = {'model': 'gpt-3.5-turbo', 'messages': messages}
+        async with httpx.AsyncClient(**self.http_options) as client:
+            r = await client.post(url=url, headers=self.headers, json=data)
+        if not r.is_success:
+            r.raise_for_status()
+        return r.json()
+
+    async def openai_edits(self, message: str):
+        url = 'https://api.openai.com/v1/edits'
+        data = {'model': 'text-davinci-edit-001', 'input': message,
+                'instruction': 'Fix the spelling mistakes'}
+        # Fix the spelling and grammar errors ??? box -> thinking
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.post(url=url, headers=self.headers, json=data)
         if not r.is_success:
