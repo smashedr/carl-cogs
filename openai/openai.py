@@ -1,11 +1,13 @@
 import discord
 import httpx
+import io
 import json
 import logging
 import re
+import validators
 import redis.asyncio as redis
 from datetime import timedelta
-from io import BytesIO
+from PIL import Image
 
 from redbot.core import commands
 
@@ -31,7 +33,7 @@ class Openai(commands.Cog):
     }
     headers = {
         'Authorization': f'Bearer {key}',
-        'Content-Type': 'application/json',
+        # 'Content-Type': 'application/json',
     }
 
     def __init__(self, bot):
@@ -78,9 +80,13 @@ class Openai(commands.Cog):
         bot_msg = await channel.send('Querying ChatGPT Now...',
                                      delete_after=self.http_options['timeout'])
         try:
-            log.info(msg.content)
-            data = await self.openai_completions(msg.content)
-            log.info(data)
+            log.debug(msg.content)
+            messages = [
+                {'role': 'system', 'content': 'You are a helpful assistant.'},
+                {'role': 'user', 'content': msg.content},
+            ]
+            data = await self.openai_completions(messages)
+            log.debug(data)
             chat_response = data['choices'][0]['message']['content']
             await msg.reply(chat_response)
 
@@ -92,7 +98,7 @@ class Openai(commands.Cog):
             await bot_msg.delete()
 
     @commands.command(name='chatgpt', aliases=['newchat'])
-    async def chatgpt_new(self, ctx, *, question: str):
+    async def chatgpt_new(self, ctx: commands.Context, *, question: str):
         """Start a new ChatGPT with: <question>"""
         bot_msg = await ctx.send('Starting a new ChatGPT...',
                                  delete_after=self.http_options['timeout'])
@@ -102,7 +108,7 @@ class Openai(commands.Cog):
                 {'role': 'system', 'content': 'You are a helpful assistant.'},
                 {'role': 'user', 'content': question},
             ]
-            chat_response = self.query_n_save(ctx, messages)
+            chat_response = await self.query_n_save(ctx, messages)
             await ctx.send(chat_response)
 
         except Exception as error:
@@ -113,20 +119,24 @@ class Openai(commands.Cog):
             await bot_msg.delete()
 
     @commands.command(name='chat', aliases=['c'])
-    async def chatgpt_continue(self, ctx, *, question: str):
+    async def chatgpt_continue(self, ctx: commands.Context, *, question: str):
         """Continue a ChatGPT session with: <question>"""
         messages = await self.redis.get(f'chatgpt-{ctx.author.id}')
-        messages = json.loads(messages)
-        if not messages:
-            await ctx.send(f'No chats in the last {CHAT_EXPIRE_MIN} minutes.')
-            return
-
-        bot_msg = await ctx.send('Continuing ChatGPT chat...',
-                                 delete_after=self.http_options['timeout'])
+        if messages:
+            messages = json.loads(messages)
+            bot_msg = await ctx.send('Continuing ChatGPT chat...',
+                                     delete_after=self.http_options['timeout'])
+        else:
+            messages = [
+                {'role': 'system', 'content': 'You are a helpful assistant.'},
+            ]
+            bot_msg = await ctx.send(f'No chats in the last {CHAT_EXPIRE_MIN} '
+                                     f'minutes. Starting a new chat...',
+                                     delete_after=self.http_options['timeout'])
         await ctx.typing()
         try:
             messages.append({'role': 'user', 'content': question})
-            chat_response = self.query_n_save(ctx, messages)
+            chat_response = await self.query_n_save(ctx, messages)
             await ctx.send(chat_response)
 
         except Exception as error:
@@ -136,7 +146,7 @@ class Openai(commands.Cog):
         finally:
             await bot_msg.delete()
 
-    async def query_n_save(self, ctx, messages):
+    async def query_n_save(self, ctx: commands.Context, messages):
         data = await self.openai_completions(messages)
         log.debug(data)
         chat_response = data['choices'][0]['message']['content']
@@ -151,14 +161,17 @@ class Openai(commands.Cog):
     async def openai_completions(self, messages):
         url = 'https://api.openai.com/v1/chat/completions'
         data = {'model': 'gpt-3.5-turbo', 'messages': messages}
+        headers = {'Content-Type': 'application/json'}
+        headers.update(self.headers)
+        log.debug('headers: %s', headers)
         async with httpx.AsyncClient(**self.http_options) as client:
-            r = await client.post(url=url, headers=self.headers, json=data)
+            r = await client.post(url=url, headers=headers, json=data)
         if not r.is_success:
             r.raise_for_status()
         return r.json()
 
-    @commands.command(name='aimage', aliases=['aiimage'])
-    async def openai_image(self, ctx, *, query: str):
+    @commands.command(name='aigeneration', aliases=['aigen', 'aimage'])
+    async def openai_image_cmd(self, ctx: commands.Context, *, query: str):
         """Request an Image from OpenAI: <size> <query>"""
         size = '1024x1024'
         sizes = ['256x256', '512x512', '1024x1024']
@@ -175,7 +188,7 @@ class Openai(commands.Cog):
                                  delete_after=self.http_options['timeout'])
         await ctx.typing()
         try:
-            img_response = await self.openai_image_gen(query, size)
+            img_response = await self.openai_generations(query, size)
             log.debug(img_response)
             if not img_response['data']:
                 await ctx.send('Error: No data returned...')
@@ -187,7 +200,7 @@ class Openai(commands.Cog):
             if not r.is_success:
                 r.raise_for_status()
 
-            data = BytesIO()
+            data = io.BytesIO()
             data.write(r.content)
             data.seek(0)
             file_name = '-'.join(query.split()[:3]).lower() + '.png'
@@ -202,7 +215,7 @@ class Openai(commands.Cog):
         finally:
             await bot_msg.delete()
 
-    async def openai_image_gen(self, query, size='1024x1024', n=1):
+    async def openai_generations(self, query, size='1024x1024', n=1):
         url = 'https://api.openai.com/v1/images/generations'
         data = {
             'prompt': query,
@@ -214,3 +227,115 @@ class Openai(commands.Cog):
         if not r.is_success:
             r.raise_for_status()
         return r.json()
+
+    @commands.command(name='aivariation', aliases=['aivary'])
+    async def openai_image(self, ctx: commands.Context, *, query: str = None):
+        """Request an Image from OpenAI: <image or image url>"""
+        log.debug(query)
+        log.debug(ctx.message)
+        log.debug(ctx.message.attachments)
+
+        if not query or ctx.message.attachments:
+            await ctx.send_help()
+            return
+
+        bot_msg = await ctx.send(f'Getting Image Variation Now...',
+                                 delete_after=self.http_options['timeout'])
+        await ctx.typing()
+
+        if query:
+            query = query.strip('< >')
+            log.debug('query: %s', query)
+            if not validators.url(query):
+                await ctx.send(f'Not a valid url: {query}')
+                return
+
+            # Step 1: Make a GET request and save the response to a io.BytesIO object
+            async with httpx.AsyncClient(**self.http_options) as client:
+                r = await client.get(url=query, headers=self.headers)
+            if not r.is_success:
+                await ctx.send(f'Error fetching URL: {query}')
+                await bot_msg.delete()
+                # r.raise_for_status()
+                return
+
+            image_bytes = io.BytesIO(r.content)
+
+        if ctx.message.attachments:
+            await ctx.send(f'Error: Attachments are not supported yet.')
+            return
+
+        # Step 2: Determine if the image is a PNG
+        image = Image.open(image_bytes)
+
+        # Step 3: Convert to PNG if it's not already a PNG
+        if image.format != 'PNG':
+            log.debug('Converting Image to PNG...')
+            # Create a new io.BytesIO object to store the PNG image
+            png_image = io.BytesIO()
+
+            # Convert the image to PNG format and save it to the io.BytesIO object
+            image.save(png_image, 'PNG')
+            png_image.seek(0)
+            image_bytes = png_image
+
+        log.debug('Querying OpenAI for Data...')
+        size = self.determine_best_size(image)
+        img_response = await self.openai_variations(image_bytes, size)
+        log.debug(img_response)
+        if not img_response['data']:
+            await ctx.send('Error: No data returned...')
+            await bot_msg.delete()
+            return
+
+        try:
+            log.debug('Retrieving Image from URL...')
+            url = img_response['data'][0]['url']
+            log.debug('url: %s', url)
+            async with httpx.AsyncClient(**self.http_options) as client:
+                r = await client.get(url=url)
+            if not r.is_success:
+                r.raise_for_status()
+
+            log.debug('Uploading Image to Discord...')
+            data = io.BytesIO()
+            data.write(r.content)
+            data.seek(0)
+            file = discord.File(data, filename='variation.png')
+            await ctx.send(file=file)
+
+        except Exception as error:
+            log.exception(error)
+            await ctx.send(f'Error performing lookup: `{error}`')
+
+        finally:
+            await bot_msg.delete()
+
+    async def openai_variations(self, file: io.BytesIO = None, size='1024x1024'):
+        url = 'https://api.openai.com/v1/images/variations'
+        data = {'size': size, 'n': 1}
+        async with httpx.AsyncClient(**self.http_options) as client:
+            r = await client.post(url=url, headers=self.headers,
+                                  data=data, files={'image': file})
+        if not r.is_success:
+            r.raise_for_status()
+        return r.json()
+
+    @staticmethod
+    def determine_best_size(image):
+        sizes = ['256x256', '512x512', '1024x1024']
+        width, height = image.size
+
+        best_size = None
+        best_diff = float('inf')
+
+        for size in sizes:
+            target_width, target_height = map(int, size.split('x'))
+            diff = abs(target_width - width) + abs(target_height - height)
+
+            if diff < best_diff:
+                best_size = size
+                best_diff = diff
+
+        log.debug('best_size: %s', best_size)
+        return best_size
