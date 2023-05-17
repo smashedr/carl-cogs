@@ -3,6 +3,7 @@ import discord
 import fuckit
 import httpx
 import logging
+import os
 import platform
 import traceback
 from io import BytesIO
@@ -11,8 +12,6 @@ from typing import Optional
 
 from redbot.core import Config, commands
 from redbot.core.utils import chat_formatting as cf
-# from discord_slash.utils.manage_components import create_button, create_actionrow
-# from discord_slash.model import ButtonStyle
 
 log = logging.getLogger('red.carlcog')
 
@@ -31,6 +30,7 @@ class Carlcog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.chrome = '/data/local-chromium/588429/chrome-linux/chrome'
+        self.chrome_revision = '588429'
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_global(alert_channel=None)
 
@@ -43,6 +43,12 @@ class Carlcog(commands.Cog):
         self.mydata_command = self.bot.remove_command('mydata')
         self.ping_command = self.bot.remove_command('ping')
         self.uptime_command = self.bot.remove_command('uptime')
+        if not os.path.exists(self.chrome):
+            log.info(f'{self.__cog_name__}: Start Downloading Chrome')
+            os.environ['PYPPETEER_HOME'] = self.chrome
+            os.environ['PYPPETEER_CHROMIUM_REVISION'] = self.chrome_revision
+            os.system('pyppeteer-install ')
+            log.info(f'{self.__cog_name__}: Finish Downloading Chrome')
         log.info(f'{self.__cog_name__}: Cog Load Finish')
 
     async def cog_unload(self) -> None:
@@ -311,15 +317,11 @@ class Carlcog(commands.Cog):
         em.add_field(name='View Source', value=source_txt, inline=False)
         em.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar.url)
         em.timestamp = ctx.message.created_at
-
-        # buttons = [
-        #     create_button(style=ButtonStyle.URL, label='Add to Server', url=inv_url),
-        #     create_button(style=ButtonStyle.URL, label='Open Dashboard', url='https://carl.sapps.me/'),
-        # ]
-        # action_row = create_actionrow(*buttons)
-
-        # await ctx.send(embed=em, components=[action_row])
-        await ctx.send(embed=em)
+        buttons = {
+            'Add to Server': inv_url,
+            'Open Dashboard': 'https://carl.sapps.me/',
+        }
+        await ctx.send(embed=em, view=ButtonsURLView(buttons))
 
     @commands.command(name='uptime', aliases=['up', 'ping', 'latency'])
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -364,3 +366,10 @@ class Carlcog(commands.Cog):
 
         unit_details = '\n'.join(f'+ {data[x]} {x}' for x in units)
         return unit_details
+
+
+class ButtonsURLView(discord.ui.View):
+    def __init__(self, buttons: dict[str, str]):
+        super().__init__()
+        for label, url in buttons.items():
+            self.add_item(discord.ui.Button(label=label, url=url))

@@ -1,4 +1,4 @@
-import aredis
+import redis.asyncio as redis
 import asyncio
 import json
 import logging
@@ -21,13 +21,15 @@ class PubSub(commands.Cog):
         self.client = None
         self.pubsub = None
         self.host = None
-        self.password = None
 
     async def cog_load(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Load Start')
-        self.host = await self.config.host()
-        self.password = await self.config.password()
-        self.client = aredis.StrictRedis(host=self.host, port=6379, db=0, password=self.password)
+        self.client = redis.Redis(
+            host=await self.config.host(),
+            port=6379,
+            db=0,
+            password=await self.config.password(),
+        )
         self.pubsub = self.client.pubsub(ignore_subscribe_messages=True)
         self.loop = asyncio.create_task(self.my_main_loop())
         log.info(f'{self.__cog_name__}: Cog Load Finished')
@@ -37,17 +39,18 @@ class PubSub(commands.Cog):
         self.loop.cancel()
 
     async def my_main_loop(self) -> None:
-        log.debug('my_main_loop')
+        log.info(f'{self.__cog_name__}: Start Main Loop')
         await self.pubsub.subscribe('loop')
+        log.debug(self.bot.get_cog('PubSub'))
         while self is self.bot.get_cog('PubSub'):
-            # log.debug('looping: my_main_loop')
+            # log.info('my_main_loop:while')
             message = await self.wait_for_message(self.pubsub)
             if message:
                 await self.process_message(message)
             await asyncio.sleep(0.01)
 
     async def wait_for_message(self, pubsub, timeout=3):
-        # log.debug('wait_for_message:timeout=1')
+        # log.debug('wait_for_message')
         now = time.time()
         timeout = now + timeout
         while now < timeout:
@@ -60,12 +63,13 @@ class PubSub(commands.Cog):
 
     async def process_message(self, raw_message):
         try:
+            log.debug('raw_message: %s', raw_message)
             message = json.loads(raw_message['data'].decode('utf-8'))
             log.debug('message: %s', message)
             channel = message['channel']
             log.debug('channel: %s', channel)
             guild = self.bot.get_guild(message['guild'])
-            data = {}
+            data = dict()
             if 'roles' in message['requests']:
                 data['roles'] = self.process_roles(guild.roles)
             if 'channels' in message['requests']:
@@ -149,13 +153,15 @@ class PubSub(commands.Cog):
     async def pubsub_start(self, ctx):
         """Starts PubSub."""
         # enabled = await self.config.enabled()
-        await ctx.send('PubSub started. Does not work.')
+        await ctx.send(f'PubSub started. Does not work. '
+                       f'`{ctx.prefix}load pubsub` instead.')
 
     @pubsub.command(name='stop', aliases=['off'])
     async def pubsub_stop(self, ctx):
         """Stops PubSub."""
         # enabled = await self.config.enabled()
-        await ctx.send(f'PubSub stopped. Does not work, {ctx.prefix}unload instead.')
+        await ctx.send(f'PubSub stopped. Does not work. '
+                       f'`{ctx.prefix}unload pubsub` instead.')
 
     @pubsub.command(name='set', aliases=['s'])
     async def pubsub_set(self, ctx, setting):

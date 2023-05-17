@@ -56,64 +56,14 @@ class Openai(commands.Cog):
     async def on_message_without_command(self, message: discord.Message) -> None:
         if message.author.bot:
             return
+        if not message.content:
+            return
         if message.content.lower() == 'chatgpt':
             await self.process_chatgpt(message)
         if message.content.lower() == 'fuck':
             await self.process_fuck(message)
         if message.content.lower() in ['aimage', 'aimg']:
             await self.process_aimage(message)
-
-    async def process_aimage(self, message: discord.Message) -> None:
-        """Listens for aimage."""
-        channel = message.channel
-        await message.delete()
-        match = None
-        async for m in message.channel.history(limit=5):
-            if m.author.bot:
-                continue
-            if m.id == message.id:
-                continue
-            match = m
-            break
-
-        if not match:
-            await channel.send('No recent messages found???', delete_after=10)
-            return
-
-        bm = await channel.send(f'Status: Querying OpenAI for: `{match.content}`',
-                                delete_after=self.http_options['timeout'])
-        await channel.typing()
-        try:
-            img_response = await self.openai_generations(match.content)
-            log.debug(img_response)
-            if not img_response['data']:
-                await channel.send('Error: No data returned!', delete_after=10)
-                return
-
-            await bm.edit(content='Status: Downloading Image from OpenAI...')
-            url = img_response['data'][0]['url']
-            async with httpx.AsyncClient(**self.http_options) as client:
-                r = await client.get(url=url)
-            if not r.is_success:
-                r.raise_for_status()
-
-            await bm.edit(content='Status: Uploading Image to Discord...')
-            data = io.BytesIO()
-            data.write(r.content)
-            data.seek(0)
-            file_name = '-'.join(match.content.split()[:3]).lower() + '.png'
-            file = discord.File(data, filename=file_name)
-            # chat_response = f'**{match.content}**:'
-            await match.reply(file=file)
-
-        except Exception as error:
-            log.exception(error)
-            await channel.send(f'Error performing lookup: `{error}`',
-                               delete_after=10)
-
-        finally:
-            await bm.delete()
-
 
     async def process_fuck(self, message: discord.Message) -> None:
         """Listens for fuck."""
@@ -176,6 +126,57 @@ class Openai(commands.Cog):
         finally:
             await bm.delete()
 
+    async def process_aimage(self, message: discord.Message) -> None:
+        """Listens for aimage."""
+        channel = message.channel
+        await message.delete()
+        match = None
+        async for m in message.channel.history(limit=5):
+            if m.author.bot:
+                continue
+            if m.id == message.id:
+                continue
+            match = m
+            break
+
+        if not match:
+            await channel.send('No recent messages found???', delete_after=10)
+            return
+
+        bm = await channel.send(f'Status: Querying OpenAI for: `{match.content}`',
+                                delete_after=self.http_options['timeout'])
+        await channel.typing()
+        try:
+            img_response = await self.openai_generations(match.content)
+            log.debug(img_response)
+            if not img_response['data']:
+                await channel.send('Error: No data returned!', delete_after=10)
+                return
+
+            await bm.edit(content='Status: Downloading Image from OpenAI...')
+            url = img_response['data'][0]['url']
+            async with httpx.AsyncClient(**self.http_options) as client:
+                r = await client.get(url=url)
+            if not r.is_success:
+                r.raise_for_status()
+
+            await bm.edit(content='Status: Uploading Image to Discord...')
+            data = io.BytesIO()
+            data.write(r.content)
+            data.seek(0)
+            file_name = '-'.join(match.content.split()[:3]).lower() + '.png'
+            file = discord.File(data, filename=file_name)
+            # chat_response = f'**{match.content}**:'
+            await match.reply(file=file)
+
+        except Exception as error:
+            log.exception(error)
+            await channel.send(f'Error performing lookup: `{error}`',
+                               delete_after=10)
+
+        finally:
+            await bm.delete()
+
     @commands.command(name='chatgpt', aliases=['newchat'])
     async def ai_chat_new_cmd(self, ctx: commands.Context, *, question: str):
         """Shorthand for Start a new ChatGPT with: <question>"""
@@ -187,7 +188,6 @@ class Openai(commands.Cog):
         await self.ai_chat(ctx, question=question)
 
     @commands.group(name='ai', aliases=['oai', 'openai'])
-    @commands.admin()
     async def ai(self, ctx):
         """Commands for OpenAI."""
 
@@ -241,6 +241,17 @@ class Openai(commands.Cog):
         finally:
             await bm.delete()
 
+    @ai.command(name='spell', aliases=['s', 'spelling', 'spellcheck'])
+    async def ai_spell(self, ctx: commands.Context, *, content: str):
+        """Fix spelling of <content>."""
+        log.debug('content: %s', content)
+        bm = await ctx.send(f'Querying OpenAI Now...',
+                            delete_after=self.http_options['timeout'])
+        data = await self.openai_edits(content)
+        await bm.delete()
+        if data['choices']:
+            await ctx.message.reply(data['choices'][0]['text'])
+
     @ai.command(name='gen', aliases=['generation', 'image'])
     async def ai_image_gen(self, ctx: commands.Context, *, query: str):
         """Request an Image from OpenAI: <size> <query>"""
@@ -289,7 +300,7 @@ class Openai(commands.Cog):
 
     @ai.command(name='vary', aliases=['variation', 'ivary', 'aivary'])
     async def ai_image_vary(self, ctx: commands.Context, *, query: str = None):
-        """Request an Image from OpenAI: <image or image url>"""
+        """Request an Image from OpenAI <image or image url>"""
         log.debug(query)
         log.debug(ctx.message)
         log.debug(ctx.message.attachments)
