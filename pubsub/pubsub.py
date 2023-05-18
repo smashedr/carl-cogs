@@ -1,8 +1,9 @@
-import redis.asyncio as redis
 import asyncio
+import discord
 import json
 import logging
 import time
+import redis.asyncio as redis
 
 from redbot.core import commands, Config
 from redbot.core.utils.predicates import MessagePredicate
@@ -69,6 +70,7 @@ class PubSub(commands.Cog):
             channel = message['channel']
             log.debug('channel: %s', channel)
             guild = self.bot.get_guild(message['guild'])
+            log.debug('guild: %s', guild)
             data = dict()
             if 'roles' in message['requests']:
                 data['roles'] = self.process_roles(guild.roles)
@@ -76,11 +78,28 @@ class PubSub(commands.Cog):
                 data['channels'] = self.process_channels(guild.channels)
             if 'members' in message['requests']:
                 data['members'] = self.process_members(guild.members)
-            log.debug(data)
+            if 'guild' in message['requests']:
+                data['guild'] = self.process_guild(guild)
+            # log.debug(data)
             await self.client.publish(channel, json.dumps(data, default=str))
         except Exception as error:
             log.exception(error)
             log.warning('Exception processing message.')
+
+    @staticmethod
+    def process_guild(guild):
+        log.debug('guild.id: %s', guild.id)
+        data = {
+            'id': guild.id,
+            'banner': guild.banner,
+            'default_role': guild.default_role,
+            'description': guild.description,
+            'icon': guild.icon,
+            'member_count': guild.member_count,
+            'name': guild.name,
+            'owner_id': guild.owner_id,
+        }
+        return data
 
     @staticmethod
     def process_roles(roles):
@@ -122,8 +141,8 @@ class PubSub(commands.Cog):
                 'discriminator': member.discriminator,
                 'nick': member.nick,
                 'display_name': member.display_name,
-                'default_avatar_url': member.default_avatar_url,
-                'avatar_url': member.avatar_url,
+                'default_avatar': member.default_avatar,
+                'avatar': member.avatar,
                 'roles': cls.process_iterable(member.roles, ['id', 'name']),
                 'bot': bool(member.bot),
                 'pending': bool(member.pending),
