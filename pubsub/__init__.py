@@ -1,7 +1,7 @@
-from .pubsub import PubSub
+from .pubsub import Pubsub
 
 
 async def setup(bot):
-    cog = PubSub(bot)
+    cog = Pubsub(bot)
     await bot.add_cog(cog)
     # await cog.initialize()
