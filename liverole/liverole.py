@@ -9,10 +9,15 @@ log = logging.getLogger('red.liverole')
 class Liverole(commands.Cog):
     """Carl's Liverole Cog"""
 
+    guild_default = {
+        'enabled': False,
+        'role': None,
+    }
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
-        self.config.register_guild(enabled=False, role=None)
+        self.config.register_guild(**self.guild_default)
 
     async def cog_load(self) -> None:
         log.info(f'{self.__cog_name__}: Cog Load')

@@ -1,22 +1,28 @@
 import asyncio
 import json
 import logging
-import time
+from collections.abc import Iterable
 import redis.asyncio as redis
 
-from redbot.core import commands, Config
-# from redbot.core.utils.predicates import MessagePredicate
+from redbot.core import commands
 
 log = logging.getLogger('red.pubsub')
 
 
 class Pubsub(commands.Cog):
-    """Carl's Pubsub Cog"""
+    """
+    Carl's Pubsub Cog.
+        [p]set api
+        Name: redis
+        Data:
+        host    hostname
+        port    portnumber
+        db      dbnumber
+        pass    password
+    """
 
     def __init__(self, bot):
         self.bot = bot
-        # self.config = Config.get_conf(self, 1337, True)
-        # self.config.register_global(host='redis', password=None)
         self.loop = None
         self.client = None
         self.pubsub = None
@@ -42,8 +48,8 @@ class Pubsub(commands.Cog):
         log.info(f'{self.__cog_name__}: Start Main Loop')
         await self.pubsub.subscribe('red.pubsub')
         while self is self.bot.get_cog('Pubsub'):
-            # log.info('pubsub_loop:while')
-            message = await self.pubsub.get_message(timeout=1)
+            log.info('pubsub_loop:while')
+            message = await self.pubsub.get_message(timeout=None)
             if message:
                 await self.process_message(message)
             await asyncio.sleep(0.01)
@@ -58,6 +64,9 @@ class Pubsub(commands.Cog):
             guild = self.bot.get_guild(message['guild'])
             log.debug('guild: %s', guild)
             data = dict()
+            # if 'verify' in message['requests']:
+            #     await self.process_verify(guild, channel, message)
+            #     return
             if 'roles' in message['requests']:
                 data['roles'] = self.process_roles(guild.roles)
             if 'channels' in message['requests']:
@@ -66,27 +75,23 @@ class Pubsub(commands.Cog):
                 data['members'] = self.process_members(guild.members)
             if 'guild' in message['requests']:
                 data['guild'] = self.process_guild(guild)
-            if 'verify' in message['requests']:
-                data['verify'] = await self.process_verify(guild, message)
-            # log.debug(data)
-            await self.client.publish(channel, json.dumps(data, default=str))
+            log.debug(data)
+            log.debug('channel: %s', channel)
+            pr = await self.client.publish(channel, json.dumps(data, default=str))
+            log.debug('pr: %s', pr)
         except Exception as error:
             log.exception(error)
             log.warning('Exception processing message.')
 
-    async def process_verify(self, guild, message):
-        log.debug('process_verify: %s', guild.id)
-        user_id = message["data"]["user"]
-        log.debug('user_id: %s', user_id)
-        log.debug(message)
-        # await self.client.setex(f'verify:{user_id}', 300, 1)
-        p = await self.client.publish('red.captcha', f'{user_id}')
-        log.debug('p: %s', p)
-        data = {'is_success': True, 'message': 'success'}
-        return data
+    # async def process_verify(self, guild, channel, message) -> None:
+    #     log.debug('process_verify: %s', guild.id)
+    #     log.debug('channel: %s', channel)
+    #     log.debug('message: %s', message)
+    #     data = {'guild': guild.id, 'channel': channel, 'message': message}
+    #     await self.client.publish('red.captcha', json.dumps(data, default=str))
 
     @staticmethod
-    def process_guild(guild):
+    def process_guild(guild) -> dict:
         log.debug('process_guild: %s', guild.id)
         data = {
             'id': guild.id,
@@ -101,7 +106,8 @@ class Pubsub(commands.Cog):
         return data
 
     @staticmethod
-    def process_roles(roles):
+    def process_roles(roles) -> list:
+        log.debug('process_roles')
         response = []
         for role in roles:
             data = {
@@ -118,7 +124,8 @@ class Pubsub(commands.Cog):
         return response
 
     @staticmethod
-    def process_channels(channels):
+    def process_channels(channels) -> list:
+        log.debug('process_channels')
         response = []
         for channel in channels:
             data = {
@@ -131,7 +138,8 @@ class Pubsub(commands.Cog):
         return response
 
     @classmethod
-    def process_members(cls, members):
+    def process_members(cls, members) -> list:
+        log.debug('process_members')
         resp = []
         for member in members:
             data = {
@@ -153,7 +161,7 @@ class Pubsub(commands.Cog):
         return resp
 
     @staticmethod
-    def process_iterable(iterable, keys: list) -> list:
+    def process_iterable(iterable: Iterable, keys: list) -> list:
         resp = []
         for i in iterable:
             data = {}
