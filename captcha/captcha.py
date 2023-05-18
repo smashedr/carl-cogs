@@ -179,7 +179,7 @@ class Captcha(commands.Cog):
         enabled = await self.config.guild(ctx.guild).enabled()
         if not role:
             await ctx.send('⛔ CAPTCHA role not set. Please set first.')
-        if enabled:
+        elif enabled:
             await ctx.send('✅ CAPTCHA module already enabled.')
         else:
             await self.config.guild(ctx.guild).enabled.set(True)
@@ -200,10 +200,10 @@ class Captcha(commands.Cog):
         """Get CAPTCHA status."""
         config = await self.config.guild(ctx.guild).all()
         role = ctx.guild.get_role(config['role'])
-        role_name = f'`@{role.name}`' if role else '**NOT SET**'
+        role_name = f'`@{role.name}`' if role else '⛔ **Not Set**'
         out = f'CAPTCHA Settings:\n' \
-              f'Status: **{config["enabled"]}**\n' \
+              f'Enabled: **{config["enabled"]}**\n' \
               f'Role: {role_name}\n' \
-              f'Bots: {role_name}'
+              f'Bots: {config["bots"]}'
         await ctx.send(out)
 
