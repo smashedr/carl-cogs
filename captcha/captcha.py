@@ -59,17 +59,82 @@ class Captcha(commands.Cog):
             log.info('captcha_loop:while')
             message = await self.pubsub.get_message(timeout=None)
             if message:
-                await self.process_verification(message)
+                await self.process_message(message)
             await asyncio.sleep(0.01)
 
-    async def process_verification(self, message):
-        log.debug('raw_message: %s', message)
-        data = json.loads(message['data'].decode('utf-8'))
+    async def process_message(self, message: dict) -> None:
+        try:
+            log.debug('message: %s', message)
+            data = json.loads(message['data'].decode('utf-8'))
+            log.debug('data: %s', data)
+
+            channel = data['channel']
+            log.debug('channel: %s', channel)
+
+            guild = self.bot.get_guild(int(data['guild']))
+            log.debug('guild: %s', guild)
+
+            user_id = data['user']
+            log.debug('user_id: %s', user_id)
+            member = await guild.fetch_member(int(user_id))
+
+            log.debug('data.requests: %s', data['requests'])
+            resp = dict()
+            if 'data' in data['requests']:
+                resp = await self.process_get_data(guild, member, data)
+            if 'verify' in data['requests']:
+                resp = await self.process_verification(guild, member, data)
+            log.debug('resp: %s', resp)
+            pr = await self.client.publish(channel, json.dumps(resp, default=str))
+            log.debug('pr: %s', pr)
+        except Exception as error:
+            log.exception(error)
+            log.warning('Exception processing message.')
+
+    @classmethod
+    async def process_get_data(cls, guild: discord.Guild, member: discord.Member,
+                         data: dict) -> dict:
+        log.debug('process_members')
+        member_data = {
+            'id': member.id,
+            'name': member.name,
+            'discriminator': member.discriminator,
+            'nick': member.nick,
+            'display_name': member.display_name,
+            'default_avatar': str(member.default_avatar),
+            'avatar': str(member.avatar),
+            # 'roles': cls.process_iterable(member.roles, ['id', 'name']),
+            'bot': bool(member.bot),
+            'pending': bool(member.pending),
+            'status': member.status,
+            'color': member.color,
+            'joined_at': member.joined_at,
+        }
+        guild_data = {
+            'id': guild.id,
+            'banner': guild.banner,
+            'default_role': guild.default_role,
+            'description': guild.description,
+            'icon': guild.icon,
+            'member_count': guild.member_count,
+            'name': guild.name,
+            'owner_id': guild.owner_id,
+        }
+        return {'member': member_data, 'guild': guild_data}
+
+    async def process_verification(self, guild: discord.Guild,
+                                   member: discord.Member,
+                                   data: dict) -> dict:
+        # log.debug('message: %s', message)
+        # data = json.loads(message['data'].decode('utf-8'))
         log.debug('data: %s', data)
-        user_id = data['user']
-        log.debug('user_id: %s', user_id)
         channel = data['channel']
         log.debug('channel: %s', channel)
+
+        log.debug('member.id: %s', member.id)
+
+        log.debug('guild.id: %s', guild.id)
+
         response = json.dumps({'success': True})
         log.debug('response: %s', response)
         await self.client.publish(channel, response)

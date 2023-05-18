@@ -54,41 +54,34 @@ class Pubsub(commands.Cog):
                 await self.process_message(message)
             await asyncio.sleep(0.01)
 
-    async def process_message(self, raw_message):
+    async def process_message(self, message: dict) -> None:
         try:
-            log.debug('raw_message: %s', raw_message)
-            message = json.loads(raw_message['data'].decode('utf-8'))
             log.debug('message: %s', message)
-            channel = message['channel']
+            data = json.loads(message['data'].decode('utf-8'))
+            log.debug('data: %s', data)
+
+            channel = data['channel']
             log.debug('channel: %s', channel)
-            guild = self.bot.get_guild(message['guild'])
+
+            guild = self.bot.get_guild(int(data['guild']))
             log.debug('guild: %s', guild)
-            data = dict()
-            # if 'verify' in message['requests']:
-            #     await self.process_verify(guild, channel, message)
-            #     return
-            if 'roles' in message['requests']:
-                data['roles'] = self.process_roles(guild.roles)
-            if 'channels' in message['requests']:
-                data['channels'] = self.process_channels(guild.channels)
-            if 'members' in message['requests']:
-                data['members'] = self.process_members(guild.members)
-            if 'guild' in message['requests']:
-                data['guild'] = self.process_guild(guild)
-            log.debug(data)
-            log.debug('channel: %s', channel)
-            pr = await self.client.publish(channel, json.dumps(data, default=str))
+
+            log.debug('data.requests: %s', data['requests'])
+            resp = dict()
+            if 'roles' in data['requests']:
+                resp['roles'] = self.process_roles(guild.roles)
+            if 'channels' in data['requests']:
+                resp['channels'] = self.process_channels(guild.channels)
+            if 'members' in data['requests']:
+                resp['members'] = self.process_members(guild.members)
+            if 'guild' in data['requests']:
+                resp['guild'] = self.process_guild(guild)
+            log.debug('resp: %s', resp)
+            pr = await self.client.publish(channel, json.dumps(resp, default=str))
             log.debug('pr: %s', pr)
         except Exception as error:
             log.exception(error)
             log.warning('Exception processing message.')
-
-    # async def process_verify(self, guild, channel, message) -> None:
-    #     log.debug('process_verify: %s', guild.id)
-    #     log.debug('channel: %s', channel)
-    #     log.debug('message: %s', message)
-    #     data = {'guild': guild.id, 'channel': channel, 'message': message}
-    #     await self.client.publish('red.captcha', json.dumps(data, default=str))
 
     @staticmethod
     def process_guild(guild) -> dict:
@@ -169,71 +162,3 @@ class Pubsub(commands.Cog):
                 data[key] = getattr(i, key)
             resp.append(data)
         return resp
-
-    # @commands.group(name='pubsub', aliases=['ps'])
-    # @commands.is_owner()
-    # async def pubsub(self, ctx):
-    #     """Options for configuring Pubsub."""
-    #
-    # @pubsub.command(name='start', aliases=['on'])
-    # async def pubsub_start(self, ctx):
-    #     """Starts Pubsub."""
-    #     # enabled = await self.config.enabled()
-    #     await ctx.send(f'Pubsub started. Does not work. '
-    #                    f'`{ctx.prefix}load pubsub` instead.')
-    #
-    # @pubsub.command(name='stop', aliases=['off'])
-    # async def pubsub_stop(self, ctx):
-    #     """Stops Pubsub."""
-    #     # enabled = await self.config.enabled()
-    #     await ctx.send(f'Pubsub stopped. Does not work. '
-    #                    f'`{ctx.prefix}unload pubsub` instead.')
-    #
-    # @pubsub.command(name='set', aliases=['s'])
-    # async def pubsub_set(self, ctx, setting):
-    #     """Set optional Pubsub settings."""
-    #     # enabled = await self.config.enabled()
-    #     if setting.lower() in ['password', 'pass']:
-    #         await ctx.send('Check your DM.')
-    #         channel = await ctx.author.create_dm()
-    #         await channel.send('Please enter the password...')
-    #         pred = MessagePredicate.same_context(channel=channel, user=ctx.author)
-    #         try:
-    #             response = await self.bot.wait_for("message", check=pred, timeout=30)
-    #         except asyncio.TimeoutError:
-    #             await channel.send(f'Request timed out. You need to start over.')
-    #             return
-    #         if response:
-    #             password = response.content
-    #             await channel.send('Password recorded successfully. You can delete '
-    #                                'the message containing the password now!')
-    #         else:
-    #             log.debug('Error like wtf yo...')
-    #             log.debug(pred.result)
-    #             log.debug(response.content)
-    #             return
-    #         log.debug('SUCCESS password')
-    #         if password == 'none':
-    #             password = None
-    #         log.debug(password)
-    #         await self.config.password.set(password)
-    #
-    #     elif setting.lower() in ['hostname', 'host']:
-    #         await ctx.channel.send('Please enter the hostname...')
-    #         pred = MessagePredicate.same_context(ctx)
-    #         try:
-    #             response = await self.bot.wait_for("message", check=pred, timeout=30)
-    #         except asyncio.TimeoutError:
-    #             await ctx.channel.send(f'Request timed out. You need to start over.')
-    #             return
-    #         if response:
-    #             host = response.content
-    #             await ctx.channel.send('Hostname recorded successfully.')
-    #         else:
-    #             log.debug('Error like wtf yo...')
-    #             log.debug(pred.result)
-    #             log.debug(response.content)
-    #             return
-    #         log.debug('SUCCESS hostname')
-    #         log.debug(host)
-    #         await self.config.host.set(host)
