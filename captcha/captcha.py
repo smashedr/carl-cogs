@@ -5,6 +5,8 @@ import logging
 import redis.asyncio as redis
 
 from redbot.core import commands, Config
+from redbot.core.utils.menus import start_adding_reactions
+from redbot.core.utils.predicates import ReactionPredicate
 
 log = logging.getLogger('red.captcha')
 
@@ -132,10 +134,16 @@ class Captcha(commands.Cog):
         log.debug('channel: %s', channel)
 
         log.debug('member.id: %s', member.id)
-
         log.debug('guild.id: %s', guild.id)
 
-        response = json.dumps({'success': True})
+        config = await self.config.guild(guild).all()
+        if not config['enabled']:
+            response = json.dumps({'success': False, 'message': 'Disabled'})
+        else:
+            role = guild.get_role(int(config['role']))
+            await member.add_roles(role)
+            response = json.dumps({'success': True})
+
         log.debug('response: %s', response)
         await self.client.publish(channel, response)
 
@@ -207,3 +215,65 @@ class Captcha(commands.Cog):
               f'Bots: {config["bots"]}'
         await ctx.send(out)
 
+    @captcha.command(name='setup', aliases=['auto', 'a'])
+    async def userchannels_setup(self, ctx):
+        """AUTO Setup of CAPTCHA module."""
+        guild = ctx.guild
+        message = await ctx.send('This will automatically setup CAPTCHA by '
+                                 'removing most permissions from `@everyone` '
+                                 'and adding a `verified` role with the '
+                                 'current permissions of `@everyone`.\n'
+                                 'Proceed?')
+        pred = ReactionPredicate.yes_or_no(message, ctx.author)
+        start_adding_reactions(message, ReactionPredicate.YES_OR_NO_EMOJIS)
+        try:
+            await self.bot.wait_for('reaction_add', check=pred, timeout=30)
+        except asyncio.TimeoutError:
+            await ctx.send('⛔ Request timed out. Aborting.', delete_after=5)
+            await message.delete()
+            return
+
+        if not pred.result:
+            await ctx.send('⛔ Aborting.', delete_after=5)
+            await message.delete()
+            return
+
+        await ctx.typing()
+        await message.clear_reactions()
+        await message.edit(content='⌛ Starting CAPTCHA Setup...')
+
+        config = await self.config.guild(ctx.guild).all()
+        log.debug(config)
+
+        everyone = guild.get_role(guild.id)
+        log.debug(everyone.permissions)
+        await message.edit(content='⌛ Creating role `Verified`.')
+        role = await guild.create_role(
+            name='Verified',
+            permissions=everyone.permissions,
+        )
+
+        await message.edit(content='⌛ Adding `Verified` role to all Members.')
+        await ctx.typing()
+        for member in guild.members:
+            log.debug('member: %s', member)
+            await member.add_roles(role)
+
+        await ctx.typing()
+        await message.edit(content='⌛ Updating `@everyone` permissions.')
+        # Remove @everyone permissions
+        await everyone.edit(permissions=discord.Permissions.none())
+        # Update the permissions of the 'everyone' role
+        perms = discord.Permissions(
+            connect=True,
+            change_nickname=True,
+            read_message_history=True,
+            view_channel=True,
+        )
+        await everyone.edit(permissions=perms)
+
+        await message.edit(content='⌛ Updating CAPTCHA settings.')
+        await self.config.guild(ctx.guild).enabled.set(True)
+        await self.config.guild(ctx.guild).role.set(role.id)
+
+        await message.edit(content='✅ All Done!')

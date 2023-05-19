@@ -29,8 +29,9 @@ class Carlcog(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.chrome = '/data/local-chromium/588429/chrome-linux/chrome'
-        self.chrome_revision = '588429'
+        self.data_dir = '/data'
+        self.revision = '588429'
+        self.chrome = f'{self.data_dir}/local-chromium/{self.revision}/chrome-linux/chrome'
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_global(alert_channel=None)
 
@@ -45,8 +46,8 @@ class Carlcog(commands.Cog):
         self.uptime_command = self.bot.remove_command('uptime')
         if not os.path.exists(self.chrome):
             log.info(f'{self.__cog_name__}: Start Downloading Chrome')
-            os.environ['PYPPETEER_HOME'] = self.chrome
-            os.environ['PYPPETEER_CHROMIUM_REVISION'] = self.chrome_revision
+            os.environ['PYPPETEER_HOME'] = self.data_dir
+            os.environ['PYPPETEER_CHROMIUM_REVISION'] = self.revision
             os.system('pyppeteer-install ')
             log.info(f'{self.__cog_name__}: Finish Downloading Chrome')
         log.info(f'{self.__cog_name__}: Cog Load Finish')
