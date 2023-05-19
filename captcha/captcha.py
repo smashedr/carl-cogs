@@ -8,6 +8,8 @@ from redbot.core import commands, Config
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
 
+from .menus import MenuView
+
 log = logging.getLogger('red.captcha')
 
 
@@ -25,8 +27,9 @@ class Captcha(commands.Cog):
 
     guild_default = {
         'enabled': False,
-        'role': None,
+        'role': 0,
         'bots': True,
+        'url': None,
     }
 
     def __init__(self, bot):
@@ -83,19 +86,20 @@ class Captcha(commands.Cog):
             log.debug('data.requests: %s', data['requests'])
             resp = dict()
             if 'data' in data['requests']:
-                resp = await self.process_get_data(guild, member, data)
+                resp = await self.process_get_data(guild, member)
             if 'verify' in data['requests']:
                 resp = await self.process_verification(guild, member, data)
             log.debug('resp: %s', resp)
             pr = await self.client.publish(channel, json.dumps(resp, default=str))
             log.debug('pr: %s', pr)
         except Exception as error:
+            log.error('Exception processing message.')
             log.exception(error)
-            log.warning('Exception processing message.')
+            # resp = {'success': False, 'message': str(error)}
 
     @classmethod
-    async def process_get_data(cls, guild: discord.Guild, member: discord.Member,
-                         data: dict) -> dict:
+    async def process_get_data(cls, guild: discord.Guild,
+                               member: discord.Member,) -> dict:
         log.debug('process_members')
         member_data = {
             'id': member.id,
@@ -127,25 +131,25 @@ class Captcha(commands.Cog):
     async def process_verification(self, guild: discord.Guild,
                                    member: discord.Member,
                                    data: dict) -> dict:
-        # log.debug('message: %s', message)
-        # data = json.loads(message['data'].decode('utf-8'))
-        log.debug('data: %s', data)
-        channel = data['channel']
-        log.debug('channel: %s', channel)
+        try:
+            # log.debug('message: %s', message)
+            # data = json.loads(message['data'].decode('utf-8'))
+            log.debug('data: %s', data)
+            channel = data['channel']
+            log.debug('channel: %s', channel)
+            log.debug('member.id: %s', member.id)
+            log.debug('guild.id: %s', guild.id)
 
-        log.debug('member.id: %s', member.id)
-        log.debug('guild.id: %s', guild.id)
-
-        config = await self.config.guild(guild).all()
-        if not config['enabled']:
-            response = json.dumps({'success': False, 'message': 'Disabled'})
-        else:
-            role = guild.get_role(int(config['role']))
-            await member.add_roles(role)
-            response = json.dumps({'success': True})
-
-        log.debug('response: %s', response)
-        await self.client.publish(channel, response)
+            config = await self.config.guild(guild).all()
+            if config['enabled']:
+                role = guild.get_role(int(config['role']))
+                await member.add_roles(role)
+                return {'success': True}
+            else:
+                return {'success': False, 'message': 'Disabled'}
+        except Exception as error:
+            log.exception(error)
+            return {'success': False, 'message': str(error)}
 
     # @commands.Cog.listener(name='on_message_without_command')
     # async def on_message_without_command(self, message: discord.Message) -> None:
@@ -173,6 +177,17 @@ class Captcha(commands.Cog):
     @commands.admin()
     async def captcha(self, ctx):
         """Options for manging CAPTCHA."""
+
+    @captcha.command(name='url', aliases=['u'])
+    async def captcha_url(self, ctx, url: str = ''):
+        """Sets the CAPTCHA API URL."""
+        log.debug('url: %s', url)
+        # url = url.replace('/view', '').strip('/ ')
+        # await self.config.guild(ctx.guild).url.set(url)
+        # await ctx.send(f'✅ CAPTCHA API URL set to: <{url}>')
+
+        await ctx.send('[New Menu] Currently only ULR supported.',
+                       view=MenuView(self))
 
     @captcha.command(name='role', aliases=['r'])
     async def captcha_channel(self, ctx, *, role: discord.Role):
@@ -238,42 +253,43 @@ class Captcha(commands.Cog):
             await message.delete()
             return
 
-        await ctx.typing()
-        await message.clear_reactions()
-        await message.edit(content='⌛ Starting CAPTCHA Setup...')
+        async with ctx.typing():
+            await message.clear_reactions()
+            await message.edit(content='⌛ Starting CAPTCHA Setup...')
 
-        config = await self.config.guild(ctx.guild).all()
-        log.debug(config)
+            config = await self.config.guild(ctx.guild).all()
+            log.debug(config)
 
-        everyone = guild.get_role(guild.id)
-        log.debug(everyone.permissions)
-        await message.edit(content='⌛ Creating role `Verified`.')
-        role = await guild.create_role(
-            name='Verified',
-            permissions=everyone.permissions,
-        )
+            everyone = guild.get_role(guild.id)
+            log.debug(everyone.permissions)
+            await message.edit(content='⌛ Creating role `Verified`.')
+            role = await guild.create_role(
+                name='Verified',
+                permissions=everyone.permissions,
+            )
 
-        await message.edit(content='⌛ Adding `Verified` role to all Members.')
-        await ctx.typing()
-        for member in guild.members:
-            log.debug('member: %s', member)
-            await member.add_roles(role)
+            await message.edit(content='⌛ Adding `Verified` role to all Members.')
+            member: discord.Member
+            for member in guild.members:
+                if role not in member.roles:
+                    log.debug('Adding Role to: %s', member)
+                    await member.add_roles(role)
 
-        await ctx.typing()
-        await message.edit(content='⌛ Updating `@everyone` permissions.')
-        # Remove @everyone permissions
-        await everyone.edit(permissions=discord.Permissions.none())
-        # Update the permissions of the 'everyone' role
-        perms = discord.Permissions(
-            connect=True,
-            change_nickname=True,
-            read_message_history=True,
-            view_channel=True,
-        )
-        await everyone.edit(permissions=perms)
+            await message.edit(content='⌛ Updating `@everyone` permissions.')
+            # Remove @everyone permissions
+            await everyone.edit(permissions=discord.Permissions.none())
+            # Update the permissions of the 'everyone' role
+            perms = discord.Permissions(
+                connect=True,
+                change_nickname=True,
+                read_message_history=True,
+                view_channel=True,
+            )
+            await everyone.edit(permissions=perms)
 
-        await message.edit(content='⌛ Updating CAPTCHA settings.')
-        await self.config.guild(ctx.guild).enabled.set(True)
-        await self.config.guild(ctx.guild).role.set(role.id)
+            await message.edit(content='⌛ Updating CAPTCHA settings.')
+            await self.config.guild(ctx.guild).enabled.set(True)
+            await self.config.guild(ctx.guild).role.set(role.id)
 
-        await message.edit(content='✅ All Done!')
+            await message.edit(content='✅ All Done!')
+            return

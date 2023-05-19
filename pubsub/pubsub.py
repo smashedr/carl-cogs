@@ -80,8 +80,9 @@ class Pubsub(commands.Cog):
             pr = await self.client.publish(channel, json.dumps(resp, default=str))
             log.debug('pr: %s', pr)
         except Exception as error:
+            log.error('Exception processing message.')
             log.exception(error)
-            log.warning('Exception processing message.')
+            # resp = {'success': False, 'message': str(error)}
 
     @staticmethod
     def process_guild(guild) -> dict:
