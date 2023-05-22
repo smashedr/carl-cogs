@@ -29,14 +29,14 @@ class Carlcog(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.config = Config.get_conf(self, 1337, True)
+        self.config.register_global(alert_channel=None)
         self.data_dir = '/data'
         self.revision = '588429'
         self.chrome = f'{self.data_dir}/local-chromium/{self.revision}/chrome-linux/chrome'
-        self.config = Config.get_conf(self, 1337, True)
-        self.config.register_global(alert_channel=None)
 
-    async def cog_load(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Load Start')
+    async def cog_load(self):
+        log.info('%s: Cog Load Start', self.__cog_name__)
         self.embedset_command = self.bot.remove_command('embedset')
         self.forgetme_command = self.bot.remove_command('forgetme')
         self.info_command = self.bot.remove_command('info')
@@ -45,15 +45,15 @@ class Carlcog(commands.Cog):
         self.ping_command = self.bot.remove_command('ping')
         self.uptime_command = self.bot.remove_command('uptime')
         if not os.path.exists(self.chrome):
-            log.info(f'{self.__cog_name__}: Start Downloading Chrome')
+            log.info('%s: Start Downloading Chrome', self.__cog_name__)
             os.environ['PYPPETEER_HOME'] = self.data_dir
             os.environ['PYPPETEER_CHROMIUM_REVISION'] = self.revision
             os.system('pyppeteer-install ')
-            log.info(f'{self.__cog_name__}: Finish Downloading Chrome')
-        log.info(f'{self.__cog_name__}: Cog Load Finish')
+            log.info('%s: Finish Downloading Chrome', self.__cog_name__)
+        log.info('%s: Cog Load Finish', self.__cog_name__)
 
-    async def cog_unload(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Unload')
+    async def cog_unload(self):
+        log.info('%s: Cog Unload', self.__cog_name__)
         with fuckit:
             self.bot.remove_command('embedset')
             self.bot.remove_command('forgetme')
@@ -87,15 +87,15 @@ class Carlcog(commands.Cog):
         channel_id = await self.config.alert_channel()
         if not channel_id:
             return
-        channel = self.bot.get_channel(channel_id)
+        channel = discord.VoiceChannel = self.bot.get_channel(channel_id)
         if not channel:
             log.warning('Channel %s not found.', channel_id)
             return
 
-        if guild.is_icon_animated():
-            icon_url = guild.icon_url_as(format='gif')
-        else:
-            icon_url = guild.icon_url_as(format='png')
+        # if guild.is_icon_animated():
+        #     icon_url = guild.icon_url_as(format='gif')
+        # else:
+        #     icon_url = guild.icon_url_as(format='png')
 
         em = discord.Embed()
 
@@ -111,7 +111,7 @@ class Carlcog(commands.Cog):
             description = f'{self.bot.user.mention} left a server \U0001F4E4 \n'
             em.colour = discord.Colour.red()
 
-        em.set_thumbnail(url=icon_url)
+        em.set_thumbnail(url=guild.icon.url)
         em.title = guild.name
         em.description = description
         em.add_field(name='Members', value=len(guild.members))
@@ -154,7 +154,7 @@ class Carlcog(commands.Cog):
         em.add_field(name='Channel', value=ctx.channel.mention or ctx.channel)
         if ctx.guild:
             em.add_field(name='Server', value=ctx.guild.name)
-            em.set_thumbnail(url=ctx.guild.icon_url)
+            em.set_thumbnail(url=ctx.guild.icon.url)
         else:
             em.set_thumbnail(url=self.bot.user.avatar.url)
         em.set_footer(text=f'ID: {ctx.author.id}', icon_url=ctx.author.avatar.url)

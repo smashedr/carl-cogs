@@ -7,33 +7,31 @@ from redbot.core.utils import AsyncIter
 log = logging.getLogger('red.autochannels')
 
 
-GUILD_SETTINGS = {
-    'enabled': False,
-    'channel': None,
-    'rooms': [],
-}
-
-CHANNEL_SETTINGS = {
-    'room': False,
-    'auto': False,
-    'parent': None,
-}
-
-
 class Autochannels(commands.Cog):
     """Carl's Autochannels Cog"""
+
+    guild_default = {
+        'enabled': False,
+        'channel': None,
+        'rooms': [],
+    }
+    channel_default = {
+        'room': False,
+        'auto': False,
+        'parent': None,
+    }
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
-        self.config.register_guild(**GUILD_SETTINGS)
-        self.config.register_channel(**CHANNEL_SETTINGS)
+        self.config.register_guild(**self.guild_default)
+        self.config.register_channel(**self.channel_default)
 
-    async def cog_load(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Load')
+    async def cog_load(self):
+        log.info('%s: Cog Load', self.__cog_name__)
 
-    async def cog_unload(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Unload')
+    async def cog_unload(self):
+        log.info('%s: Cog Unload', self.__cog_name__)
 
     async def process_create(self, channel, member):
         config = await self.config.channel(channel).all()
@@ -116,8 +114,8 @@ class Autochannels(commands.Cog):
             return
 
         log.debug('Deleting the following:')
-        sorted_channels = sorted(match_channels, key=lambda d: d.name, reverse=True)
-        for i, channel in enumerate(sorted_channels):
+        channels = sorted(match_channels, key=lambda d: d.name, reverse=True)
+        for i, channel in enumerate(channels):
             if i == to_delete:
                 break
 
@@ -176,20 +174,17 @@ class Autochannels(commands.Cog):
     @commands.group(name='autochannels', aliases=['ac'])
     @commands.guild_only()
     @commands.admin()
-    async def autochannels(self, ctx):
+    async def autochannels(self, ctx: commands.Context):
         """Options for managing Autochannels."""
 
     @autochannels.command(name='add', aliases=['a'])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def autochannels_add(self, ctx, *, channel: discord.VoiceChannel):
+    async def autochannels_add(self, ctx: commands.Context, *,
+                               channel: discord.VoiceChannel):
         """
         Adds a channel to Autochannels Autorooms configuration.
         [p]autochannels add Channel Name
         """
-        # log = category
-        # log.debug(dir(log))
-        # log.debug(type(log))
-        # log.debug(log)
         rooms = await self.config.guild(ctx.guild).rooms()
         log.debug(rooms)
         if channel.id in rooms:
@@ -205,7 +200,8 @@ class Autochannels(commands.Cog):
 
     @autochannels.command(name='remove', aliases=['r', 'delete'])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def autochannels_remove(self, ctx, *, channel: discord.VoiceChannel):
+    async def autochannels_remove(self, ctx: commands.Context, *,
+                                  channel: discord.VoiceChannel):
         """
         Adds a channel to Autochannels Autorooms configuration.
         [p]autochannels add Channel Name
@@ -213,16 +209,16 @@ class Autochannels(commands.Cog):
         rooms = await self.config.guild(ctx.guild).rooms()
         log.debug(rooms)
         if channel.id not in rooms:
-            await ctx.send(f'Channel **{channel.name}** not in configuration.')
+            await ctx.send(f'Channel **{channel.name}** not in config.')
             return
 
         rooms.remove(channel.id)
         await self.config.channel(channel).clear()
         await self.config.guild(ctx.guild).rooms.set(rooms)
-        await ctx.send(f'Channel **{channel.name}** removed from configuration.')
+        await ctx.send(f'Channel **{channel.name}** removed from config.')
 
     @autochannels.command(name='enable', aliases=['e', 'on'])
-    async def autochannels_enable(self, ctx):
+    async def autochannels_enable(self, ctx: commands.Context):
         """Enable Autochannels Globally."""
         enabled = await self.config.guild(ctx.guild).enabled()
         if enabled:
@@ -232,7 +228,7 @@ class Autochannels(commands.Cog):
             await ctx.send('Autochannels has been enabled.')
 
     @autochannels.command(name='disable', aliases=['d', 'off'])
-    async def autochannels_disable(self, ctx):
+    async def autochannels_disable(self, ctx: commands.Context):
         """Disable Autochannels Globally."""
         enabled = await self.config.guild(ctx.guild).enabled()
         if not enabled:
@@ -242,7 +238,7 @@ class Autochannels(commands.Cog):
             await ctx.send('Autochannels has been disabled.')
 
     @autochannels.command(name='status', aliases=['s', 'stat', 'settings'])
-    async def autochannels_status(self, ctx):
+    async def autochannels_status(self, ctx: commands.Context):
         """Get Autochannels status."""
         config = await self.config.guild(ctx.guild).all()
         log.debug(config)

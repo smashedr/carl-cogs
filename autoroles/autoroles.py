@@ -9,19 +9,24 @@ log = logging.getLogger('red.autoroles')
 class Autoroles(commands.Cog):
     """Carl's Autoroles Cog"""
 
+    guild_default = {
+        'enabled': False,
+        'roles': [],
+    }
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
-        self.config.register_guild(enabled=False, roles=None)
+        self.config.register_guild(**self.guild_default)
 
-    async def cog_load(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Load')
+    async def cog_load(self):
+        log.info('%s: Cog Load', self.__cog_name__)
 
-    async def cog_unload(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Unload')
+    async def cog_unload(self):
+        log.info('%s: Cog Unload', self.__cog_name__)
 
     @commands.Cog.listener()
-    async def on_member_join(self, member: discord.Member) -> None:
+    async def on_member_join(self, member: discord.Member):
         log.debug('member: %s', member)
         config = await self.config.guild(member.guild).all()
         if config and config['enabled'] and config['roles']:
@@ -31,11 +36,11 @@ class Autoroles(commands.Cog):
     @commands.group(name='autoroles', aliases=['ar'])
     @commands.guild_only()
     @commands.admin_or_permissions(manage_roles=True)
-    async def autoroles(self, ctx):
+    async def autoroles(self, ctx: commands.Context):
         """Options for managing Autoroles."""
 
     @autoroles.command(name='enable', aliases=['on'])
-    async def autoroles_enable(self, ctx):
+    async def autoroles_enable(self, ctx: commands.Context):
         """Enables Autoroles."""
         enabled = await self.config.guild(ctx.guild).enabled()
         if enabled:
@@ -45,7 +50,7 @@ class Autoroles(commands.Cog):
             await ctx.send('Autoroles has been enabled.')
 
     @autoroles.command(name='disable', aliases=['off'])
-    async def autoroles_disable(self, ctx):
+    async def autoroles_disable(self, ctx: commands.Context):
         """Disable Autoroles."""
         enabled = await self.config.guild(ctx.guild).enabled()
         if not enabled:
@@ -56,9 +61,9 @@ class Autoroles(commands.Cog):
 
     @autoroles.command(name='add')
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def autoroles_add(self, ctx, *, role: discord.Role):
+    async def autoroles_add(self, ctx: commands.Context, *, role: discord.Role):
         """Add a role to autoroles."""
-        roles = await self.config.guild(ctx.guild).roles() or []
+        roles: [discord.Role] = await self.config.guild(ctx.guild).roles()
         log.debug(roles)
         if role.id not in roles:
             if role >= ctx.guild.me.top_role:
@@ -76,9 +81,9 @@ class Autoroles(commands.Cog):
 
     @autoroles.command(name='remove', aliases=['del', 'delete'])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def autoroles_remove(self, ctx, role: discord.Role):
+    async def autoroles_remove(self, ctx: commands.Context, role: discord.Role):
         """Removes a role from autoroles."""
-        roles = await self.config.guild(ctx.guild).roles() or []
+        roles: [discord.Role] = await self.config.guild(ctx.guild).roles()
         log.debug(roles)
         if role.id in roles:
             roles.remove(role.id)
@@ -88,7 +93,7 @@ class Autoroles(commands.Cog):
             await ctx.send(f'Role `@{role.name}` is not an autorole.')
 
     @autoroles.command(name='status', aliases=['info', 'settings'])
-    async def autoroles_status(self, ctx):
+    async def autoroles_status(self, ctx: commands.Context):
         """Get Autoroles status."""
         config = await self.config.guild(ctx.guild).all()
         status = '**Enabled**' if config['enabled'] else '**NOT ENABLED**'

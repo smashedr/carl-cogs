@@ -9,60 +9,58 @@ from redbot.core.utils.predicates import ReactionPredicate
 
 log = logging.getLogger('red.userchannels')
 
-ROOM_NAMES = {
-    'a': ['Abode', 'Area'],
-    'b': ['Bistro', 'Bunk', 'Burrow'],
-    'c': ['Camp', 'Castle', 'Cabin' 'Chamber', 'Crib'],
-    'd': ['Dorm', 'Digs', 'Den'],
-    'e': ['Encampment', 'Estate'],
-    'f': ['Farm', 'Firehouse', 'Flat'],
-    'g': ['Grotto', 'Grange'],
-    'h': ['Hall', 'Harbor', 'Haven', 'Hotel', 'House', 'Hut'],
-    'i': ['Inn', 'Igloo'],
-    'j': ['Joint'],
-    'k': ['Kiosk'],
-    'l': ['Lodge'],
-    'm': ['Manor', 'Meadow', 'Motel', 'Mansion'],
-    'n': ['Nest'],
-    'o': ['Oasis', 'Orchard'],
-    'p': ['Pad', 'Paradise', 'Place', 'Pub'],
-    'q': ['Quarters'],
-    'r': ['Ranch', 'Range', 'Resort'],
-    's': ['Square', 'Shack', 'Ship', 'Shelter', 'Startup'],
-    't': ['Temple', 'Tent', 'Tower', 'Town', 'Turf'],
-    'u': ['Union'],
-    'v': ['Valley', 'Villa', 'Vineyard'],
-    'w': ['Warehouse'],
-    'xx': [''],
-    'y': ['Yacht'],
-    'zz': [''],
-}
-
-GUILD_SETTINGS = {
-    'enabled': False,
-    'channel': None,
-    'category': None,
-}
-
-CHANNEL_SETTINGS = {
-    'auto': False,
-}
-
 
 class Userchannels(commands.Cog):
     """Carl's Userchannels Cog"""
 
+    room_names = {
+        'a': ['Abode', 'Area'],
+        'b': ['Bistro', 'Bunk', 'Burrow'],
+        'c': ['Camp', 'Castle', 'Cabin' 'Chamber', 'Crib'],
+        'd': ['Dorm', 'Digs', 'Den'],
+        'e': ['Encampment', 'Estate'],
+        'f': ['Farm', 'Firehouse', 'Flat'],
+        'g': ['Grotto', 'Grange'],
+        'h': ['Hall', 'Harbor', 'Haven', 'Hotel', 'House', 'Hut'],
+        'i': ['Inn', 'Igloo'],
+        'j': ['Joint'],
+        'k': ['Kiosk'],
+        'l': ['Lodge'],
+        'm': ['Manor', 'Meadow', 'Motel', 'Mansion'],
+        'n': ['Nest'],
+        'o': ['Oasis', 'Orchard'],
+        'p': ['Pad', 'Paradise', 'Place', 'Pub'],
+        'q': ['Quarters'],
+        'r': ['Ranch', 'Range', 'Resort'],
+        's': ['Square', 'Shack', 'Ship', 'Shelter', 'Startup'],
+        't': ['Temple', 'Tent', 'Tower', 'Town', 'Turf'],
+        'u': ['Union'],
+        'v': ['Valley', 'Villa', 'Vineyard'],
+        'w': ['Warehouse'],
+        'xx': [''],
+        'y': ['Yacht'],
+        'zz': [''],
+    }
+    guild_default = {
+        'enabled': False,
+        'channel': None,
+        'category': None,
+    }
+    channel_default = {
+        'auto': False,
+    }
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
-        self.config.register_guild(**GUILD_SETTINGS)
-        self.config.register_channel(**CHANNEL_SETTINGS)
+        self.config.register_guild(**self.guild_default)
+        self.config.register_channel(**self.channel_default)
 
-    async def cog_load(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Load')
+    async def cog_load(self):
+        log.info('%s: Cog Load', self.__cog_name__)
 
-    async def cog_unload(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Unload')
+    async def cog_unload(self):
+        log.info('%s: Cog Unload', self.__cog_name__)
 
     async def process_remove(self, channel):
         if channel.members:
@@ -90,8 +88,9 @@ class Userchannels(commands.Cog):
 
         # get channel name
         suffix = 'Room'
-        if member.display_name[0].lower() in ROOM_NAMES:
-            suffix = random.choice(ROOM_NAMES[member.display_name[0].lower()])
+        if member.display_name[0].lower() in self.room_names:
+            names = self.room_names[member.display_name[0].lower()]
+            suffix = random.choice(names)
         channel_name = f"{member.display_name}'s {suffix}"
         log.debug(channel_name)
 
@@ -151,11 +150,11 @@ class Userchannels(commands.Cog):
     @commands.group(name='userchannels', aliases=['uc'])
     @commands.guild_only()
     @commands.admin()
-    async def userchannels(self, ctx):
+    async def userchannels(self, ctx: commands.Context):
         """Options for managing Userchannels."""
 
     @userchannels.command(name='setup', aliases=['auto', 'a'])
-    async def userchannels_setup(self, ctx):
+    async def userchannels_setup(self, ctx: commands.Context):
         """AUTO Setup of Userchannels!"""
         message = await ctx.send('This will automatically create the '
                                  'Userchannels category, channel, and enable '
@@ -202,7 +201,7 @@ class Userchannels(commands.Cog):
                        'members can see it...')
 
     @userchannels.command(name='enable', aliases=['e', 'on'])
-    async def userchannels_enable(self, ctx):
+    async def userchannels_enable(self, ctx: commands.Context):
         """Enable Userchannels."""
         enabled = await self.config.guild(ctx.guild).enabled()
         if enabled:
@@ -212,7 +211,7 @@ class Userchannels(commands.Cog):
             await ctx.send('Userchannels has been enabled.')
 
     @userchannels.command(name='disable', aliases=['d', 'off'])
-    async def userchannels_disable(self, ctx):
+    async def userchannels_disable(self, ctx: commands.Context):
         """Disable Userchannels."""
         enabled = await self.config.guild(ctx.guild).enabled()
         if not enabled:
@@ -223,7 +222,8 @@ class Userchannels(commands.Cog):
 
     @userchannels.command(name='channel', aliases=['ch', 'chan', 'chann'])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def userchannels_channel(self, ctx, *, channel: discord.VoiceChannel):
+    async def userchannels_channel(self, ctx: commands.Context, *,
+                                   channel: discord.VoiceChannel):
         """Set Userchannels channel."""
         log.debug(channel.id)
         await self.config.guild(ctx.guild).channel.set(channel.id)
@@ -232,7 +232,8 @@ class Userchannels(commands.Cog):
 
     @userchannels.command(name='category', aliases=['ca', 'cat'])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def userchannels_category(self, ctx, *, category: discord.CategoryChannel):
+    async def userchannels_category(self, ctx: commands.Context, *,
+                                    category: discord.CategoryChannel):
         """Set Userchannels category."""
         log.debug(category.id)
         await self.config.guild(ctx.guild).category.set(category.id)
@@ -240,7 +241,7 @@ class Userchannels(commands.Cog):
                        f'**{category.name}** - {category.id}')
 
     @userchannels.command(name='status', aliases=['s', 'stat', 'settings'])
-    async def userchannels_status(self, ctx):
+    async def userchannels_status(self, ctx: commands.Context):
         """Get Userchannels status."""
         config = await self.config.guild(ctx.guild).all()
         log.debug(config)

@@ -8,16 +8,22 @@ log = logging.getLogger('red.warcraftlogs')
 
 class Warcraftlogs(commands.Cog):
     """Carl's Warcraftlogs Cog"""
+
+    guild_default = {
+        'enabled': False,
+        'splits': {},
+    }
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
-        self.config.register_guild(enabled=False, splits={})
+        self.config.register_guild(**self.guild_default)
 
-    async def cog_load(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Load')
+    async def cog_load(self):
+        log.info('%s: Cog Load', self.__cog_name__)
 
-    async def cog_unload(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Unload')
+    async def cog_unload(self):
+        log.info('%s: Cog Unload', self.__cog_name__)
 
     @commands.Cog.listener()
     async def on_message_without_command(self, message: discord.Message):
@@ -58,11 +64,12 @@ class Warcraftlogs(commands.Cog):
     @commands.group(name='warcraftlogs', aliases=['wcl'])
     @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
-    async def wcl(self, ctx):
+    async def wcl(self, ctx: commands.Context):
         """Options for manging Warcraftlogs splits."""
 
     @wcl.command(name='add', aliases=['a'])
-    async def wcl_add(self, ctx, channel: discord.TextChannel, *, match):
+    async def wcl_add(self, ctx: commands.Context,
+                      channel: discord.TextChannel, *, match: str):
         """
         Add a channel to Warcraftlogs splits with a matching title term.
         [p]wcl add <channel> <matching title term>
@@ -78,7 +85,7 @@ class Warcraftlogs(commands.Cog):
             await ctx.send(f'Split matching "{match.lower()}" already exist.')
 
     @wcl.command(name='remove', aliases=['r'])
-    async def wcl_remove(self, ctx, *, match):
+    async def wcl_remove(self, ctx: commands.Context, *, match: str):
         """Removes a channel from Warcraftlogs splits."""
         config = await self.config.guild(ctx.guild).splits()
         if match.lower() in config:
@@ -89,7 +96,7 @@ class Warcraftlogs(commands.Cog):
             await ctx.send(f'Split matching "{match.lower()}" does not exist')
 
     @wcl.command(name='enable', aliases=['e', 'on'])
-    async def wcl_enable(self, ctx):
+    async def wcl_enable(self, ctx: commands.Context):
         """Enables Warcraftlogs."""
         enabled = await self.config.guild(ctx.guild).enabled()
         if enabled:
@@ -99,7 +106,7 @@ class Warcraftlogs(commands.Cog):
             await ctx.send('Warcraftlogs Splitting have been enabled.')
 
     @wcl.command(name='disable', aliases=['d', 'off'])
-    async def wcl_disable(self, ctx):
+    async def wcl_disable(self, ctx: commands.Context):
         """Disable Warcraftlogs."""
         enabled = await self.config.guild(ctx.guild).enabled()
         if not enabled:
@@ -109,7 +116,7 @@ class Warcraftlogs(commands.Cog):
             await ctx.send('Warcraftlogs Splitting have been disabled.')
 
     @wcl.command(name='status', aliases=['s', 'settings'])
-    async def wcl_status(self, ctx):
+    async def wcl_status(self, ctx: commands.Context):
         """Get Warcraftlogs status."""
         log.debug(ctx.guild)
         config = await self.config.guild(ctx.guild).all()

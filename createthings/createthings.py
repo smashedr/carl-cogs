@@ -42,17 +42,22 @@ EMOJI_SETS = {
 class Createthings(commands.Cog):
     """Carl's Createthings Cog"""
 
+    http_options = {
+        'follow_redirects': True,
+        'timeout': 10,
+    }
+
     def __init__(self, bot):
         self.bot = bot
 
-    async def cog_load(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Load')
+    async def cog_load(self):
+        log.info('%s: Cog Load', self.__cog_name__)
 
-    async def cog_unload(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Unload')
+    async def cog_unload(self):
+        log.info('%s: Cog Unload', self.__cog_name__)
 
     @staticmethod
-    async def create_role_set(ctx, role_set):
+    async def create_role_set(ctx: commands.Context, role_set):
         results = []
         async for name, color in AsyncIter(role_set.items()):
             log.debug(f'{name} - {color}')
@@ -71,8 +76,7 @@ class Createthings(commands.Cog):
 
         return results
 
-    @staticmethod
-    async def create_emoji_set(ctx, emoji_set):
+    async def create_emoji_set(self, ctx: commands.Context, emoji_set):
         results = []
         async for name, url in AsyncIter(emoji_set.items()):
             log.debug(f'{name} - {url}')
@@ -84,7 +88,7 @@ class Createthings(commands.Cog):
 
             log.debug('Creating emoji: %s', name)
             emoji = await ctx.guild.create_custom_emoji(
-                name=name, image=get_discord_image_data(url),
+                name=name, image=self.get_discord_image_data(url),
                 reason=f'Carl createemoji command used by {ctx.author.name}',
             )
             results.append(f'{emoji} - Creation Success ✅')
@@ -94,12 +98,12 @@ class Createthings(commands.Cog):
     @commands.group(name='createroles', aliases=['cr'])
     @commands.guild_only()
     @commands.admin()
-    async def createroles(self, ctx):
+    async def createroles(self, ctx: commands.Context):
         """Create pre-defined Role sets."""
 
     @createroles.command(name='list', aliases=["l"])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def createroles_list(self, ctx, name: str = None):
+    async def createroles_list(self, ctx: commands.Context, name: str = None):
         """List configured role sets that can be created."""
         await ctx.typing()
         if name and name in ROLE_SETS:
@@ -111,7 +115,7 @@ class Createthings(commands.Cog):
 
     @createroles.command(name='create', aliases=["c"])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def createroles_create(self, ctx, *, name: str):
+    async def createroles_create(self, ctx: commands.Context, *, name: str):
         """Create a Role set with the given name. View sets with `list`."""
         await ctx.typing()
         name = name.lower()
@@ -130,12 +134,12 @@ class Createthings(commands.Cog):
     @commands.group(name='createemoji', aliases=['ce'])
     @commands.guild_only()
     @commands.admin()
-    async def createemoji(self, ctx):
+    async def createemoji(self, ctx: commands.Context):
         """Create pre-defined Emoji sets."""
 
     @createemoji.command(name='list', aliases=["l"])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def createemoji_list(self, ctx, name: str = None):
+    async def createemoji_list(self, ctx: commands.Context, name: str = None):
         """List configured emoji sets that can be created."""
         await ctx.typing()
         if name and name in EMOJI_SETS:
@@ -147,7 +151,7 @@ class Createthings(commands.Cog):
 
     @createemoji.command(name='create', aliases=["c"])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def createemoji_create(self, ctx, *, name: str):
+    async def createemoji_create(self, ctx: commands.Context, *, name: str):
         """Create an Emoji set with the given name. View sets with `list`."""
         name = name.lower()
         log.debug(name)
@@ -169,21 +173,16 @@ class Createthings(commands.Cog):
             out = [f'Emoji Creation Complete. Results:'] + results
         await ctx.send('\n'.join(out))
 
+    def get_discord_image_data(self, url=str(), content=bytes()) -> bytes:
+        if not url and content:
+            raise ValueError('url or content required')
 
-def get_discord_image_data(url=None, content=None):
-    if not url and content:
-        raise ValueError('url or content required')
+        if not url:
+            return content
 
-    if not url:
-        return content
-
-    log.debug('fetching url: %s', url)
-    http_options = {
-        'follow_redirects': True,
-        'timeout': 10,
-    }
-    async with httpx.AsyncClient(**http_options) as client:
-        r = await client.get(url)
-    if not r.is_success:
-        r.raise_for_status()
-    return r.content
+        log.debug('fetching url: %s', url)
+        async with httpx.AsyncClient(**self.http_options) as client:
+            r = await client.get(url)
+        if not r.is_success:
+            r.raise_for_status()
+        return r.content

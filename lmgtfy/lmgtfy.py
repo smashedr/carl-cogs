@@ -13,16 +13,16 @@ class Lmgtfy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def cog_load(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Load')
+    async def cog_load(self):
+        log.info('%s: Cog Load', self.__cog_name__)
 
-    async def cog_unload(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Unload')
+    async def cog_unload(self):
+        log.info('%s: Cog Unload', self.__cog_name__)
 
     @commands.Cog.listener(name='on_message_without_command')
-    async def on_message_without_command(self, message: discord.Message) -> None:
+    async def on_message_without_command(self, message: discord.Message):
         """Listens for lmgtfy."""
-        channel = message.channel
+        channel: discord.TextChannel = message.channel
 
         trigger = 'lmgtfy'
         if message.author.bot or message.content.lower() != trigger:

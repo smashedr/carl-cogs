@@ -1,8 +1,8 @@
 import asyncio
 import json
 import logging
-from collections.abc import Iterable
 import redis.asyncio as redis
+from typing import Optional, Iterable, List
 
 from redbot.core import commands
 
@@ -10,25 +10,16 @@ log = logging.getLogger('red.pubsub')
 
 
 class Pubsub(commands.Cog):
-    """
-    Carl's Pubsub Cog.
-        [p]set api
-        Name: redis
-        Data:
-        host    hostname
-        port    portnumber
-        db      dbnumber
-        pass    password
-    """
+    """Carl's Pubsub Cog"""
 
     def __init__(self, bot):
         self.bot = bot
-        self.loop = None
-        self.client = None
-        self.pubsub = None
+        self.loop: Optional[asyncio.Task] = None
+        self.client: Optional[redis.Redis] = None
+        self.pubsub: Optional[redis.client.PubSub] = None
 
-    async def cog_load(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Load Start')
+    async def cog_load(self):
+        log.info('%s: Cog Load Start', self.__cog_name__)
         data = await self.bot.get_shared_api_tokens('redis')
         self.client = redis.Redis(
             host=data['host'] if 'host' in data else 'redis',
@@ -36,16 +27,19 @@ class Pubsub(commands.Cog):
             db=int(data['db']) if 'db' in data else 0,
             password=data['pass'] if 'pass' in data else None,
         )
+        await self.client.ping()
         self.pubsub = self.client.pubsub(ignore_subscribe_messages=True)
         self.loop = asyncio.create_task(self.pubsub_loop())
-        log.info(f'{self.__cog_name__}: Cog Load Finished')
+        log.info('%s: Cog Load Finish', self.__cog_name__)
 
-    async def cog_unload(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Unload')
-        self.loop.cancel()
+    async def cog_unload(self):
+        log.info('%s: Cog Unload', self.__cog_name__)
+        if self.loop and not self.loop.cancelled():
+            log.info('Stopping Loop')
+            self.loop.cancel()
 
-    async def pubsub_loop(self) -> None:
-        log.info(f'{self.__cog_name__}: Start Main Loop')
+    async def pubsub_loop(self):
+        log.info('%s: Start Main Loop', self.__cog_name__)
         await self.pubsub.subscribe('red.pubsub')
         while self is self.bot.get_cog('Pubsub'):
             log.info('pubsub_loop:while')
@@ -77,7 +71,8 @@ class Pubsub(commands.Cog):
             if 'guild' in data['requests']:
                 resp['guild'] = self.process_guild(guild)
             log.debug('resp: %s', resp)
-            pr = await self.client.publish(channel, json.dumps(resp, default=str))
+            response = json.dumps(resp, default=str)
+            pr = await self.client.publish(channel, response)
             log.debug('pr: %s', pr)
         except Exception as error:
             log.error('Exception processing message.')
@@ -155,7 +150,7 @@ class Pubsub(commands.Cog):
         return resp
 
     @staticmethod
-    def process_iterable(iterable: Iterable, keys: list) -> list:
+    def process_iterable(iterable: Iterable, keys: List) -> List:
         resp = []
         for i in iterable:
             data = {}

@@ -3,6 +3,7 @@ import datetime
 import httpx
 import logging
 import time
+from typing import Optional
 
 from redbot.core import commands
 from redbot.core.utils import chat_formatting as cf
@@ -23,14 +24,14 @@ class Heartbeat(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.loop = None
+        self.loop: Optional[asyncio.Task] = None
 
-    async def cog_load(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Load')
+    async def cog_load(self):
+        log.info('%s: Cog Load', self.__cog_name__)
         self.loop = asyncio.create_task(self.heartbeat_loop())
 
-    async def cog_unload(self) -> None:
-        log.info(f'{self.__cog_name__}: Cog Unload')
+    async def cog_unload(self):
+        log.info('%s: Cog Unload', self.__cog_name__)
         if self.loop and not self.loop.cancelled():
             log.info('Stopping Loop')
             self.loop.cancel()

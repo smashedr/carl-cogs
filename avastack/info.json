@@ -1,0 +1,15 @@
+{
+  "name": "Aviation Stack",
+  "author": ["Shane#0816"],
+  "short": "Aviation Stack COG.",
+  "description": "Aviation Stack COG.",
+  "install_msg": "Get started with `[p]help Avastack`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "required_cogs": {},
+  "requirements": [],
+  "min_bot_version": "3.5.0",
+  "min_python_version" : [3,8,0],
+  "disabled": false,
+  "hidden": true,
+  "type": "COG"
+}
