@@ -46,3 +46,21 @@ Cog | Description
 **[lmgtfy](lmgtfy/lmgtfy.py)** | **WIP** Replies to the last query in chat with a real google link.
 **[pubsub](pubsub/pubsub.py)** | **Custom** Redis Pub/Sub for Carl Bot and Carl's website.
 **[reactroles](reactroles/reactroles.py)** | **WIP**: React Roles Cog; Working but not yet finished.
+
+# Additional Setup Information
+
+## Redis
+To setup Redis, use the `set api` command.   
+```agsl
+[p]set api
+```
+Name: `redis`  
+Data:
+```agsl
+host    redis
+port    6379
+db      0
+pass    onlyifrequired
+```
+Above information are the defaults. Password defaults to `None`.
+DO NOT enter a password in the config unless you require one.

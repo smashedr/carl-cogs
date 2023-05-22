@@ -14,7 +14,7 @@ class Userchannels(commands.Cog):
     """Carl's Userchannels Cog"""
 
     room_names = {
-        'a': ['Abode', 'Area'],
+        'a': ['Abode', 'Area', 'Airplane'],
         'b': ['Bistro', 'Bunk', 'Burrow'],
         'c': ['Camp', 'Castle', 'Cabin' 'Chamber', 'Crib'],
         'd': ['Dorm', 'Digs', 'Den'],
@@ -23,7 +23,7 @@ class Userchannels(commands.Cog):
         'g': ['Grotto', 'Grange'],
         'h': ['Hall', 'Harbor', 'Haven', 'Hotel', 'House', 'Hut'],
         'i': ['Inn', 'Igloo'],
-        'j': ['Joint'],
+        'j': ['Joint', 'Jet'],
         'k': ['Kiosk'],
         'l': ['Lodge'],
         'm': ['Manor', 'Meadow', 'Motel', 'Mansion'],

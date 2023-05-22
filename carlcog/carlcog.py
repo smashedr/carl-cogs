@@ -1,13 +1,9 @@
 import datetime
 import discord
 import fuckit
-import httpx
 import logging
-import os
 import platform
 import traceback
-from io import BytesIO
-from pyppeteer import launch
 from typing import Optional
 
 from redbot.core import Config, commands
@@ -31,9 +27,6 @@ class Carlcog(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_global(alert_channel=None)
-        self.data_dir = '/data'
-        self.revision = '588429'
-        self.chrome = f'{self.data_dir}/local-chromium/{self.revision}/chrome-linux/chrome'
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
@@ -44,12 +37,6 @@ class Carlcog(commands.Cog):
         self.mydata_command = self.bot.remove_command('mydata')
         self.ping_command = self.bot.remove_command('ping')
         self.uptime_command = self.bot.remove_command('uptime')
-        if not os.path.exists(self.chrome):
-            log.info('%s: Start Downloading Chrome', self.__cog_name__)
-            os.environ['PYPPETEER_HOME'] = self.data_dir
-            os.environ['PYPPETEER_CHROMIUM_REVISION'] = self.revision
-            os.system('pyppeteer-install ')
-            log.info('%s: Finish Downloading Chrome', self.__cog_name__)
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
@@ -193,89 +180,6 @@ class Carlcog(commands.Cog):
             log.debug(prefixes)
             await self.bot.set_prefixes(prefixes, ctx.guild)
             await ctx.send(f'Prefixes for guild set to: **{prefixes}**')
-
-    @commands.command(name='checksite', aliases=['cs', 'check'])
-    @commands.cooldown(3, 15, commands.BucketType.user)
-    async def cc_check_site(self, ctx, url: str, auth: Optional[str] = None):
-        """
-        Check the status of a site at the given <url> with optional <auth>.
-        Example:
-            [p]checksite google.com
-            [p]checksite https://secret-site.com/ username:password
-        """
-        await ctx.message.delete()
-        msg = await ctx.send(f'Processing: \U0000231B')
-        await ctx.typing()
-        mdn_url = 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Status'
-        http_options = {
-            'follow_redirects': True,
-            'verify': False,
-            'timeout': 10,
-        }
-
-        if auth:
-            if ':' not in auth:
-                await ctx.send('Invalid foramt for <auth>. Must be: `user:pass`')
-                return
-
-            username, password = auth.split(':')
-            basic_auth = {'auth': (username, password)}
-        else:
-            basic_auth = {}
-
-        url = url.strip('<>')
-        if not url.lower().startswith('http'):
-            url = f'http://{url}'
-
-        try:
-            async with httpx.AsyncClient(**http_options, **basic_auth) as client:
-                log.debug(auth)
-                r = await client.head(url)
-        except httpx.InvalidURL:
-            await msg.delete()
-            await ctx.send(f'Invalid URL: ```{r.url}```')
-            return
-        except httpx.ConnectTimeout:
-            await msg.delete()
-            await ctx.send(f'Connection timeout after 10 seconds...')
-            return
-        except httpx.HTTPError as error:
-            await msg.delete()
-            await ctx.send(f'HTTP Error: `{error}`')
-            return
-        except Exception as error:
-            log.info(error)
-            await msg.delete()
-            await ctx.send(f'Exception: `{error}`')
-            return
-
-        if r.status_code > 399:
-            await msg.delete()
-            await ctx.send(f'Response Status: **{r.status_code} - {r.reason_phrase}**'
-                           f'```{r.url}``` <{mdn_url}/{r.status_code}>')
-            return
-
-        try:
-            browser = await launch(
-                executablePath=self.chrome, args=['--no-sandbox'], ignoreHTTPSErrors=True)
-            page = await browser.newPage()
-            await page.setViewport({'width': 1280, 'height': 960})
-            if auth:
-                await page.authenticate({'username': username, 'password': password})
-            await page.goto(str(r.url), timeout=1000 * 10)
-            result = await page.screenshot()
-            await browser.close()
-            data = BytesIO()
-            data.write(result)
-            data.seek(0)
-            file = discord.File(data, filename='screenshot.png')
-            await msg.delete()
-            await ctx.typing()
-            await ctx.send(f'Response code: **{r.status_code}** ```{r.url}```', files=[file])
-        except Exception as error:
-            log.exception(error)
-            await msg.delete()
-            await ctx.send(error)
 
     @commands.command(name='info', aliases=['about'])
     @commands.cooldown(1, 5, commands.BucketType.user)
