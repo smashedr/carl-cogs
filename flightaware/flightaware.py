@@ -1,9 +1,13 @@
 import asyncio
 import base64
 import discord
+import json
 import logging
 import re
 import io
+import redis.asyncio as redis
+from datetime import timedelta
+from typing import Optional
 
 from redbot.core import commands
 from redbot.core.utils import chat_formatting as cf
@@ -18,9 +22,22 @@ class Flightaware(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.api_key: Optional[str] = None
+        self.client: Optional[redis.Redis] = None
 
     async def cog_load(self):
-        log.info('%s: Cog Load', self.__cog_name__)
+        log.info('%s: Cog Load Start', self.__cog_name__)
+        data = await self.bot.get_shared_api_tokens('flightaware')
+        self.api_key = data['api_key']
+        data = await self.bot.get_shared_api_tokens('redis')
+        self.client = redis.Redis(
+            host=data['host'] if 'host' in data else 'redis',
+            port=int(data['port']) if 'port' in data else 6379,
+            db=int(data['db']) if 'db' in data else 0,
+            password=data['pass'] if 'pass' in data else None,
+        )
+        await self.client.ping()
+        log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
@@ -93,7 +110,7 @@ class Flightaware(commands.Cog):
 
     @fa.command(name='flight', aliases=['f'])
     async def fa_flight(self, ctx: commands.Context, ident: str):
-        """Get Flight Information for: <ident>"""
+        """Get Flight info for: <ident>"""
         await self.process_flight(ctx, ident)
 
     async def process_flight(self, ctx, ident: str):
@@ -103,7 +120,8 @@ class Flightaware(commands.Cog):
             return
 
         ident = ident_validate
-        fa = FlightAware('NKvlLrgaLaXDf4bVLW4ex9OwCf782Aoa')
+        log.debug('--- API CALL ---')
+        fa = FlightAware(self.api_key)
         fdata = await fa.flights_ident(ident)
         log.debug(fdata)
         if not fdata or 'flights' not in fdata or not fdata['flights']:
@@ -114,13 +132,13 @@ class Flightaware(commands.Cog):
         total = len(fdata['flights'])
         log.debug('total: %s', total)
         live, past, sched = [], [], []
-        for f in fdata['flights']:
-            if int(f['progress_percent']) == 0:
-                sched.append(f)
-            elif int(f['progress_percent']) == 100:
-                past.append(f)
+        for d in fdata['flights']:
+            if int(d['progress_percent']) == 0:
+                sched.append(d)
+            elif int(d['progress_percent']) == 100:
+                past.append(d)
             else:
-                live.append(f)
+                live.append(d)
         log.debug('-'*20)
         log.debug('live: %s', len(live))
         log.debug('past: %s', len(past))
@@ -131,30 +149,41 @@ class Flightaware(commands.Cog):
             return
 
         if len(live) == 1:
-            f = live[0]
-            log.debug(f)
+            d = live[0]
+            log.debug(d)
             msgs.append(
-                f"\nFA ID: `{f['fa_flight_id']}`\n"
+                f"\nFA ID: `{d['fa_flight_id']}`\n"
                 f"```"
-                f"ICAO/IATA:  {f['ident_icao']} / {f['ident_iata']}\n"
-                f"Status:     {f['status']} -- {f['progress_percent']}%\n"
-                f"Distance:   {f['route_distance']} nm\n"
-                f"Aircraft:   {f['aircraft_type']} - {f['registration']}\n"
-                f"Takeoff:    {f['actual_off']}\n"
-                f"From:       {f['origin']['code']} - {f['origin']['name']}\n"
-                f"ETA:        {f['estimated_on']}\n"
-                f"To:         {f['destination']['code']} - {f['destination']['name']}"
+                f"Operator:   {d['operator_icao']} / {d['operator_iata']}\n"
+                f"ICAO/IATA:  {d['ident_icao']} / {d['ident_iata']}\n"
+                f"Status:     {d['status']}\n"
+                f"Distance:   {d['route_distance']} nm - {d['progress_percent']}%\n"
+                f"Aircraft:   {d['aircraft_type']} - {d['registration']}\n"
+                f"Takeoff:    {d['actual_off']}\n"
+                f"From:       {d['origin']['code']} - {d['origin']['name']}\n"
+                f"ETA:        {d['estimated_on']}\n"
+                f"To:         {d['destination']['code']} - {d['destination']['name']}"
             )
-            if f['gate_destination'] and f['baggage_claim']:
-                msgs.append(f"\nGate/Bags:  {f['gate_destination']} / {f['baggage_claim']}")
-            elif f['gate_destination']:
-                msgs.append(f"\nGate:       {f['gate_destination']}")
-            if f['codeshares']:
-                msgs.append(f"\nCodeshares: {cf.humanize_list(f['codeshares'])}")
+            if d['gate_destination'] and d['baggage_claim']:
+                msgs.append(f"\nGate/Bags:  {d['gate_destination']} / {d['baggage_claim']}")
+            elif d['gate_destination']:
+                msgs.append(f"\nGate:       {d['gate_destination']}")
+            if d['codeshares']:
+                msgs.append(f"\nCodeshares: {cf.humanize_list(d['codeshares'])}")
             msgs.append(f"```")
-            msgs.append(f'<{fa.live_flight_url}{ident}>')
 
-            # data = await fa.flights_map(f['fa_flight_id'])
+            buttons = {
+                'FlightAware': f'{fa.live_flight_url}{ident}',
+            }
+            if d['registration']:
+                buttons.update(
+                    {'AirFleets': f"{fa.airfleets_search_url}{d['registration']}"}
+                )
+            view = FlightView(self, d['operator_icao'], buttons)
+            await ctx.send(' '.join(msgs), view=view)
+            return
+
+            # data = await fa.flights_map(d['fa_flight_id'])
             # if 'map' not in data:
             #     await ctx.send(' '.join(msgs))
             #     return
@@ -162,21 +191,72 @@ class Flightaware(commands.Cog):
             # file_data = io.BytesIO()
             # file_data.write(image_data)
             # file_data.seek(0)
-            # file = discord.File(file_data, filename=f"{f['fa_flight_id']}.png")
+            # file = discord.File(file_data, filename=f"{d['fa_flight_id']}.png")
             # await ctx.send(' '.join(msgs), files=[file])
             # return
 
         await ctx.send(' '.join(msgs))
 
+    @fa.command(name='airline', aliases=['operator', 'oper', 'o', 'a'])
+    async def fa_operator(self, ctx: commands.Context, airline_id: str):
+        """Get Airline Operator info for: <id>"""
+        log.debug('airline_id: %s', airline_id)
+        operator_id = self.validate_ident(airline_id)
+        log.debug('operator_id: %s', operator_id)
+        if not operator_id:
+            await ctx.send(F'Unable to validate `id`: **{airline_id}**')
+            return
+
+        fdata = json.loads(await self.client.get(f'fa:{operator_id}'))
+        # fdata = None
+        log.debug('-'*20)
+        log.debug(fdata)
+        log.debug('-'*20)
+        if not fdata:
+            log.debug('--- API CALL ---')
+            fa = FlightAware(self.api_key)
+            fdata = await fa.operators_id(operator_id)
+        log.debug(fdata)
+        if not fdata:
+            await ctx.send('Nothing Found. All the people committed suicide...')
+            return
+
+        await self.client.setex(
+            f'fa:{operator_id}',
+            timedelta(hours=8),
+            json.dumps(fdata),
+        )
+        d = fdata
+        msgs = [f"Operator: **{d['name']}**"]
+        msgs.append(
+            f"```"
+            f"ICAO/IATA:  {d['icao']} / {d['iata']}\n"
+            f"Callsign:   {d['callsign']}\n"
+            f"Short:      {d['shortname']}\n"
+            f"Country:    {d['country']}"
+        )
+        if d['location']:
+            msgs.append(f"\nLocation:   {d['location']}")
+        if d['phone']:
+            msgs.append(f"\nPhone:      {d['phone']}")
+        msgs.append(f"```")
+        buttons = {}
+        if d['url']:
+            buttons.update({'Website': d['url']})
+        if d['wiki_url']:
+            buttons.update({'Wikipedia': d['wiki_url']})
+        await ctx.send(' '.join(msgs), view=ButtonsURLView(buttons))
+
     @staticmethod
     def validate_ident(ident: str):
-        m = re.search('[a-zA-Z0-9]{2,3}[0-9]{1,4}', ident.upper())
+        # m = re.search('[a-zA-Z0-9]{2,3}[0-9]{1,4}', ident.upper())
+        m = re.search('[a-zA-Z0-9-]{2,7}', ident.upper())
         if m and m.group(0):
             return m.group(0)
         return None
 
     # async def process_live_flight(self, ctx, ident: str):
-    #     fa = FlightAware('NKvlLrgaLaXDf4bVLW4ex9OwCf782Aoa')
+    #     fa = FlightAware(self.api_key')
     #     fdata = await fa.flights_search(f'-idents "{fn}"')
     #     log.debug(fdata)
     #     if not fdata or 'flights' not in fdata or not fdata['flights']:
@@ -185,19 +265,78 @@ class Flightaware(commands.Cog):
     #         await ctx.reply(msg)
     #         return
     #     n = len(fdata['flights'])
-    #     f = fdata['flights'][0]
+    #     d = fdata['flights'][0]
     #     msg = (
-    #         f"Found {n} Flights: **{fn}** `{f['fa_flight_id']}`\n"
+    #         f"Found {n} Flights: **{fn}** `{d['fa_flight_id']}`\n"
     #         f"```"
-    #         f"Aircraft: {f['aircraft_type']}\n"
-    #         f"Takeoff:  {f['actual_off']}\n"
-    #         f"From:     {f['origin']['code']} - {f['origin']['name']}\n"
-    #         f"To:       {f['destination']['code']} - {f['destination']['name']}\n"
-    #         f"Speed:    {f['last_position']['groundspeed']}\n"
-    #         f"Heading:  {f['last_position']['heading']}\n"
-    #         f"FL:       {f['last_position']['altitude']}\n"
-    #         f"Lat:      {f['last_position']['latitude']}\n"
-    #         f"Long:     {f['last_position']['longitude']}\n"
+    #         f"Aircraft: {d['aircraft_type']}\n"
+    #         f"Takeoff:  {d['actual_off']}\n"
+    #         f"From:     {d['origin']['code']} - {d['origin']['name']}\n"
+    #         f"To:       {d['destination']['code']} - {d['destination']['name']}\n"
+    #         f"Speed:    {d['last_position']['groundspeed']}\n"
+    #         f"Heading:  {d['last_position']['heading']}\n"
+    #         f"FL:       {d['last_position']['altitude']}\n"
+    #         f"Lat:      {d['last_position']['latitude']}\n"
+    #         f"Long:     {d['last_position']['longitude']}\n"
     #         f"```"
     #     )
     #     await ctx.reply(msg)
+
+
+class ButtonsURLView(discord.ui.View):
+    def __init__(self, buttons: dict[str, str]):
+        super().__init__()
+        for label, url in buttons.items():
+            self.add_item(discord.ui.Button(label=label, url=url))
+
+
+class FlightView(discord.ui.View):
+    def __init__(self, cog: commands.Cog, icao: str, buttons: Optional[dict] = None):
+        self.cog = cog
+        log.debug('icao: %s', icao)
+        self.icao = icao
+        log.debug('self.icao: %s', self.icao)
+        super().__init__(timeout=None)
+        # self.add_item(GetOperatorButton(self.cog))
+        if buttons:
+            for label, url in buttons.items():
+                self.add_item(discord.ui.Button(label=label, url=url))
+
+    @discord.ui.button(emoji='\N{AIRPLANE}', label="Operator Info", style=discord.ButtonStyle.green)
+    async def button_callback(self, interaction, button):
+        button.disabled = True
+        await interaction.response.edit_message(view=self)
+        await self.cog.fa_operator(interaction.channel, self.icao)
+
+
+# class GetOperatorButton(discord.ui.Button):
+#     def __init__(self, cog: commands.Cog):
+#         super().__init__(
+#             emoji='\N{AIRPLANE}',
+#             label='Get Operator Info',
+#             style=discord.ButtonStyle.green,
+#             # custom_id='captcha-url-btn',
+#         )
+#         self.cog = cog
+#
+#     async def callback(self, interaction: discord.Interaction):
+#         log.debug('-'*40)
+#         tolog = interaction
+#         log.debug(dir(tolog))
+#         log.debug(type(tolog))
+#         log.debug(tolog)
+#         # params = {
+#         #     'user': interaction.user.id,
+#         #     'guild': interaction.guild.id,
+#         # }
+#         # query_string = urlencode(params)
+#         # url = f'{self.cog.url}/verify/?{query_string}'
+#         # message = f'{interaction.user.mention} Click Here: <{url}>'
+#
+#         # self.disabled = True # set button.disabled to True to disable the button
+#         # self.label = "No more pressing!" # change the button's label to something else
+#         # await interaction.response.edit_message(view=self)
+#
+#         msg = 'It Happened, Late at Night.'
+#         await interaction.response.send_message(msg, ephemeral=True,
+#                                                 delete_after=180)
