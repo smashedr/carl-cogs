@@ -152,7 +152,7 @@ class Flightaware(commands.Cog):
             d = live[0]
             log.debug(d)
             msgs.append(
-                f"\nFA ID: `{d['fa_flight_id']}`\n"
+                f"\nFA ID: `{d['fa_flight_id']}` "
                 f"```"
                 f"Operator:   {d['operator_icao']} / {d['operator_iata']}\n"
                 f"ICAO/IATA:  {d['ident_icao']} / {d['ident_iata']}\n"
@@ -180,7 +180,8 @@ class Flightaware(commands.Cog):
                     {'AirFleets': f"{fa.airfleets_search_url}{d['registration']}"}
                 )
             view = FlightView(self, d['operator_icao'], buttons)
-            await ctx.send(' '.join(msgs), view=view)
+            message = await ctx.send(' '.join(msgs), view=view)
+            view.message = message
             return
 
             # data = await fa.flights_map(d['fa_flight_id'])
@@ -207,16 +208,13 @@ class Flightaware(commands.Cog):
             await ctx.send(F'Unable to validate `id`: **{airline_id}**')
             return
 
-        fdata = json.loads(await self.client.get(f'fa:{operator_id}'))
-        # fdata = None
-        log.debug('-'*20)
+        fdata = json.loads(await self.client.get(f'fa:{operator_id}') or '{}')
         log.debug(fdata)
-        log.debug('-'*20)
         if not fdata:
             log.debug('--- API CALL ---')
             fa = FlightAware(self.api_key)
             fdata = await fa.operators_id(operator_id)
-        log.debug(fdata)
+            log.debug(fdata)
         if not fdata:
             await ctx.send('Nothing Found. All the people committed suicide...')
             return
@@ -227,14 +225,14 @@ class Flightaware(commands.Cog):
             json.dumps(fdata),
         )
         d = fdata
-        msgs = [f"Operator: **{d['name']}**"]
-        msgs.append(
+        msgs = [(
+            f"Operator: **{d['name']}** "
             f"```"
             f"ICAO/IATA:  {d['icao']} / {d['iata']}\n"
             f"Callsign:   {d['callsign']}\n"
             f"Short:      {d['shortname']}\n"
             f"Country:    {d['country']}"
-        )
+        )]
         if d['location']:
             msgs.append(f"\nLocation:   {d['location']}")
         if d['phone']:
@@ -284,6 +282,7 @@ class Flightaware(commands.Cog):
 
 
 class ButtonsURLView(discord.ui.View):
+    """URL Button View"""
     def __init__(self, buttons: dict[str, str]):
         super().__init__()
         for label, url in buttons.items():
@@ -291,23 +290,29 @@ class ButtonsURLView(discord.ui.View):
 
 
 class FlightView(discord.ui.View):
-    def __init__(self, cog: commands.Cog, icao: str, buttons: Optional[dict] = None):
+    """Flight View"""
+    def __init__(self, cog: Flightaware, icao: str, buttons: Optional[dict] = None):
         self.cog = cog
-        log.debug('icao: %s', icao)
         self.icao = icao
-        log.debug('self.icao: %s', self.icao)
-        super().__init__(timeout=None)
-        # self.add_item(GetOperatorButton(self.cog))
-        if buttons:
-            for label, url in buttons.items():
+        self.buttons = buttons
+        self.message: Optional[discord.Message] = None
+        super().__init__(timeout=60*8)
+        if self.buttons:
+            for label, url in self.buttons.items():
                 self.add_item(discord.ui.Button(label=label, url=url))
 
-    @discord.ui.button(emoji='\N{AIRPLANE}', label="Operator Info", style=discord.ButtonStyle.green)
+    async def on_timeout(self):
+        for child in self.children:
+            if child.label == 'Operator Info':
+                child.disabled = True
+        await self.message.edit(view=self)
+
+
+    @discord.ui.button(emoji='\N{AIRPLANE}', label="Operator Info", style=discord.ButtonStyle.blurple)
     async def button_callback(self, interaction, button):
         button.disabled = True
         await interaction.response.edit_message(view=self)
         await self.cog.fa_operator(interaction.channel, self.icao)
-
 
 # class GetOperatorButton(discord.ui.Button):
 #     def __init__(self, cog: commands.Cog):
