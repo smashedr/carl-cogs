@@ -54,6 +54,8 @@ class Openai(commands.Cog):
             return
         if not message.content:
             return
+        if message.type == discord.MessageType.reply:
+            await self.process_chatgpt_reply(message)
         if message.content.lower() == 'chatgpt':
             await self.process_chatgpt(message)
         if message.content.lower() == 'fuck':
@@ -72,6 +74,8 @@ class Openai(commands.Cog):
             if message.author.id == m.author.id:
                 match = m
                 break
+            if not m.content:
+                continue
 
         if not match:
             await channel.send('No messages by you out of the last 10...',
@@ -82,6 +86,10 @@ class Openai(commands.Cog):
         if data['choices']:
             await match.reply(data['choices'][0]['text'])
 
+    async def process_chatgpt_reply(self, message: discord.Message) -> None:
+        """Listens for chatgpt replies."""
+        pass
+
     async def process_chatgpt(self, message: discord.Message) -> None:
         """Listens for chatgpt."""
         channel: discord.TextChannel = message.channel
@@ -91,6 +99,8 @@ class Openai(commands.Cog):
             if m.author.bot:
                 continue
             if m.id == message.id:
+                continue
+            if not m.content:
                 continue
             # if m.author.id == message.author.id:
             #     continue
@@ -133,6 +143,8 @@ class Openai(commands.Cog):
             if m.author.bot:
                 continue
             if m.id == message.id:
+                continue
+            if not m.content:
                 continue
             match = m
             break

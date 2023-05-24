@@ -74,20 +74,15 @@ class Dictionary(commands.Cog):
             await ctx.send(f'No results for: `{term}`')
             return
 
-        log.debug(0)
         data = result[0]
         log.debug(data)
         em = discord.Embed()
         em.colour = discord.Colour.blue()
-        log.debug(1)
         author = {'name': data['word']}
         if 'phonetics' in data:
             for text in data['phonetics']:
                 log.debug(text)
                 if 'audio' in text and text['audio']:
-                    log.debug('-'*20)
-                    log.debug(text['text'])
-                    log.debug(text['audio'])
                     # em.set_author(name='🔊 ' + text['text'], url=text['audio'])
                     author.update({'url': text['audio']})
                     author['name'] = '🔊 ' + author['name']
