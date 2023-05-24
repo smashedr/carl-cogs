@@ -109,25 +109,31 @@ class Flightaware(commands.Cog):
         """FlightAware Commands."""
 
     @fa.command(name='flight', aliases=['f'])
-    async def fa_flight(self, ctx: commands.Context, ident: str):
+    async def fa_flight(self, ctx: commands.Context, ident_str: str):
         """Get Flight info for: <ident>"""
-        await self.process_flight(ctx, ident)
+        await self.process_flight(ctx, ident_str)
 
-    async def process_flight(self, ctx, ident: str):
-        ident_validate = self.validate_ident(ident)
-        if not ident_validate:
-            await ctx.send(F'Unable to validate `ident`: **{ident}**')
+    async def process_flight(self, ctx, ident_str: str):
+        ident = self.validate_ident(ident_str)
+        if not ident:
+            await ctx.send(F'Unable to validate `ident`: **{ident_str}**')
             return
 
-        ident = ident_validate
-        log.debug('--- API CALL ---')
         fa = FlightAware(self.api_key)
-        fdata = await fa.flights_ident(ident)
-        log.debug(fdata)
-        if not fdata or 'flights' not in fdata or not fdata['flights']:
-            msg = f'No flights found for ident: **{ident}**\n'
-            await ctx.send(msg)
-            return
+        fdata = json.loads(await self.client.get(f'fa:{ident}') or '{}')
+        if not fdata:
+            log.info('--- API CALL ---')
+            fdata = await fa.flights_ident(ident)
+            log.debug(fdata)
+            if not fdata or 'flights' not in fdata or not fdata['flights']:
+                msg = f'No flights found for ident: **{ident}**\n'
+                await ctx.send(msg)
+                return
+            await self.client.setex(
+                f'fa:{ident}',
+                timedelta(minutes=3),
+                json.dumps(fdata),
+            )
 
         total = len(fdata['flights'])
         log.debug('total: %s', total)
@@ -208,11 +214,11 @@ class Flightaware(commands.Cog):
             await ctx.send(F'Unable to validate `id`: **{airline_id}**')
             return
 
+        fa = FlightAware(self.api_key)
         fdata = json.loads(await self.client.get(f'fa:{operator_id}') or '{}')
         log.debug(fdata)
         if not fdata:
-            log.debug('--- API CALL ---')
-            fa = FlightAware(self.api_key)
+            log.info('--- API CALL ---')
             fdata = await fa.operators_id(operator_id)
             log.debug(fdata)
         if not fdata:
@@ -221,7 +227,7 @@ class Flightaware(commands.Cog):
 
         await self.client.setex(
             f'fa:{operator_id}',
-            timedelta(hours=8),
+            timedelta(days=7),
             json.dumps(fdata),
         )
         d = fdata
