@@ -7,7 +7,7 @@ import re
 import io
 import redis.asyncio as redis
 from datetime import timedelta
-from typing import Optional
+from typing import Optional, List, Tuple, Dict
 
 from redbot.core import commands
 from redbot.core.utils import chat_formatting as cf
@@ -131,80 +131,91 @@ class Flightaware(commands.Cog):
                 return
             await self.client.setex(
                 f'fa:{ident}',
-                timedelta(minutes=3),
+                timedelta(minutes=10),
                 json.dumps(fdata),
             )
 
-        total = len(fdata['flights'])
-        log.debug('total: %s', total)
-        live, past, sched = [], [], []
-        for d in fdata['flights']:
-            if int(d['progress_percent']) == 0:
-                sched.append(d)
-            elif int(d['progress_percent']) == 100:
-                past.append(d)
-            else:
-                live.append(d)
-        log.debug('-'*20)
-        log.debug('live: %s', len(live))
-        log.debug('past: %s', len(past))
-        log.debug('sched: %s', len(sched))
-        msgs = [f'**{ident}**: Live: `{len(live)}`  Sched: `{len(sched)}`  Past: `{len(past)}`']
-        if len(live) > 1 and len(sched) == 0:
-            await ctx.send(' '.join(msgs))
-            return
+        # total = len(fdata['flights'])
+        # log.debug('total: %s', total)
+        # live, past, sched = [], [], []
+        # for d in fdata['flights']:
+        #     if int(d['progress_percent']) == 0:
+        #         sched.append(d)
+        #     elif int(d['progress_percent']) == 100:
+        #         past.append(d)
+        #     else:
+        #         live.append(d)
+        # log.debug('-'*20)
+        # log.debug('live: %s', len(live))
+        # log.debug('past: %s', len(past))
+        # log.debug('sched: %s', len(sched))
+        # msgs = [f'**{ident}**: Live: `{len(live)}`  Sched: `{len(sched)}`  Past: `{len(past)}`']
+        # if len(live) > 1 and len(sched) == 0:
+        #     await ctx.send(' '.join(msgs))
+        #     return
 
-        if len(live) == 1:
-            d = live[0]
-            log.debug(d)
+        embeds = []
+        index = 0
+        content = f'Flights for **{ident}**'
+        for i, d in enumerate(reversed(fdata['flights'])):
+            em = discord.Embed()
+            em.title = d['fa_flight_id']
+            msgs = []
+            if d['progress_percent'] and (0 < d['progress_percent'] < 100):
+                index = i
+                msgs.append(f'🔴 [Live Now on FlightAware]({fa.fa_flight_url}{ident})')
             msgs.append(
-                f"\nFA ID: `{d['fa_flight_id']}` "
                 f"```"
                 f"Operator:   {d['operator_icao']} / {d['operator_iata']}\n"
                 f"ICAO/IATA:  {d['ident_icao']} / {d['ident_iata']}\n"
                 f"Status:     {d['status']}\n"
                 f"Distance:   {d['route_distance']} nm - {d['progress_percent']}%\n"
-                f"Aircraft:   {d['aircraft_type']} - {d['registration']}\n"
-                f"Takeoff:    {d['actual_off']}\n"
-                f"From:       {d['origin']['code']} - {d['origin']['name']}\n"
-                f"ETA:        {d['estimated_on']}\n"
-                f"To:         {d['destination']['code']} - {d['destination']['name']}"
+                f"Aircraft:   {d['aircraft_type']} - {d['registration']}"
             )
+            if d['origin'] and d['destination']:
+                msgs.append(
+                    f"\nTakeoff:    {d['actual_off']}\n"
+                    f"From:       {d['origin']['code']} - {d['origin']['name']}\n"
+                    f"ETA:        {d['estimated_on']}\n"
+                    f"To:         {d['destination']['code']} - {d['destination']['name']}"
+                )
             if d['gate_destination'] and d['baggage_claim']:
                 msgs.append(f"\nGate/Bags:  {d['gate_destination']} / {d['baggage_claim']}")
             elif d['gate_destination']:
                 msgs.append(f"\nGate:       {d['gate_destination']}")
+            elif d['route']:
+                msgs.append(f"\nRoute:      {d['route']}")
             if d['codeshares']:
                 msgs.append(f"\nCodeshares: {cf.humanize_list(d['codeshares'])}")
             msgs.append(f"```")
+            # if d['progress_percent'] and (0 < d['progress_percent'] < 100):
+            #     index = i
+            #     msgs.append(f'✈️ [Live Now on FlightAware]({fa.fa_flight_url}{ident}) ✈️')
 
-            buttons = {
-                'FlightAware': f'{fa.live_flight_url}{ident}',
-            }
+            value = ''
             if d['registration']:
-                buttons.update(
-                    {'AirFleets': f"{fa.airfleets_search_url}{d['registration']}"}
-                )
-            view = FlightView(self, d['operator_icao'], buttons)
-            message = await ctx.send(' '.join(msgs), view=view)
-            view.message = message
-            return
+                value += f"[{d['registration']}]({fa.fa_registration_url}{d['registration']}) | "
+            if d['aircraft_type']:
+                value += f"[{d['aircraft_type']}]({fa.fa_aircraft_url}{d['aircraft_type']}) | "
+            if d['origin'] and d['origin']['code_icao']:
+                value += f"[{d['origin']['code_icao']}]({fa.fa_airport_url}{d['origin']['code_icao']}) | "
+            if d['destination'] and d['destination']['code_icao']:
+                value += f"[{d['destination']['code_icao']}]({fa.fa_airport_url}{d['destination']['code_icao']}) | "
+            value = value.strip('| ')
+            value += f"\n{i+1}/{len(fdata['flights'])}"
+            em.add_field(name='Links', value=value)
 
-            # data = await fa.flights_map(d['fa_flight_id'])
-            # if 'map' not in data:
-            #     await ctx.send(' '.join(msgs))
-            #     return
-            # image_data = base64.b64decode(data['map'])
-            # file_data = io.BytesIO()
-            # file_data.write(image_data)
-            # file_data.seek(0)
-            # file = discord.File(file_data, filename=f"{d['fa_flight_id']}.png")
-            # await ctx.send(' '.join(msgs), files=[file])
-            # return
+            # msgs.append(f"{i+1}/{len(fdata['flights'])}")
+            em.description = ' '.join(msgs)
+            embeds.append(em)
 
-        await ctx.send(' '.join(msgs))
+        log.debug('embeds: %s', len(embeds))
+        log.debug('index: %s', index)
 
-    @fa.command(name='airline', aliases=['operator', 'oper', 'o', 'a'])
+        view = EmbedsView(self, embeds, index=index)
+        await view.send_initial_message(ctx, content=content)
+
+    @fa.command(name='operator', aliases=['airline', 'oper', 'o', 'a'])
     async def fa_operator(self, ctx: commands.Context, airline_id: str):
         """Get Airline Operator info for: <id>"""
         log.debug('airline_id: %s', airline_id)
@@ -302,23 +313,70 @@ class FlightView(discord.ui.View):
         self.icao = icao
         self.buttons = buttons
         self.message: Optional[discord.Message] = None
-        super().__init__(timeout=60*8)
+        super().__init__(timeout=60*60*6)
         if self.buttons:
             for label, url in self.buttons.items():
                 self.add_item(discord.ui.Button(label=label, url=url))
 
     async def on_timeout(self):
+        child: discord.ui.View
         for child in self.children:
             if child.label == 'Operator Info':
                 child.disabled = True
         await self.message.edit(view=self)
-
 
     @discord.ui.button(emoji='\N{AIRPLANE}', label="Operator Info", style=discord.ButtonStyle.blurple)
     async def button_callback(self, interaction, button):
         button.disabled = True
         await interaction.response.edit_message(view=self)
         await self.cog.fa_operator(interaction.channel, self.icao)
+
+
+class EmbedsView(discord.ui.View):
+    """Embeds View"""
+    def __init__(self, cog: Flightaware, embeds, index: int = 0, timeout: int = 60*60*6):
+        self.cog: commands.Cog = cog
+        self.embeds: List[discord.Embed] = embeds
+        self.index: int = index
+        self.user_id: Optional[int] = None
+        self.message: Optional[discord.Message] = None
+        super().__init__(timeout=timeout)
+
+    async def send_initial_message(self, ctx, content: str = None,
+                                   index: Optional[int] = None, **kwargs) -> discord.Message:
+        log.debug('send_initial_message')
+        self.user_id = ctx.author.id
+        self.index = index if index else self.index
+        self.message = await ctx.send(content, view=self, embed=self.embeds[self.index], **kwargs)
+        return self.message
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.style = discord.ButtonStyle.gray
+            child.disabled = True
+        await self.message.edit(view=self)
+
+    @discord.ui.button(label='Prev', style=discord.ButtonStyle.blurple)
+    async def prev_button(self, interaction, button):
+        if self.index < 1:
+            await interaction.response.edit_message()
+            return
+        self.index = self.index - 1
+        await interaction.response.edit_message(embed=self.embeds[self.index])
+
+    @discord.ui.button(label='Next', style=discord.ButtonStyle.blurple)
+    async def next_button(self, interaction, button):
+        if not self.index < len(self.embeds) - 1:
+            await interaction.response.edit_message()
+            return
+        self.index = self.index + 1
+        await interaction.response.edit_message(embed=self.embeds[self.index])
+
+
+#
+# GARBAGE BELOW
+#
+
 
 # class GetOperatorButton(discord.ui.Button):
 #     def __init__(self, cog: commands.Cog):

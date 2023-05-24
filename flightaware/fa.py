@@ -8,8 +8,12 @@ class FlightAware(object):
     """
     :param api_key: FlightAware API Key or AEROAPI_KEY environment variable
     """
-    live_flight_url = 'https://flightaware.com/live/flight/'
+    fa_flight_url = 'https://flightaware.com/live/flight/'
+    fa_airport_url = 'https://flightaware.com/live/airport/'
+    fa_aircraft_url = 'https://flightaware.com/live/aircrafttype/'
+    fa_registration_url = 'https://flightaware.com/resources/registration/'
     airfleets_search_url = 'https://www.airfleets.net/recherche/?key='
+    airnav_url = 'https://www.airnav.com/airport/'
     url = 'https://aeroapi.flightaware.com/aeroapi'
     http_options = {
         'follow_redirects': True,
