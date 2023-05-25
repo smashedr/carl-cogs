@@ -1,11 +1,13 @@
 import asyncio
 import base64
 import discord
+import httpx
 import json
 import logging
 import re
 import io
 import redis.asyncio as redis
+from bs4 import BeautifulSoup
 from datetime import timedelta
 from typing import Optional, List, Tuple, Dict
 
@@ -98,7 +100,7 @@ class Flightaware(commands.Cog):
     #     #     if ac not in f.read():
     #     #         return
 
-    @commands.command(name='flight')
+    @commands.command(name='flight', aliases=['f'])
     async def flight(self, ctx: commands.Context, ident: str):
         """Get Flight Information for: <ident>"""
         await self.process_flight(ctx, ident)
@@ -131,7 +133,7 @@ class Flightaware(commands.Cog):
                 return
             await self.client.setex(
                 f'fa:{ident}',
-                timedelta(minutes=10),
+                timedelta(minutes=5),
                 json.dumps(fdata),
             )
 
@@ -188,23 +190,22 @@ class Flightaware(commands.Cog):
             if d['codeshares']:
                 msgs.append(f"\nCodeshares: {cf.humanize_list(d['codeshares'])}")
             msgs.append(f"```")
-            # if d['progress_percent'] and (0 < d['progress_percent'] < 100):
-            #     index = i
-            #     msgs.append(f'✈️ [Live Now on FlightAware]({fa.fa_flight_url}{ident}) ✈️')
-
             value = ''
             if d['registration']:
-                value += f"[{d['registration']}]({fa.fa_registration_url}{d['registration']}) | "
+                value += f"[{d['registration']}]({fa.fa_registration_url}{d['registration']}) " \
+                         f"[🖼️]({fa.jetphotos_url}{d['registration']}) | "
             if d['aircraft_type']:
-                value += f"[{d['aircraft_type']}]({fa.fa_aircraft_url}{d['aircraft_type']}) | "
+                # value += f"[{d['aircraft_type']}]({fa.fa_aircraft_url}{d['aircraft_type']}) | "
+                value += f"[{d['aircraft_type']}]({await self.wiki_url(d['aircraft_type'])}) | "
             if d['origin'] and d['origin']['code_icao']:
-                value += f"[{d['origin']['code_icao']}]({fa.fa_airport_url}{d['origin']['code_icao']}) | "
+                value += f"[{d['origin']['code_icao']}]({fa.airnav_url}{d['origin']['code_icao']}) " \
+                         f"[🔈]({fa.liveatc_url}{d['origin']['code_icao']}) | "
             if d['destination'] and d['destination']['code_icao']:
-                value += f"[{d['destination']['code_icao']}]({fa.fa_airport_url}{d['destination']['code_icao']}) | "
+                value += f"[{d['destination']['code_icao']}]({fa.airnav_url}{d['destination']['code_icao']}) " \
+                         f"[🔈]({fa.liveatc_url}{d['destination']['code_icao']}) | "
             value = value.strip('| ')
             value += f"\n{i+1}/{len(fdata['flights'])}"
             em.add_field(name='Links', value=value)
-
             # msgs.append(f"{i+1}/{len(fdata['flights'])}")
             em.description = ' '.join(msgs)
             embeds.append(em)
@@ -269,6 +270,51 @@ class Flightaware(commands.Cog):
         if m and m.group(0):
             return m.group(0)
         return None
+
+    async def wiki_url(self, icao_type: str) -> Optional[str]:
+        icao_type = icao_type.upper()
+        base_url = f'https://en.wikipedia.org'
+        url = f'https://en.wikipedia.org/wiki/List_of_aircraft_type_designators'
+        http_options = {
+            'follow_redirects': True,
+            'timeout': 30,
+        }
+        try:
+            aircraft_data = json.loads(await self.client.get('fa:wiki_aircraft_type') or '{}')
+            if aircraft_data:
+                if icao_type in aircraft_data:
+                    return f'{base_url}{aircraft_data[icao_type]}'
+
+            log.info('--- REMOTE CALL ---')
+            async with httpx.AsyncClient(**http_options) as client:
+                r = await client.get(url)
+            if not r.is_success:
+                r.raise_for_status()
+            html = r.content.decode('utf-8')
+            soup = BeautifulSoup(html, 'html.parser')
+            rows = soup.find('table').find('tbody').find_all('tr')
+            aircraft_data = {}
+            for row in rows:
+                columns = row.find_all('td')
+                if not columns:
+                    continue
+                icao_type = columns[0].text.strip()
+                model_href = columns[2].find('a')['href']
+                aircraft_data[icao_type] = model_href
+            log.debug('-'*20)
+            log.debug(aircraft_data)
+            await self.client.setex(
+                'fa:wiki_aircraft_type',
+                timedelta(days=14),
+                json.dumps(aircraft_data),
+            )
+            if icao_type in aircraft_data:
+                return f'{base_url}{aircraft_data[icao_type]}'
+            return None
+
+        except Exception as error:
+            log.exception(error)
+            return None
 
     # async def process_live_flight(self, ctx, ident: str):
     #     fa = FlightAware(self.api_key')
@@ -371,41 +417,3 @@ class EmbedsView(discord.ui.View):
             return
         self.index = self.index + 1
         await interaction.response.edit_message(embed=self.embeds[self.index])
-
-
-#
-# GARBAGE BELOW
-#
-
-
-# class GetOperatorButton(discord.ui.Button):
-#     def __init__(self, cog: commands.Cog):
-#         super().__init__(
-#             emoji='\N{AIRPLANE}',
-#             label='Get Operator Info',
-#             style=discord.ButtonStyle.green,
-#             # custom_id='captcha-url-btn',
-#         )
-#         self.cog = cog
-#
-#     async def callback(self, interaction: discord.Interaction):
-#         log.debug('-'*40)
-#         tolog = interaction
-#         log.debug(dir(tolog))
-#         log.debug(type(tolog))
-#         log.debug(tolog)
-#         # params = {
-#         #     'user': interaction.user.id,
-#         #     'guild': interaction.guild.id,
-#         # }
-#         # query_string = urlencode(params)
-#         # url = f'{self.cog.url}/verify/?{query_string}'
-#         # message = f'{interaction.user.mention} Click Here: <{url}>'
-#
-#         # self.disabled = True # set button.disabled to True to disable the button
-#         # self.label = "No more pressing!" # change the button's label to something else
-#         # await interaction.response.edit_message(view=self)
-#
-#         msg = 'It Happened, Late at Night.'
-#         await interaction.response.send_message(msg, ephemeral=True,
-#                                                 delete_after=180)

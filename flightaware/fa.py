@@ -13,6 +13,8 @@ class FlightAware(object):
     fa_aircraft_url = 'https://flightaware.com/live/aircrafttype/'
     fa_registration_url = 'https://flightaware.com/resources/registration/'
     airfleets_search_url = 'https://www.airfleets.net/recherche/?key='
+    jetphotos_url = 'https://www.jetphotos.com/registration/'
+    liveatc_url = 'https://www.liveatc.net/search/?icao='
     airnav_url = 'https://www.airnav.com/airport/'
     url = 'https://aeroapi.flightaware.com/aeroapi'
     http_options = {
