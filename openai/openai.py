@@ -10,7 +10,7 @@ from datetime import timedelta
 from PIL import Image
 from typing import Optional, List
 
-from redbot.core import commands
+from redbot.core import commands, app_commands
 
 log = logging.getLogger('red.openai')
 
@@ -78,7 +78,7 @@ class Openai(commands.Cog):
                 continue
 
         if not match:
-            await channel.send('No messages by you out of the last 10...',
+            await channel.send('No messages from you out of the last 10...',
                                delete_after=10)
             return
 
@@ -112,7 +112,7 @@ class Openai(commands.Cog):
             return
 
         bm: discord.Message = await channel.send(
-            'Querying ChatGPT Now...',
+            '\U0000231B Querying ChatGPT Now...',
             delete_after=self.http_options['timeout']
         )
         try:
@@ -154,7 +154,7 @@ class Openai(commands.Cog):
             return
 
         bm: discord.Message = await channel.send(
-            f'Status: Querying OpenAI for: `{match.content}`',
+            f'\U0000231B Querying OpenAI for: `{match.content}`',
             delete_after=self.http_options['timeout']
         )
         try:
@@ -166,7 +166,7 @@ class Openai(commands.Cog):
                                    delete_after=10)
                 return
 
-            await bm.edit(content='Status: Downloading Image from OpenAI...')
+            await bm.edit(content='\U0000231B Downloading Image from OpenAI...')
             await channel.typing()
             url = img_response['data'][0]['url']
             async with httpx.AsyncClient(**self.http_options) as client:
@@ -177,7 +177,7 @@ class Openai(commands.Cog):
                                    delete_after=10)
                 r.raise_for_status()
 
-            await bm.edit(content='Status: Uploading Image to Discord...')
+            await bm.edit(content='\U0000231B Uploading Image to Discord...')
             await channel.typing()
             data = io.BytesIO()
             data.write(r.content)
@@ -193,28 +193,29 @@ class Openai(commands.Cog):
         finally:
             await bm.delete()
 
-    @commands.command(name='chatgpt', aliases=['newchat'])
+    @commands.hybrid_command(name='newchat', aliases=['chatgpt'])
     async def ai_chat_new_cmd(self, ctx: commands.Context, *, question: str):
         """Shorthand for Start a new ChatGPT with: <question>"""
         await self.ai_chat_new(ctx, question=question)
 
-    @commands.command(name='chat', aliases=['c'])
+    @commands.hybrid_command(name='chat', aliases=['c'], description='Continue or Start ChatGPT Session')
     async def ai_chat_cmd(self, ctx: commands.Context, *, question: str):
         """Shorthand for Continue ChatGPT with <question>."""
         await self.ai_chat(ctx, question=question)
 
-    @commands.group(name='ai', aliases=['oai', 'openai'])
+    @commands.hybrid_group(name='ai', description='OpenAI and ChatGPT Commands')
     async def ai(self, ctx: commands.Context):
         """Commands for OpenAI."""
 
-    @ai.command(name='chatgpt', aliases=['newchat', 'chatnew'])
+    @ai.command(name='newchat', aliases=['chatgpt'], description='Start New ChatGPT Session')
+    @app_commands.describe(question='Question or Query to send to ChatGPT')
     async def ai_chat_new(self, ctx: commands.Context, *, question: str):
         """Start a new ChatGPT with <question>."""
+        await ctx.typing()
         bm: discord.Message = await ctx.send(
-            'Starting a new ChatGPT...',
+            '\U0000231B Starting a new ChatGPT...',
             delete_after=self.http_options['timeout']
         )
-        await ctx.typing()
         try:
             messages = [
                 {'role': 'system', 'content': 'You are a helpful assistant.'},
@@ -231,14 +232,16 @@ class Openai(commands.Cog):
         finally:
             await bm.delete()
 
-    @ai.command(name='chat', aliases=['c'])
+    @ai.command(name='chat', aliases=['c'], description='Continue or Start ChatGPT Session')
+    @app_commands.describe(question='Question or Query to send to ChatGPT')
     async def ai_chat(self, ctx: commands.Context, *, question: str):
         """Continue ChatGPT with <question>."""
         messages = await self.client.get(f'chatgpt:{ctx.author.id}')
         messages = json.loads(messages) if messages else []
+        await ctx.typing()
         if messages:
             bm: discord.Message = await ctx.send(
-                'Continuing ChatGPT chat...',
+                '\U0000231B Continuing ChatGPT chat...',
                 delete_after=self.http_options['timeout']
             )
         else:
@@ -246,10 +249,9 @@ class Openai(commands.Cog):
                 {'role': 'system', 'content': 'You are a helpful assistant.'},
             ]
             bm: discord.Message = await ctx.send(
-                'Starting a new ChatGPT...',
+                '\U0000231B Starting a new ChatGPT...',
                 delete_after=self.http_options['timeout']
             )
-        await ctx.typing()
         try:
             messages.append({'role': 'user', 'content': question})
             chat_response = await self.query_n_save(ctx, messages)
@@ -262,24 +264,28 @@ class Openai(commands.Cog):
         finally:
             await bm.delete()
 
-    @ai.command(name='spell', aliases=['s', 'spelling', 'spellcheck'])
+    @ai.command(name='spelling', aliases=['spellcheck', 'spell', 's'], description='Fix Spelling Errors for Content')
+    @app_commands.describe(content='Content to Fix Spelling Errors')
     async def ai_spell(self, ctx: commands.Context, *, content: str):
         """Fix spelling of <content>."""
         log.debug('content: %s', content)
         bm: discord.Message = await ctx.send(
-            f'Querying OpenAI Now...',
-            delete_after=self.http_options['timeout']
+            f'\U0000231B Querying OpenAI Now...',
+            delete_after=self.http_options['timeout'],
+            ephemeral=True,
         )
         data = await self.openai_edits(content)
         await bm.delete()
         if data['choices']:
-            await ctx.message.reply(data['choices'][0]['text'])
+            await ctx.send(data['choices'][0]['text'], ephemeral=True)
 
-    @ai.command(name='gen', aliases=['g', 'generation', 'image'])
-    async def ai_image_gen(self, ctx: commands.Context, *, query: str):
+    @ai.command(name='generation', aliases=['gen', 'g', 'image'], description='Generate a New Image from a Description')
+    @app_commands.describe(description='Description for New Image')
+    async def ai_image_gen(self, ctx: commands.Context, *, description: str):
         """Request an Image from OpenAI: <size> <query>"""
         size = '1024x1024'
         sizes = ['256x256', '512x512', '1024x1024']
+        query = description
         m = re.search('[0-9]{3,4}x[0-9]{3,4}', query)
         if m and m.group(0):
             if m.group(0) in sizes:
@@ -289,11 +295,11 @@ class Openai(commands.Cog):
                 await ctx.send(f'Valid sizes: {sizes}', delete_after=60)
                 return
 
+        await ctx.typing()
         bm: discord.Message = await ctx.send(
-            f'Generating Image at size {size} now...',
+            f'\U0000231B Generating Image at size {size} now...',
             delete_after=self.http_options['timeout']
         )
-        await ctx.typing()
         try:
             img_response = await self.openai_generations(query, size)
             log.debug(img_response)
@@ -326,9 +332,11 @@ class Openai(commands.Cog):
         finally:
             await bm.delete()
 
-    @ai.command(name='vary', aliases=['variation', 'ivary', 'aivary', 'v'])
-    async def ai_image_vary(self, ctx: commands.Context, *, query: str = None):
+    @ai.command(name='variation', description='Request Image Variation')
+    @app_commands.describe(link='Link of Image to Vary')
+    async def ai_image_vary(self, ctx: commands.Context, *, link: str):
         """Request an Image from OpenAI <image or image url>"""
+        query = link
         log.debug(query)
         log.debug(ctx.message)
         log.debug(ctx.message.attachments)
@@ -337,11 +345,12 @@ class Openai(commands.Cog):
             await ctx.send_help()
             return
 
+        await ctx.typing()
         bm: discord.Message = await ctx.send(
-            f'Status: Processing Image Variation...',
+            f'\U0000231B Processing Image Variation...',
             delete_after=self.http_options['timeout']
         )
-        await ctx.typing()
+        # await ctx.typing()
         if query:
             query = query.strip('< >')
             log.debug('query: %s', query)
@@ -350,8 +359,8 @@ class Openai(commands.Cog):
                 return
 
             # Step 1: Make a GET request and save response to BytesIO object
-            await bm.edit(content='Status: Downloading provided URL...')
-            await ctx.typing()
+            await bm.edit(content='\U0000231B Downloading provided URL...')
+            # await ctx.typing()
             async with httpx.AsyncClient(**self.http_options) as client:
                 r = await client.get(url=query, headers=self.headers)
             if not r.is_success:
@@ -370,8 +379,8 @@ class Openai(commands.Cog):
         # Step 3: Convert to PNG if it's not already a PNG
         image = Image.open(image_bytes)
         if image.format != 'PNG':
-            await bm.edit(content='Status: Converting to PNG...')
-            await ctx.typing()
+            await bm.edit(content='\U0000231B Converting to PNG...')
+            # await ctx.typing()
             log.debug('Converting Image to PNG...')
             png_image = io.BytesIO()
             image.save(png_image, 'PNG')
@@ -379,8 +388,8 @@ class Openai(commands.Cog):
             image_bytes = png_image
 
         log.debug('Querying OpenAI for Data...')
-        await bm.edit(content='Status: Querying OpenAI for New Image...')
-        await ctx.typing()
+        await bm.edit(content='\U0000231B Querying OpenAI for New Image...')
+        # await ctx.typing()
         size = self.determine_best_size(image)
         log.debug('size: %s', size)
         img_response = await self.openai_variations(image_bytes, size=size)
@@ -392,8 +401,8 @@ class Openai(commands.Cog):
 
         try:
             log.debug('Retrieving Image from URL...')
-            await bm.edit(content='Status: Downloading Image from OpenAI...')
-            await ctx.typing()
+            await bm.edit(content='\U0000231B Downloading Image from OpenAI...')
+            # await ctx.typing()
             url = img_response['data'][0]['url']
             log.debug('url: %s', url)
             async with httpx.AsyncClient(**self.http_options) as client:
@@ -405,8 +414,8 @@ class Openai(commands.Cog):
                 r.raise_for_status()
 
             log.debug('Uploading Image to Discord...')
-            await bm.edit(content='Status: Uploading Image to Discord...')
-            await ctx.typing()
+            await bm.edit(content='\U0000231B Uploading Image to Discord...')
+            # await ctx.typing()
             data = io.BytesIO()
             data.write(r.content)
             data.seek(0)

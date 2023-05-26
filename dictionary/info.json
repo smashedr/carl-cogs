@@ -3,7 +3,7 @@
   "author": ["Shane#0816"],
   "short": "Carl's Dictionary Module.",
   "description": "Dictionary and Urban Dictionary lookups.",
-  "install_msg": "Get started with `[p]dictionary` or `[p]urban <word>`",
+  "install_msg": "Get started with `[p]dictionary` or `[p]urban`",
   "end_user_data_statement": "Caveat Emptor.",
   "required_cogs": {},
   "requirements": ["httpx"],

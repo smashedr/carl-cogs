@@ -1,9 +1,9 @@
 {
-  "name": "Welcome",
+  "name": "VoiceText",
   "author": ["Shane#0816"],
-  "short": "Carl's Welcome Module.",
-  "description": "Welcomes new users to your servers on join.",
-  "install_msg": "Manage this command with `[p]welcome`",
+  "short": "Carl's VoiceText Module.",
+  "description": "Creates Text Channels for Active Voice Channels and Cleans Up.",
+  "install_msg": "Manage this command with `[p]voicetext`",
   "end_user_data_statement": "Caveat Emptor.",
   "required_cogs": {},
   "requirements": [],

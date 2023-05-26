@@ -16,6 +16,7 @@ class FlightAware(object):
     jetphotos_url = 'https://www.jetphotos.com/registration/'
     liveatc_url = 'https://www.liveatc.net/search/?icao='
     airnav_url = 'https://www.airnav.com/airport/'
+
     url = 'https://aeroapi.flightaware.com/aeroapi'
     http_options = {
         'follow_redirects': True,
@@ -107,7 +108,7 @@ class FlightAware(object):
 
     async def owner_ident(self, ident: str) -> Dict[str, Any]:
         """
-        :param ident: Registration, Flight Number, FA ID
+        :param ident: Registration, Flight Number
         :return: Dictionary from JSON response
         """
         url = f'{self.url}/aircraft/{ident.upper()}/owner'

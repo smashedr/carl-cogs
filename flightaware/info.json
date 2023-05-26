@@ -1,8 +1,8 @@
 {
   "name": "FlightAware",
   "author": ["Shane#0816"],
-  "short": "FlightAware COG.",
-  "description": "FlightAware COG.",
+  "short": "Carl's FlightAware Module.",
+  "description": "FlightAware Flights, Operators, Registration.",
   "install_msg": "Get started with `[p]help Flightaware`",
   "end_user_data_statement": "Caveat Emptor.",
   "required_cogs": {},
