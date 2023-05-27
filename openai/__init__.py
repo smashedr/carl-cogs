@@ -1,6 +1,6 @@
-from .openai import Openai
+from .openai import OpenAI
 
 
 async def setup(bot):
-    cog = Openai(bot)
+    cog = OpenAI(bot)
     await bot.add_cog(cog)

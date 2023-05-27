@@ -15,7 +15,7 @@ from redbot.core import commands, app_commands
 log = logging.getLogger('red.openai')
 
 
-class Openai(commands.Cog):
+class OpenAI(commands.Cog):
     """Carl's OpenAI Cog"""
 
     chat_expire_min = 30
@@ -193,49 +193,24 @@ class Openai(commands.Cog):
         finally:
             await bm.delete()
 
-    @commands.hybrid_command(name='newchat', aliases=['chatgpt'])
-    async def ai_chat_new_cmd(self, ctx: commands.Context, *, question: str):
-        """Shorthand for Start a new ChatGPT with: <question>"""
-        await self.ai_chat_new(ctx, question=question)
+    # @commands.hybrid_command(name='newchat', aliases=['chatgpt'])
+    # async def ai_chat_new_cmd(self, ctx: commands.Context, *, question: str):
+    #     """Shorthand for Start a new ChatGPT with: <question>"""
+    #     await self.ai_chat_new(ctx, question=question)
 
     @commands.hybrid_command(name='chat', aliases=['c'], description='Continue or Start ChatGPT Session')
     async def ai_chat_cmd(self, ctx: commands.Context, *, question: str):
-        """Shorthand for Continue ChatGPT with <question>."""
+        """Continue or Start ChatGPT Session with <question>"""
         await self.ai_chat(ctx, question=question)
 
     @commands.hybrid_group(name='ai', description='OpenAI and ChatGPT Commands')
     async def ai(self, ctx: commands.Context):
-        """Commands for OpenAI."""
-
-    @ai.command(name='newchat', aliases=['chatgpt'], description='Start New ChatGPT Session')
-    @app_commands.describe(question='Question or Query to send to ChatGPT')
-    async def ai_chat_new(self, ctx: commands.Context, *, question: str):
-        """Start a new ChatGPT with <question>."""
-        await ctx.typing()
-        bm: discord.Message = await ctx.send(
-            '\U0000231B Starting a new ChatGPT...',
-            delete_after=self.http_options['timeout']
-        )
-        try:
-            messages = [
-                {'role': 'system', 'content': 'You are a helpful assistant.'},
-                {'role': 'user', 'content': question},
-            ]
-            chat_response = await self.query_n_save(ctx, messages)
-            await ctx.send(chat_response)
-
-        except Exception as error:
-            log.exception(error)
-            await ctx.send(f'Error performing lookup: `{error}`',
-                           delete_after=10)
-
-        finally:
-            await bm.delete()
+        """OpenAI and ChatGPT Commands"""
 
     @ai.command(name='chat', aliases=['c'], description='Continue or Start ChatGPT Session')
     @app_commands.describe(question='Question or Query to send to ChatGPT')
     async def ai_chat(self, ctx: commands.Context, *, question: str):
-        """Continue ChatGPT with <question>."""
+        """Continue or Start ChatGPT Session with <question>"""
         messages = await self.client.get(f'chatgpt:{ctx.author.id}')
         messages = json.loads(messages) if messages else []
         await ctx.typing()
@@ -257,6 +232,29 @@ class Openai(commands.Cog):
             chat_response = await self.query_n_save(ctx, messages)
             await ctx.send(chat_response)
 
+        except Exception as error:
+            log.exception(error)
+            await ctx.send(f'Error performing lookup: `{error}`',
+                           delete_after=10)
+        finally:
+            await bm.delete()
+
+    @ai.command(name='newchat', aliases=['chatgpt'], description='Start New ChatGPT Session')
+    @app_commands.describe(question='Question or Query to send to ChatGPT')
+    async def ai_chat_new(self, ctx: commands.Context, *, question: str):
+        """Start a new ChatGPT with <question>."""
+        await ctx.typing()
+        bm: discord.Message = await ctx.send(
+            '\U0000231B Starting a new ChatGPT...',
+            delete_after=self.http_options['timeout']
+        )
+        try:
+            messages = [
+                {'role': 'system', 'content': 'You are a helpful assistant.'},
+                {'role': 'user', 'content': question},
+            ]
+            chat_response = await self.query_n_save(ctx, messages)
+            await ctx.send(chat_response)
         except Exception as error:
             log.exception(error)
             await ctx.send(f'Error performing lookup: `{error}`',
@@ -328,7 +326,6 @@ class Openai(commands.Cog):
             log.exception(error)
             await ctx.send(f'Error performing lookup: `{error}`',
                            delete_after=10)
-
         finally:
             await bm.delete()
 

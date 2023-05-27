@@ -10,7 +10,7 @@ import redis.asyncio as redis
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from html import unescape
-from typing import Optional, List, Tuple, Dict
+from typing import Optional, List, Tuple, Dict, Union
 
 from redbot.core import commands, app_commands
 from redbot.core.bot import Red
@@ -41,75 +41,72 @@ class Flightaware(commands.Cog):
             password=data['pass'] if 'pass' in data else None,
         )
         await self.client.ping()
+        await self.gen_wiki_type_data()
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
 
-    # @commands.Cog.listener(name='on_message_without_command')
-    # async def on_message_without_command(self, message: discord.Message):
-    #     if message.author.bot:
-    #         return
-    #     if not message.content:
-    #         return
-    #     # split = message.content.split()
-    #     # if len(split) > 1:
-    #     #     return
-    #     # word = split[0].upper()
-    #     # m = re.search('[a-zA-Z]{2,3}[0-9]{1,4}', message.content)
-    #
-    #
-    #     m = re.search('[a-zA-Z0-9]{2,3}[0-9]{1,4}', message.content)
-    #     log.debug(0)
-    #     if not m or not m.group(0):
-    #         log.debug(1)
-    #         return
-    #     fn = m.group(0).upper()
-    #     log.debug('FN: %s', fn)
-    #
-    #     valid = False
-    #     m = re.search('[a-zA-Z]{3}[0-9]{1,4}', fn)
-    #     if m and m.group(0):
-    #         log.debug('ICAO')
-    #         file = '/data/cogs/flightaware/icao.txt'
-    #         with open(file) as f:
-    #             if fn[:3] in f.read():
-    #                 valid = True
-    #     if not valid:
-    #         log.debug('IATA')
-    #         file = '/data/cogs/flightaware/iata.txt'
-    #         with open(file) as f:
-    #             if fn[:2] in f.read():
-    #                 valid = True
-    #     if not valid:
-    #         log.error('FN Matched but NOT Found...')
-    #         return
-    #     log.debug('matched fn to ac')
-    #     await self.process_flight(message, fn)
-    #
-    #
-    #     # m = re.search('[a-zA-Z]{2,3}', fn)
-    #     # if not m or not m.group(0):
-    #     #     log.error('Matched word but not FN')
-    #     #     return
-    #     # ac = m.group(0)
-    #     # log.debug(ac)
-    #     # if len(ac) == 2:
-    #     #     file = '/data/cogs/flightaware/iata.txt'
-    #     # else:
-    #     #     file = '/data/cogs/flightaware/icao.txt'
-    #     # with open(file) as f:
-    #     #     if ac not in f.read():
-    #     #         return
+    @commands.Cog.listener(name='on_message_without_command')
+    async def on_message_without_command(self, message: discord.Message):
+        if message.author.bot:
+            return
+        if not message.content:
+            return
+        if 3 > len(message.content) > 7:
+            return
+        split = message.content.split()
+        if len(split) > 1:
+            return
+        m = re.search('[a-zA-Z0-9]{2,3}[0-9]{1,4}', split[0].upper())
+        if not m or not m.group(0):
+            return
 
-    @commands.hybrid_command(name='flight', aliases=['f'])
+        fn = m.group(0).upper()
+        log.debug('FN: %s', fn)
+        m = re.search('[a-zA-Z]{3}[0-9]{1,4}', fn)
+        if not m or not m.group(0):
+            return
+
+        valid = False
+        file = '/data/cogs/flightaware/icao.txt'
+        with open(file) as f:
+            if fn[:3] in f.read():
+                valid = True
+                log.debug('ICAO')
+        if not valid:
+            file = '/data/cogs/flightaware/iata.txt'
+            with open(file) as f:
+                if fn[:2] in f.read():
+                    valid = True
+                    log.debug('IATA')
+        if not valid:
+            log.debug('NONE')
+            log.warning('FN Regex Match but NO Airline Code Match')
+            return
+
+        log.debug('SUCCESS: matched fn to ac')
+        await self.process_flight(message.channel, message.author, fn, silent=True)
+
+        # m = re.search('[a-zA-Z]{2,3}', fn)
+        # if not m or not m.group(0):
+        #     log.error('Matched word but not FN')
+        #     return
+        # ac = m.group(0)
+        # log.debug(ac)
+        # if len(ac) == 2:
+        #     file = '/data/cogs/flightaware/iata.txt'
+        # else:
+        #     file = '/data/cogs/flightaware/icao.txt'
+        # with open(file) as f:
+        #     if ac not in f.read():
+        #         return
+
+    @commands.hybrid_command(name='flight', aliases=['f'], description='Get Flight Information')
     async def flight(self, ctx: commands.Context, ident: str):
         """Get Flight Information for: <ident>"""
-        await self.process_flight(ctx, ident)
+        await self.process_flight(ctx, ctx.author, ident)
 
-    # fa = app_commands.Group(name='fa', description='FlightAware Commands')
-
-    # @commands.group(name='fa', aliases=['flightaware'])
     @commands.hybrid_group(name='fa', aliases=['flightaware'], description='FlightAware Commands')
     @commands.guild_only()
     async def fa(self, ctx: commands.Context):
@@ -118,30 +115,35 @@ class Flightaware(commands.Cog):
     @fa.command(name='flight', description='Get Flight Information')
     @app_commands.describe(ident='Flight Number or Registration Number')
     async def fa_flight(self, ctx: commands.Context, ident: str):
-        """Get Flight info for: <ident>"""
-        await self.process_flight(ctx, ident)
+        """Get Flight Information for: <ident>"""
+        await self.process_flight(ctx, ctx.author, ident)
 
-    async def process_flight(self, ctx, ident_str: str):
-        ident = self.validate_ident(ident_str)
+    async def process_flight(self, ctx, author, ident_str: str, silent=False):
+        ctx: commands.Context
+        author: Union[discord.Member, discord.User]
+        ident: str = self.validate_ident(ident_str)
         if not ident:
+            if silent:
+                return
             await ctx.send(F'Unable to validate `ident`: **{ident_str}**', ephemeral=True, delete_after=10)
             return
-
         fa = FlightAware(self.api_key)
         fdata = json.loads(await self.client.get(f'fa:{ident}') or '{}')
         if not fdata:
             log.info('--- API CALL ---')
             fdata = await fa.flights_ident(ident)
             log.debug(fdata)
-            if not fdata or 'flights' not in fdata or not fdata['flights']:
-                msg = f'No flights found for ident: **{ident}**\n'
-                await ctx.send(msg, ephemeral=True, delete_after=10)
-                return
             await self.client.setex(
                 f'fa:{ident}',
                 timedelta(minutes=5),
-                json.dumps(fdata),
+                json.dumps(fdata or {}),
             )
+        if 'flights' not in fdata or not fdata['flights']:
+            if silent:
+                return
+            msg = f'No flights found for ident: **{ident}**\n'
+            await ctx.send(msg, ephemeral=True, delete_after=10)
+            return
 
         # total = len(fdata['flights'])
         # log.debug('total: %s', total)
@@ -168,7 +170,6 @@ class Flightaware(commands.Cog):
         for i, d in enumerate(reversed(fdata['flights'])):
             em = discord.Embed(
                 title=d['fa_flight_id'],
-                # timestamp=datetime.now(),
                 colour=discord.Colour.light_gray(),
             )
             if d['status'] and 'scheduled' in d['status'].lower():
@@ -189,12 +190,12 @@ class Flightaware(commands.Cog):
                 msgs.append(f'\U0001F7E2 [Live Now on FlightAware]({fa.fa_flight_url}{ident}) ')  # :green_circle:
                 em.colour = discord.Colour.green()
             if d['position_only']:
-                msgs.append(f'\U0001F535 **Position Only Flight** ')  # 🔵
+                msgs.append(f'\U0001F535 **Position Only!** ')  # 🔵
             if d['cancelled']:
                 msgs.append(f'\U0001F534 **Cancelled!** ')  # 🔴
             if d['diverted']:
                 msgs.append(f'\U0001F7E1 **Diverted!** ')  # :yellow_circle:
-
+            msgs = ['\n'.join(msgs)]
             msgs.append(
                 f"```ini\n"
                 f"[Operator]:   {d['operator_icao']} / {d['operator_iata']}\n"
@@ -224,8 +225,11 @@ class Flightaware(commands.Cog):
                 value += f"[{d['registration']}]({fa.fa_registration_url}{d['registration']}) " \
                          f"[\U0001F5BC\U0000FE0F]({fa.jetphotos_url}{d['registration']}) | "  # 🖼️
             if d['aircraft_type']:
-                # value += f"[{d['aircraft_type']}]({fa.fa_aircraft_url}{d['aircraft_type']}) | "
-                value += f"[{d['aircraft_type']}]({await self.wiki_url(d['aircraft_type'])}) | "
+                wiki_url = await self.get_wiki_url(d['aircraft_type'])
+                if wiki_url:
+                    value += f"[{d['aircraft_type']}]({wiki_url}) | "
+                else:
+                    value += f"{d['aircraft_type']} | "
             if d['origin'] and d['origin']['code_icao']:
                 value += f"[{d['origin']['code_icao']}]({fa.airnav_url}{d['origin']['code_icao']}) " \
                          f"[\U0001F508]({fa.liveatc_url}{d['origin']['code_icao']}) | "  # 🔈
@@ -239,11 +243,10 @@ class Flightaware(commands.Cog):
             # msgs.append(f"{i+1}/{len(fdata['flights'])}")
             em.description = ' '.join(msgs)
             embeds.append(em)
-
         log.debug('embeds: %s', len(embeds))
         log.debug('index: %s', index)
         view = EmbedsView(self, embeds, oper_icao, index=index)
-        await view.send_initial_message(ctx, content=content)
+        await view.send_initial_message(ctx, author, content=content)
 
     @fa.command(name='operator', description='Airline Operator Information')
     @app_commands.describe(code='Airline ICAO or IATA Identifier')
@@ -267,7 +270,7 @@ class Flightaware(commands.Cog):
             await ctx.send(f'No results for operator id: `{operator_id}`', ephemeral=True, delete_after=10)
             return
 
-        await self.client.setex(f'fa:{operator_id}', timedelta(days=7), json.dumps(fdata))
+        await self.client.setex(f'fa:{operator_id}', timedelta(days=30), json.dumps(fdata))
         d = fdata
         msgs = [(
             f"Operator: **{d['name']}** "
@@ -311,7 +314,7 @@ class Flightaware(commands.Cog):
             await ctx.send(f'No results for ident: `{identifier}`', ephemeral=True, delete_after=10)
             return
 
-        await self.client.setex(f'fa:{identifier}', timedelta(days=7), json.dumps(fdata))
+        await self.client.setex(f'fa:{identifier}', timedelta(days=30), json.dumps(fdata))
         d = fdata['owner']
         msg = (
             f"Registration: **{identifier}** "
@@ -331,58 +334,57 @@ class Flightaware(commands.Cog):
         view = ButtonsURLView(buttons)
         await ctx.send(unescape(msg), view=view)
 
-    @staticmethod
-    def validate_ident(ident: str):
-        # m = re.search('[a-zA-Z0-9]{2,3}[0-9]{1,4}', ident.upper())
-        m = re.search('[a-zA-Z0-9-]{2,7}', ident.upper())
-        if m and m.group(0):
-            return m.group(0)
-        return None
-
-    async def wiki_url(self, icao_type: str) -> Optional[str]:
+    async def get_wiki_url(self, icao_type: str) -> Optional[str]:
         icao_type = icao_type.upper()
         base_url = f'https://en.wikipedia.org'
+        try:
+            aircraft_data = json.loads(await self.client.get('fa:wiki_aircraft_type') or '{}')
+            if not aircraft_data:
+                aircraft_data = await self.gen_wiki_type_data()
+            if aircraft_data:
+                if icao_type in aircraft_data:
+                    return f'{base_url}{aircraft_data[icao_type]}'
+        except Exception as error:
+            log.exception(error)
+
+    async def gen_wiki_type_data(self) -> dict:
+        # TODO: Make this a task in a loop
+        log.info('--- REMOTE CALL ---')
         url = f'https://en.wikipedia.org/wiki/List_of_aircraft_type_designators'
         http_options = {
             'follow_redirects': True,
             'timeout': 30,
         }
-        try:
-            aircraft_data = json.loads(await self.client.get('fa:wiki_aircraft_type') or '{}')
-            if aircraft_data:
-                if icao_type in aircraft_data:
-                    return f'{base_url}{aircraft_data[icao_type]}'
+        async with httpx.AsyncClient(**http_options) as client:
+            r = await client.get(url)
+        if not r.is_success:
+            r.raise_for_status()
+        html = r.content.decode('utf-8')
+        soup = BeautifulSoup(html, 'html.parser')
+        rows = soup.find('table').find('tbody').find_all('tr')
+        aircraft_data = {}
+        for row in rows:
+            columns = row.find_all('td')
+            if not columns:
+                continue
+            icao_type = columns[0].text.strip()
+            model_href = columns[2].find('a')['href']
+            aircraft_data[icao_type] = model_href
+        log.debug('-'*20)
+        log.debug(aircraft_data)
+        await self.client.setex(
+            'fa:wiki_aircraft_type',
+            timedelta(days=7),
+            json.dumps(aircraft_data),
+        )
+        return aircraft_data
 
-            log.info('--- REMOTE CALL ---')  # TODO: Make this a task in a loop
-            async with httpx.AsyncClient(**http_options) as client:
-                r = await client.get(url)
-            if not r.is_success:
-                r.raise_for_status()
-            html = r.content.decode('utf-8')
-            soup = BeautifulSoup(html, 'html.parser')
-            rows = soup.find('table').find('tbody').find_all('tr')
-            aircraft_data = {}
-            for row in rows:
-                columns = row.find_all('td')
-                if not columns:
-                    continue
-                icao_type = columns[0].text.strip()
-                model_href = columns[2].find('a')['href']
-                aircraft_data[icao_type] = model_href
-            log.debug('-'*20)
-            log.debug(aircraft_data)
-            await self.client.setex(
-                'fa:wiki_aircraft_type',
-                timedelta(days=14),
-                json.dumps(aircraft_data),
-            )
-            if icao_type in aircraft_data:
-                return f'{base_url}{aircraft_data[icao_type]}'
-            return None
-
-        except Exception as error:
-            log.exception(error)
-            return None
+    @staticmethod
+    def validate_ident(ident: str) -> Optional[str]:
+        # m = re.search('[a-zA-Z0-9]{2,3}[0-9]{1,4}', ident.upper())
+        m = re.search('[a-zA-Z0-9-]{2,7}', ident.upper())
+        if m and m.group(0):
+            return m.group(0)
 
     # async def process_live_flight(self, ctx, ident: str):
     #     fa = FlightAware(self.api_key')
@@ -420,35 +422,9 @@ class ButtonsURLView(discord.ui.View):
             self.add_item(discord.ui.Button(label=label, url=url))
 
 
-class FlightView(discord.ui.View):
-    """Flight View"""
-    def __init__(self, cog: Flightaware, icao: str, buttons: Optional[dict] = None):
-        self.cog = cog
-        self.icao = icao
-        self.buttons = buttons
-        self.message: Optional[discord.Message] = None
-        super().__init__(timeout=60*60*6)
-        if self.buttons:
-            for label, url in self.buttons.items():
-                self.add_item(discord.ui.Button(label=label, url=url))
-
-    async def on_timeout(self):
-        child: discord.ui.View
-        for child in self.children:
-            if child.label == 'Operator Info':
-                child.disabled = True
-        await self.message.edit(view=self)
-
-    @discord.ui.button(emoji='\N{AIRPLANE}', label='Operator Info', style=discord.ButtonStyle.blurple)
-    async def button_callback(self, interaction, button):
-        button.disabled = True
-        await interaction.response.edit_message(view=self)
-        await self.cog.fa_operator(interaction.channel, self.icao)
-
-
 class EmbedsView(discord.ui.View):
     """Embeds View"""
-    def __init__(self, cog: Flightaware, embeds, oper_icao: str, index: int = 0, timeout: int = 60*60*6):
+    def __init__(self, cog: Flightaware, embeds, oper_icao: str, index: int = 0, timeout: int = 60*60*2):
         self.cog = cog
         self.embeds: List[discord.Embed] = embeds
         self.oper_icao: str = oper_icao
@@ -457,9 +433,9 @@ class EmbedsView(discord.ui.View):
         self.message: Optional[discord.Message] = None
         super().__init__(timeout=timeout)
 
-    async def send_initial_message(self, ctx, content: str = None, index: Optional[int] = None, **kwargs) -> discord.Message:
+    async def send_initial_message(self, ctx, author, content: str = None, index: Optional[int] = None, **kwargs) -> discord.Message:
         log.debug('send_initial_message')
-        self.user_id = ctx.author.id
+        self.user_id = author.id
         self.index = index if index else self.index
         self.message = await ctx.send(content, view=self, embed=self.embeds[self.index], **kwargs)
         return self.message
@@ -524,3 +500,29 @@ class EmbedsView(discord.ui.View):
     #     if ctx.command:
     #         ctx.args = (self.oper_icao,)
     #         await self.bot.get_cog('CommandDispatcher').execute_command(ctx).bot.get_cog('Red').data_manager.invoke_command(ctx)
+
+
+# class FlightView(discord.ui.View):
+#     """Flight View"""
+#     def __init__(self, cog: Flightaware, icao: str, buttons: Optional[dict] = None):
+#         self.cog = cog
+#         self.icao = icao
+#         self.buttons = buttons
+#         self.message: Optional[discord.Message] = None
+#         super().__init__(timeout=60*60*2)
+#         if self.buttons:
+#             for label, url in self.buttons.items():
+#                 self.add_item(discord.ui.Button(label=label, url=url))
+#
+#     async def on_timeout(self):
+#         child: discord.ui.View
+#         for child in self.children:
+#             if child.label == 'Operator Info':
+#                 child.disabled = True
+#         await self.message.edit(view=self)
+#
+#     @discord.ui.button(emoji='\N{AIRPLANE}', label='Operator Info', style=discord.ButtonStyle.blurple)
+#     async def button_callback(self, interaction, button):
+#         button.disabled = True
+#         await interaction.response.edit_message(view=self)
+#         await self.cog.fa_operator(interaction.channel, self.icao)

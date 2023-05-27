@@ -3,7 +3,7 @@
   "author": ["Shane#0816"],
   "short": "Carl's OpenAI Module.",
   "description": "OpenAI and ChatGPT Commands.",
-  "install_msg": "Get started with `[p]help Openai`",
+  "install_msg": "Get started with `[p]help OpenAI`",
   "end_user_data_statement": "Caveat Emptor.",
   "required_cogs": {},
   "requirements": ["httpx", "pillow", "redis", "validators"],
