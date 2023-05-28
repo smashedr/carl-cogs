@@ -6,24 +6,25 @@ from datetime import timedelta
 from typing import Optional
 
 from redbot.core import commands, Config
+from redbot.core.bot import Red
 from redbot.core.utils import AsyncIter
 
 log = logging.getLogger('red.activerole')
 
 
-class Activerole(commands.Cog):
-    """Carl's Activerole Cog"""
+class ActiveRole(commands.Cog):
+    """Carl's ActiveRole Cog"""
 
-    loop_sleep_seconds = 60
+    sleep_sec = 60
     guild_default = {
         'active_role': None,
+        'active_minutes': 10,
         'roles': [],
         'channels': [],
-        'active_minutes': 10,
     }
 
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: Red = bot
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(**self.guild_default)
         self.loop: Optional[asyncio.Task] = None
@@ -50,22 +51,22 @@ class Activerole(commands.Cog):
 
     async def cleanup_loop(self):
         # This loops through all guilds since only one loop runs
-        log.info('Starting Cleanup Loop in 10 seconds...')
+        log.info('%s: Starting Loop in 10 seconds', self.__cog_name__)
         await asyncio.sleep(10)
-        all_guilds = await self.config.all_guilds()
+        log.info('%s: Start Main Loop', self.__cog_name__)
         while self is self.bot.get_cog('Activerole'):
+            all_guilds = await self.config.all_guilds()
             for guild_id, data in await AsyncIter(all_guilds.items()):
                 guild = self.bot.get_guild(guild_id)
                 role = guild.get_role(data['active_role'])
-                # log.debug(f'{guild} - {role}')
                 for member in role.members:
-                    key = f'{guild.id}-{member.id}'
+                    key = f'active:{guild.id}-{member.id}'
                     # log.debug(key)
                     if not await self.client.exists(key):
                         log.debug('Inactive Remove Role: "%s"', member.name)
                         reason = f'Activerole user inactive.'
                         await member.remove_roles(role, reason=reason)
-            await asyncio.sleep(self.loop_sleep_seconds)
+            await asyncio.sleep(self.sleep_sec)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -99,7 +100,7 @@ class Activerole(commands.Cog):
             if active_role.id == role.id:
                 needs_role = False
 
-        key = f'{member.guild.id}-{member.id}'
+        key = f'active:{member.guild.id}-{member.id}'
         expire = timedelta(minutes=config['active_minutes'])
         await self.client.setex(key, expire, 1)
         if needs_role:

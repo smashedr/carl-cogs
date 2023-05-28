@@ -1,7 +1,7 @@
 {
-  "name": "Activerole",
+  "name": "ActiveRole",
   "author": ["Shane#0816"],
-  "short": "Carl's Activerole Module.",
+  "short": "Carl's ActiveRole Module.",
   "description": "Gives a role to active users in chat; uses a redis server.",
   "install_msg": "**This requires Redis.** Get started with `[p]activerole`",
   "end_user_data_statement": "Caveat Emptor.",
