@@ -116,11 +116,11 @@ class DayInHistory(commands.Cog):
             try:
                 dt = datetime.strptime(str_date, '%m-%d')
             except:
-                await ctx.send('Error processing `date`. Example: **9-11**', ephemeral=True)
+                msg = '\U000026D4 Error processing `date`. Example: **9-11**'
+                await ctx.send(msg, ephemeral=True, delete_after=10)  # ⛔
                 return
-        data = await self.get_history(dt)
-        em = discord.Embed.from_dict(data)
-        await ctx.send(embed=em)
+        view = HistoryView(self, ctx.author)
+        await view.send_initial_message(ctx, dt)
 
     @history.command(name='show', aliases=['s'],
                      description="Show Today's history, or a specific day, to You Only")
@@ -139,11 +139,11 @@ class DayInHistory(commands.Cog):
             try:
                 dt = datetime.strptime(str_date, '%m-%d')
             except:
-                await ctx.send('Error processing `date`. Example: **9-11**', ephemeral=True)
+                msg = '\U000026D4 Error processing `date`. Example: **9-11**'
+                await ctx.send(msg, ephemeral=True, delete_after=10)  # ⛔
                 return
-        data = await self.get_history(dt)
-        em = discord.Embed.from_dict(data)
-        await ctx.send(embed=em, ephemeral=True)
+        view = HistoryView(self, ctx.author)
+        await view.send_initial_message(ctx, dt, ephemeral=True)
 
     @history.command(name='channel', aliases=['c'],
                      description='Admin Only: Set Channel for Auto Posting History Daily')
@@ -182,15 +182,17 @@ class DayInHistory(commands.Cog):
         if data:
             log.debug('--- cache call ---')
             return data
+        log.debug('--- remote call ---')
         http_options = {'follow_redirects': True, 'timeout': 30}
         day_url = f"{self.history_url}/day/{date.strftime('%B-%-d').lower()}"
         log.debug('day_url: %s', day_url)
-        log.info('get day url to get headline url')
         async with httpx.AsyncClient(**http_options) as client:
             r = await client.get(day_url)
         if not r.is_success:
             r.raise_for_status()
         html = r.content.decode('utf-8')
+        if not html:
+            raise Exception('r.content is None')
         soup = BeautifulSoup(html, 'html.parser')
         a_tag = soup.find('a', {'class': 'tdih-featured__title'})
         log.debug('a_tag: %s', a_tag)
@@ -198,7 +200,6 @@ class DayInHistory(commands.Cog):
         log.debug('path: %s', path)
         feat_url = f"{self.base_url}{path}"
         log.debug('feat_url: %s', feat_url)
-        log.info('get headline url for embed data')
         async with httpx.AsyncClient(**http_options) as client:
             r = await client.get(feat_url)
         if not r.is_success:
@@ -237,3 +238,69 @@ class DayInHistory(commands.Cog):
             json.dumps(data),
         )
         return data
+
+
+class HistoryView(discord.ui.View):
+    """Embeds View"""
+    def __init__(self, cog,
+                 author: Union[int, discord.Member, discord.User],
+                 timeout: int = 60*60*2):
+        self.cog: DayInHistory = cog
+        self.user_id: int = author.id if hasattr(author, 'id') else int(author)
+        self.message: Optional[discord.Message] = None
+        self.date: Optional[datetime] = None
+        self.ephemeral: bool = False
+        self.owner_only_sec: int = 180
+        self.created_at = datetime.now()
+        super().__init__(timeout=timeout)
+
+    async def send_initial_message(self, ctx, date, ephemeral: bool = False, **kwargs) -> discord.Message:
+        self.date = date
+        self.ephemeral = ephemeral
+        data = await self.cog.get_history(self.date)
+        embed = discord.Embed.from_dict(data)
+        self.message = await ctx.send(view=self, embed=embed, ephemeral=self.ephemeral, **kwargs)
+        return self.message
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id == self.user_id:
+            return True
+        td = datetime.now() - self.created_at
+        if td.seconds >= self.owner_only_sec:
+            return True
+        remaining = self.owner_only_sec - td.seconds
+        msg = (f"\U000026D4 The creator has control for {remaining} more seconds...\n"
+               f"You can create your own response with the `/history` command.")  # ⛔
+        await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
+        return False
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.style = discord.ButtonStyle.gray
+            child.disabled = True
+        await self.message.edit(view=self)
+
+    @discord.ui.button(label='Prev', style=discord.ButtonStyle.green)
+    async def prev_button(self, interaction, button):
+        self.date = self.date - timedelta(days=1)
+        data = await self.cog.get_history(self.date)
+        embed = discord.Embed.from_dict(data)
+        await interaction.response.edit_message(embed=embed)
+
+    @discord.ui.button(label='Next', style=discord.ButtonStyle.green)
+    async def next_button(self, interaction, button):
+        self.date = self.date + timedelta(days=1)
+        data = await self.cog.get_history(self.date)
+        embed = discord.Embed.from_dict(data)
+        await interaction.response.edit_message(embed=embed)
+
+    @discord.ui.button(label='Delete', style=discord.ButtonStyle.red)
+    async def delete_button(self, interaction, button):
+        if not interaction.user.id == self.user_id:
+            msg = ("\U000026D4 Looks like you didn't create this response.\n"
+                   f"You can create your own response with the `/history` command.")  # ⛔
+            await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
+            return
+        await interaction.message.delete()
+        await interaction.response.send_message('\U00002705 Your wish is my command!',
+                                                ephemeral=True, delete_after=10)  # ✅

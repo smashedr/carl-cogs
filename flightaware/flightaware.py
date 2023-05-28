@@ -245,8 +245,8 @@ class Flightaware(commands.Cog):
             embeds.append(em)
         log.debug('embeds: %s', len(embeds))
         log.debug('index: %s', index)
-        view = EmbedsView(self, embeds, oper_icao, index=index)
-        await view.send_initial_message(ctx, author, content=content)
+        view = EmbedsView(self, author, embeds, oper_icao, index=index)
+        await view.send_initial_message(ctx, content=content)
 
     @fa.command(name='operator', description='Airline Operator Information')
     @app_commands.describe(code='Airline ICAO or IATA Identifier')
@@ -424,20 +424,37 @@ class ButtonsURLView(discord.ui.View):
 
 class EmbedsView(discord.ui.View):
     """Embeds View"""
-    def __init__(self, cog: Flightaware, embeds, oper_icao: str, index: int = 0, timeout: int = 60*60*2):
-        self.cog = cog
+    def __init__(self, cog,
+                 author: Union[int, discord.Member, discord.User],
+                 embeds: List[discord.Embed],
+                 oper_icao: str,
+                 index: int = 0,
+                 timeout: int = 60*60*2):
+        self.cog: Flightaware = cog
+        self.user_id: int = author.id if hasattr(author, 'id') else int(author)
         self.embeds: List[discord.Embed] = embeds
         self.oper_icao: str = oper_icao
         self.index: int = index
-        self.user_id: Optional[int] = None
         self.message: Optional[discord.Message] = None
+        self.owner_only_sec: int = 180
+        self.created_at = datetime.now()
         super().__init__(timeout=timeout)
 
-    async def send_initial_message(self, ctx, author, content: str = None, index: Optional[int] = None, **kwargs) -> discord.Message:
-        log.debug('send_initial_message')
-        self.user_id = author.id
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id == self.user_id:
+            return True
+        td = datetime.now() - self.created_at
+        if td.seconds >= self.owner_only_sec:
+            return True
+        remaining = self.owner_only_sec - td.seconds
+        msg = (f"\U000026D4 The creator has control for {remaining} more seconds...\n"
+               f"You can create your own response with the `/flight` command.")  # ⛔
+        await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
+        return False
+
+    async def send_initial_message(self, ctx, index: Optional[int] = None, **kwargs) -> discord.Message:
         self.index = index if index else self.index
-        self.message = await ctx.send(content, view=self, embed=self.embeds[self.index], **kwargs)
+        self.message = await ctx.send(view=self, embed=self.embeds[self.index], **kwargs)
         return self.message
 
     async def on_timeout(self):
@@ -446,7 +463,7 @@ class EmbedsView(discord.ui.View):
             child.disabled = True
         await self.message.edit(view=self)
 
-    @discord.ui.button(label='Prev', style=discord.ButtonStyle.green)  # 👈 \U0001F448
+    @discord.ui.button(label='Prev', style=discord.ButtonStyle.green)
     async def prev_button(self, interaction, button):
         # await self.disable_enable_btns(interaction)
         if self.index < 1:
@@ -455,7 +472,7 @@ class EmbedsView(discord.ui.View):
         self.index = self.index - 1
         await interaction.response.edit_message(embed=self.embeds[self.index])
 
-    @discord.ui.button(label='Next', style=discord.ButtonStyle.green)  # 👉 \U0001F449
+    @discord.ui.button(label='Next', style=discord.ButtonStyle.green)
     async def next_button(self, interaction, button):
         # await self.disable_enable_btns(interaction)
         if not self.index < len(self.embeds) - 1:
@@ -467,10 +484,13 @@ class EmbedsView(discord.ui.View):
     @discord.ui.button(label='Delete', style=discord.ButtonStyle.red)
     async def delete_button(self, interaction, button):
         if not interaction.user.id == self.user_id:
-            await interaction.response.send_message("Looks like you didn't create this response.", ephemeral=True, delete_after=10)
+            msg = ("\U000026D4 Looks like you didn't create this response.\n"
+                   f"You can create your own response with the `/history` command.")  # ⛔
+            await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
             return
         await interaction.message.delete()
-        await interaction.response.send_message('Your wish is my command!', ephemeral=True, delete_after=10)
+        await interaction.response.send_message('\U00002705 Your wish is my command!',
+                                                ephemeral=True, delete_after=10)  # ✅
 
     # async def disable_enable_btns(self, interaction):
     #     log.debug('self.index: %s', self.index)
