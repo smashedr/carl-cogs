@@ -24,7 +24,7 @@ class DayInHistory(commands.Cog):
     base_url = 'https://www.history.com'
     history_url = f'{base_url}/this-day-in-history'
     embed_color = 0xF1C40F  # Color for embed
-    send_hour_utc = 18  # Auto post at this hour
+    send_hour_utc = 20  # Auto post at this hour
     sleep_sec = 60*10  # Must be less than 1 hour
     cache_days = 7  # Must be less than 1 hour
 
@@ -102,7 +102,7 @@ class DayInHistory(commands.Cog):
     @history.command(name='post', aliases=['p'],
                      description="Post Today's history, or a specific day, in Current Channel")
     @app_commands.describe(date='Date of History to Get, Example: 9-11')
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.channel)
+    @commands.cooldown(rate=1, per=15, type=commands.BucketType.channel)
     async def history_post(self, ctx: commands.Context, *, date: Optional[str]):
         """Post Today's history, or a specific day, in Current Channel"""
         # TODO: Make this a function
@@ -125,7 +125,6 @@ class DayInHistory(commands.Cog):
     @history.command(name='show', aliases=['s'],
                      description="Show Today's history, or a specific day, to You Only")
     @app_commands.describe(date='Date of History to Get, Example: 9-11')
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.channel)
     async def history_show(self, ctx: commands.Context, *, date: Optional[str]):
         """Show Today's history, or a specific day, to You Only"""
         # TODO: Make this a function
@@ -156,12 +155,8 @@ class DayInHistory(commands.Cog):
         channel: discord.TextChannel
         log.debug('vt_channel')
         if not channel:
-            channel_id = await self.config.guild(ctx.guild).channel()
-            if not channel_id:
-                await ctx.send('\U000026D4Channel is not set. Specify a channel to set.', ephemeral=True)  # ⛔
-                return
-            channel = ctx.guild.get_channel(channel_id)
-            await ctx.send(f'\U00002705 Channel set too: {channel.name}. Specify a channel to change.', ephemeral=True)  # ✅
+            await self.config.guild(ctx.guild).channel.set(0)
+            await ctx.send(f'\U00002705 Disabled. Specify a channel to Enable.', ephemeral=True)  # ✅
             return
 
         log.debug('channel: %s', channel)
@@ -169,6 +164,7 @@ class DayInHistory(commands.Cog):
         if not str(channel.type) == 'text':
             await ctx.send('\U000026D4 Channel must be a Text Channel.', ephemeral=True)  # ⛔
             return
+
         await self.config.guild(ctx.guild).channel.set(channel.id)
         msg = f'\U00002705 Will post daily history in channel: {channel.name}'  # ✅
         await ctx.send(msg, ephemeral=True)
@@ -250,7 +246,7 @@ class HistoryView(discord.ui.View):
         self.message: Optional[discord.Message] = None
         self.date: Optional[datetime] = None
         self.ephemeral: bool = False
-        self.owner_only_sec: int = 180
+        self.owner_only_sec: int = 120
         self.created_at = datetime.now()
         super().__init__(timeout=timeout)
 

@@ -165,7 +165,7 @@ class Flightaware(commands.Cog):
         #     return
 
         embeds = []
-        index = 0
+        index = None
         content = f'Flights for **{ident}**'
         for i, d in enumerate(reversed(fdata['flights'])):
             em = discord.Embed(
@@ -178,15 +178,18 @@ class Flightaware(commands.Cog):
             off_dt = datetime.strptime(off, '%Y-%m-%dT%H:%M:%SZ')
             if off_dt:
                 em.timestamp = off_dt
-                if not index:
-                    if datetime.now() > off_dt:
-                        index = i
+                if index is not None:
+                    if datetime.now() < off_dt:
+                        log.debug('set index on DATETIME')
+                        index = i-1
+            index = 0 if not index else index
             oper_icao = d['operator_icao'] or d['operator'] or d['operator_iata']
             msgs = []
-            matches = ['on the way', 'en route']
+            matches = ['on the way', 'en route', 'taxiing']
             if (d['progress_percent'] and (0 < d['progress_percent'] < 100)) \
                     or any([x in d['status'].lower() for x in matches]):
                 index = i
+                log.debug('set index on PROGRESS or MATCH')
                 msgs.append(f'\U0001F7E2 [Live Now on FlightAware]({fa.fa_flight_url}{ident}) ')  # :green_circle:
                 em.colour = discord.Colour.green()
             if d['position_only']:
@@ -465,7 +468,7 @@ class EmbedsView(discord.ui.View):
 
     @discord.ui.button(label='Prev', style=discord.ButtonStyle.green)
     async def prev_button(self, interaction, button):
-        # await self.disable_enable_btns(interaction)
+        # await self.disable_enable_buttons(interaction)
         if self.index < 1:
             await interaction.response.edit_message()
             return
@@ -474,7 +477,7 @@ class EmbedsView(discord.ui.View):
 
     @discord.ui.button(label='Next', style=discord.ButtonStyle.green)
     async def next_button(self, interaction, button):
-        # await self.disable_enable_btns(interaction)
+        # await self.disable_enable_buttons(interaction)
         if not self.index < len(self.embeds) - 1:
             await interaction.response.edit_message()
             return
@@ -492,57 +495,23 @@ class EmbedsView(discord.ui.View):
         await interaction.response.send_message('\U00002705 Your wish is my command!',
                                                 ephemeral=True, delete_after=10)  # ✅
 
-    # async def disable_enable_btns(self, interaction):
+    # async def disable_enable_buttons(self, interaction):
     #     log.debug('self.index: %s', self.index)
     #     log.debug('len(self.embeds): %s', len(self.embeds))
-    #     if self.index == 0:
-    #         for child in self.children:
-    #             if child.label == 'Prev':
-    #                 log.debug('-- DISABLE PREV --')
-    #                 child.disabled = True
-    #                 # await interaction.response.edit_message()
-    #     if len(self.embeds) == (self.index-1):
-    #         for child in self.children:
-    #             if child.label == 'Next':
-    #                 log.debug('-- DISABLE NEXT --')
-    #                 child.disabled = True
-    #                 # await interaction.response.edit_message()
-
-    # @discord.ui.button(label='Operator', style=discord.ButtonStyle.blurple)
-    # async def operator_button(self, interaction, button):
-    #     button.disabled = True
-    #     button.style = discord.ButtonStyle.grey
-    #     await interaction.response.edit_message(view=self)
+    #     if self.index < 1:
+    #         d_prev = True
+    #     else:
+    #         d_prev = False
     #
-    #     ctx = await self.bot.get_context(interaction.message)
-    #     ctx.command = self.bot.get_command('fa_operator')
+    #     if not self.index < len(self.embeds) - 1:
+    #         d_next = True
+    #     else:
+    #         d_next = False
     #
-    #     if ctx.command:
-    #         ctx.args = (self.oper_icao,)
-    #         await self.bot.get_cog('CommandDispatcher').execute_command(ctx).bot.get_cog('Red').data_manager.invoke_command(ctx)
-
-
-# class FlightView(discord.ui.View):
-#     """Flight View"""
-#     def __init__(self, cog: Flightaware, icao: str, buttons: Optional[dict] = None):
-#         self.cog = cog
-#         self.icao = icao
-#         self.buttons = buttons
-#         self.message: Optional[discord.Message] = None
-#         super().__init__(timeout=60*60*2)
-#         if self.buttons:
-#             for label, url in self.buttons.items():
-#                 self.add_item(discord.ui.Button(label=label, url=url))
-#
-#     async def on_timeout(self):
-#         child: discord.ui.View
-#         for child in self.children:
-#             if child.label == 'Operator Info':
-#                 child.disabled = True
-#         await self.message.edit(view=self)
-#
-#     @discord.ui.button(emoji='\N{AIRPLANE}', label='Operator Info', style=discord.ButtonStyle.blurple)
-#     async def button_callback(self, interaction, button):
-#         button.disabled = True
-#         await interaction.response.edit_message(view=self)
-#         await self.cog.fa_operator(interaction.channel, self.icao)
+    #     for child in self.children:
+    #         if child.label == 'Prev':
+    #             log.debug('-- Prev - %s --', d_prev)
+    #             child.disabled = d_prev
+    #         if child.label == 'Next':
+    #             log.debug('-- Next - %s --', d_next)
+    #             child.disabled = d_next
