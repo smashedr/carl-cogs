@@ -3,10 +3,11 @@ import discord
 import httpx
 import json
 import logging
+import re
 import redis.asyncio as redis
 from bs4 import BeautifulSoup
-from datetime import timedelta
-from typing import Optional, Union, Dict, Any
+from datetime import datetime, timedelta
+from typing import Optional, Union, Dict, Any, List
 
 from redbot.core import commands, app_commands, Config
 from redbot.core.bot import Red
@@ -25,13 +26,13 @@ class AviationSafetyNetwork(commands.Cog):
     wiki_n = f'{base_url}/wikibase/dblist.php?Country=N'
     embed_color = 0xF1C40F  # Color for embed
     send_hour_utc = 20  # Auto post at this hour
-    sleep_sec = 60*5  # Must be less than 1 hour
-    cache_minutes = 10  # Must be less than 1 hour
+    sleep_sec = 60*10  # Must be less than 1 hour
+    cache_minutes = 15  # Must be less than 1 hour
 
+    http_options = {'follow_redirects': True, 'timeout': 30}
     chrome_agent = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
                     'AppleWebKit/537.36 (KHTML, like Gecko) '
                     'Chrome/113.0.0.0 Safari/537.36')
-    http_options = {'follow_redirects': True, 'timeout': 30}
     http_headers = {'user-agent': chrome_agent}
 
     global_default = {
@@ -59,7 +60,6 @@ class AviationSafetyNetwork(commands.Cog):
             password=data['pass'] if 'pass' in data else None,
         )
         await self.client.ping()
-        await self.gen_wiki_data()
         self.loop = asyncio.create_task(self.asn_loop())
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
@@ -69,39 +69,9 @@ class AviationSafetyNetwork(commands.Cog):
     async def asn_loop(self):
         log.info('%s: Start Main Loop', self.__cog_name__)
         while self is self.bot.get_cog('DayInHistory'):
-            log.info(f'Sleeping for {self.sleep_sec} seconds...')
-            await asyncio.sleep(self.sleep_sec)
+            log.debug('loop')
             await self.gen_wiki_data()
-            # UPDATE BELOW
-            # now = datetime.now()
-            # current_time = now.time()
-            # if current_time.hour != self.send_hour_utc:
-            #     log.debug('%s != %s', current_time.hour, self.send_hour_utc)
-            #     continue
-            # last = await self.config.last()
-            # if last:
-            #     last = datetime.fromisoformat(last)
-            #     if last.day == now.day:
-            #         log.debug('%s == %s', last.day, now.day)
-            #         continue
-            #
-            # log.debug('START')
-            # await self.config.last.set(now.isoformat())
-            # log.debug('config.last.set(now.isoformat())')
-            # all_guilds: dict = await self.config.all_guilds()
-            # log.debug('all_guilds: %s', all_guilds)
-            # for guild_id, data in await AsyncIter(all_guilds.items()):
-            #     log.debug('guild_id: %s', guild_id)
-            #     if not data['channel']:
-            #         continue
-            #     guild: discord.Guild = self.bot.get_guild(guild_id)
-            #     channel: discord.TextChannel = guild.get_channel(data['channel'])
-            #     data: Dict[str, Any] = await self.get_history(now)
-            #     em = discord.Embed.from_dict(data)
-            #     await channel.send(embed=em)
-            #     log.debug('sleep 5')
-            #     await asyncio.sleep(5)
-            # log.debug('DONE')
+            await asyncio.sleep(self.sleep_sec)
 
     @commands.hybrid_group(name='asn', aliases=['aviationsafety', 'aviationsafetynetwork'],
                            description='Aviation Safety Network Commands')
@@ -119,60 +89,52 @@ class AviationSafetyNetwork(commands.Cog):
         if not data:
             await ctx.send('Uhh... No ASN data. Something is wrong...')
             return
-        last: dict = data[0]
-        log.debug('--- BEGIN last ---')
-        log.debug(last)
-        log.debug('--- END last ---')
-        entry = await self.get_wiki_entry(last)
-        embed = await self.gen_embed(entry)
-        await ctx.send(embed=embed)
+        # last: dict = data[0]
+        # log.debug('--- BEGIN last ---')
+        # log.debug(last)
+        # log.debug('--- END last ---')
+        # entry = await self.get_wiki_entry(last)
+        # embed = await self.gen_embed(entry)
+
+        view = ListView(self, ctx.author, data)
+        await view.send_initial_message(ctx, 0)
 
     async def gen_embed(self, data):
         log.debug('--- BEGIN entry/data  ---')
         log.debug(data)
         log.debug('--- END entry/data  ---')
-
-        registration = data['Registration'] if 'Registration' in data else None
-        _type = data['Type'] if 'Type' in data else None
-        oper = data['Owner/operator'] if 'Owner/operator' in data else None
-        img_src = data['img_src'] if 'img_src' in data else None
-        location = data['Location'] if 'Location' in data else None
-        description = data['Narrative'] if 'Narrative' in data else None
-        fatal = data['Fatalities'] if 'Fatalities' in data else 0
-        occup = data['Occupants'] if 'Occupants' in data else 0
-        phase = data['Phase'] if 'Phase' in data else 0
+        d = data
 
         em = discord.Embed(
-            title=registration or _type or 'Unknown',
+            title=d['Registration'] or d['Type'] or 'Unknown',
             url=f"{self.base_url}{data['href']}",
         )
-        if oper:
-            url = f"{self.faa_reg_url}{registration}" if registration else None
-            em.set_author(name=oper, url=url)
-        if img_src:
-            em.set_thumbnail(url=f"{self.base_url}{img_src}")
+        if d['Owner/operator']:
+            url = f"{self.faa_reg_url}{d['Registration']}" if d['Registration'] else None
+            em.set_author(name=d['Owner/operator'], url=url)
+        if d['type_img']:
+            em.set_thumbnail(url=f"{self.base_url}{d['type_img']}")
 
         dlist = []
 
-        if fatal:
-            dlist.append(f"\U0001F534 **Fatal/Total:** {fatal} / {occup}")  # 🔴
+        if d['fatal']:
+            dlist.append(f"\U0001F534 **Fatal/Total/Other:** "
+                         f"{d['Fatalities']} / {d['Occupants']} / {d['Other fatalities']}")  # 🔴
         else:
-            dlist.append(f"**Total Occupants:** {occup}")
-
-        if location:
-            dlist.append(f"**Location**: {location}")
-
-        if _type:
-            dlist.append(f"**Type**: {_type}")
-
-        if phase:
-            dlist.append(f"**Phase**: {phase}")
+            dlist.append(f"**Fatal/Total/Other:** "
+                         f"{d['Fatalities']} / {d['Occupants']} / {d['Other fatalities']}")
+        if d['Location']:
+            dlist.append(f"**Location**: {d['Location']}")
+        if d['Phase']:
+            dlist.append(f"**Phase**: {d['Phase']}")
+        if d['Type']:
+            dlist.append(f"**Type**: {d['Type']}")
 
         dlist.append('')
-        dlist.append(description)
+        dlist.append(data['Narrative'])
 
         image_url = None
-        if data['Sources']:
+        if 'Sources' in data and data['Sources']:
             for s in data['Sources']:
                 st = s.replace('http://', '').replace('https://', '')[:50]
                 dlist.append(f"[{st}..]({s})")
@@ -180,108 +142,82 @@ class AviationSafetyNetwork(commands.Cog):
                 if s.lower().endswith(images):
                     image_url = s
                     break
-
         log.debug('image_url: %s', image_url)
         if image_url:
             em.set_image(url=image_url)
-        # join description and return embed
+
+        if data['Date'] and data['Time']:
+            string = f"{data['Date']} {data['Time']}"
+            format = '%d-%b-%Y %H:%M'
+        elif data['Date']:
+            string = f"{data['Date']}"
+            format = '%d-%b-%Y'
+
+        if data['Date']:
+            try:
+                dt = datetime.strptime(string, format)
+                em.timestamp = dt
+            except Exception as error:
+                log.exception(error)
+                pass
+
         em.description = '\n'.join(dlist)
         return em
 
-    # @history.command(name='show', aliases=['s'],
-    #                  description="Show Today's history, or a specific day, to You Only")
-    # @app_commands.describe(date='Date of History to Get, Example: 9-11')
-    # async def history_show(self, ctx: commands.Context, *, date: Optional[str]):
-    #     """Show Today's history, or a specific day, to You Only"""
-    #     # TODO: Make this a function
-    #     dt = datetime.now()
-    #     if date:
-    #         log.debug('date: %s', date)
-    #         split = re.split('/|-| ', date)
-    #         log.debug('split: %s', split)
-    #         str_date = f"{split[0]}-{split[1]}"
-    #         log.debug('str_date: %s', str_date)
-    #         try:
-    #             dt = datetime.strptime(str_date, '%m-%d')
-    #         except:
-    #             msg = '\U000026D4 Error processing `date`. Example: **9-11**'
-    #             await ctx.send(msg, ephemeral=True, delete_after=10)  # ⛔
-    #             return
-    #     view = HistoryView(self, ctx.author)
-    #     await view.send_initial_message(ctx, dt, ephemeral=True)
+    async def get_wiki_entry(self, href: str) -> Dict[str, Any]:
+        log.debug('get_wiki_entry')
+        log.debug('href: %s', href)
 
-    # @history.command(name='channel', aliases=['c'],
-    #                  description='Admin Only: Set Channel for Auto Posting History Daily')
-    # @app_commands.describe(channel='Channel to Post History Too')
-    # @commands.max_concurrency(1, commands.BucketType.guild)
-    # @commands.guild_only()
-    # @commands.admin()
-    # async def history_channel(self, ctx: commands.Context, channel: Optional[CarlChannelConverter] = None):
-    #     """Admin Only: Set Channel for Auto Posting History Daily"""
-    #     channel: discord.TextChannel
-    #     log.debug('vt_channel')
-    #     if not channel:
-    #         await self.config.guild(ctx.guild).channel.set(0)
-    #         await ctx.send(f'\U00002705 Disabled. Specify a channel to Enable.', ephemeral=True)  # ✅
-    #         return
-    #
-    #     log.debug('channel: %s', channel)
-    #     log.debug('channel.type: %s', channel.type)
-    #     if not str(channel.type) == 'text':
-    #         await ctx.send('\U000026D4 Channel must be a Text Channel.', ephemeral=True)  # ⛔
-    #         return
-    #
-    #     await self.config.guild(ctx.guild).channel.set(channel.id)
-    #     msg = f'\U00002705 Will post daily history in channel: {channel.name}'  # ✅
-    #     await ctx.send(msg, ephemeral=True)
-
-    # async def update_data_fuck(self) -> None:
-    #     log.debug('update_data')
-    #     data = json.loads(await self.client.get('asn:data') or '{}')
-    #     await self.client.set('asn:data', json.dumps(data))
-    #     return data
-
-    async def get_wiki_entry(self, last: Dict[str, Any]) -> Dict[str, Any]:
-        log.debug('asn_wiki_entry')
-        # data = json.loads(await self.client.get(f'asn:{href}') or '{}')
-        # if data:
-        #     log.debug('--- cache call ---')
-        #     return data
+        data = json.loads(await self.client.get(f'asn:{href}') or '{}')
+        if data:
+            log.debug('--- cache call ---')
+            return data
 
         log.debug('--- remote call ---')
-        url = f"{self.base_url}/{last['href']}"
+        url = f"{self.base_url}/{href}"
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.get(url, headers=self.http_headers)
         if not r.is_success:
             r.raise_for_status()
 
         html = r.content.decode('utf-8')
-        log.debug('--- BEGIN html  ---')
-        log.debug(html)
-        log.debug('--- END html  ---')
+        # log.debug('--- BEGIN html  ---')
+        # log.debug(html)
+        # log.debug('--- END html  ---')
         soup = BeautifulSoup(html, 'html.parser')
         table = soup.find('table')
         rows = table.find_all('tr')
-        data = {'href': last['href']}
+        data = {}
         for row in rows:
-            caption = row.find('td', class_='caption')
-            desc = row.find('td', class_='desc')
-            if caption and desc:
+            cells = row.find_all('td')
+            caption = cells[0]
+            desc = cells[1]
+            # caption = row.find('td', class_='caption')
+            # desc = row.find('td', class_='desc')
+            if caption:
                 key = caption.get_text(strip=True).rstrip(':')
-                value = desc.get_text(strip=True)
+                value = desc.get_text(strip=True) if desc else None
                 if key == 'Fatalities':
                     fatalities, occupants = value.split('/')
-                    fatal = fatalities.split(':')[1].strip() or 0
-                    occup = occupants.split(':')[1].strip() or 0
-                    data['Fatalities'] = int(fatal)
-                    data['Occupants'] = int(occup)
+                    fatal = fatalities.split(':')[1].strip() or '0'
+                    occup = occupants.split(':')[1].strip() or '0'
+                    data['Fatalities'] = int(fatal) if fatal.isdigit() else None
+                    data['Occupants'] = int(occup) if occup.isdigit() else None
+                elif key == 'Other fatalities':
+                    other = value.strip() or '0'
+                    data['Other fatalities'] = int(other) if other.isdigit() else None
                 elif key == 'Type':
-                    img_tag = desc.find('img')
-                    if img_tag:
-                        data['img_src'] = img_tag['src']
+                    type_img = desc.find('img')
+                    data['type_img'] = type_img if type_img else None
+                    if type_img:
+                        data['type_img'] = type_img['src']
                     data[key] = value
                 elif key == 'Location':
                     data[key] = value.replace('United States of America', '').strip('- ')
+                elif key == 'Time':
+                    m = re.search('[0-9]{2}:[0-9]{2}', value)
+                    if m and m.group(0):
+                        data[key] = m.group(0)
                 else:
                     data[key] = value
 
@@ -294,11 +230,22 @@ class AviationSafetyNetwork(commands.Cog):
             sources = sources_div.find_next_siblings('a')
             data['Sources'] = [source['href'] for source in sources]
 
-        # await self.client.setex(
-        #     f'asn:{href}',
-        #     timedelta(days=self.cache_minutes),
-        #     json.dumps(data),
-        # )
+        req = ['Date', 'Time', 'Type', 'Owner/operator', 'Registration', 'MSN', 'Fatalities', 'Occupants',
+               'Other fatalities', 'Aircraft damage', 'Category', 'Location', 'Phase', 'Nature', 'Departure airport',
+               'Destination airport', 'Investigating agency', 'Confidence Rating', 'Narrative', 'Sources']
+        for x in req:
+            if x not in data:
+                log.debug('%s - Missing: %s', href, x)
+                data[x] = None
+
+        data['fatal'] = data['Fatalities'] or data['Other fatalities']
+        data['href'] = href
+
+        await self.client.setex(
+            f"asn:{data['href']}",
+            timedelta(minutes=self.cache_minutes),
+            json.dumps(data),
+        )
         return data
 
     async def gen_wiki_data(self) -> None:
@@ -342,67 +289,87 @@ class AviationSafetyNetwork(commands.Cog):
         await self.client.set('asn:latest', json.dumps(entries))
 
 
-# class HistoryView(discord.ui.View):
-#     """Embeds View"""
-#     def __init__(self, cog,
-#                  author: Union[int, discord.Member, discord.User],
-#                  timeout: int = 60*60*2):
-#         self.cog: DayInHistory = cog
-#         self.user_id: int = author.id if hasattr(author, 'id') else int(author)
-#         self.message: Optional[discord.Message] = None
-#         self.date: Optional[datetime] = None
-#         self.ephemeral: bool = False
-#         self.owner_only_sec: int = 120
-#         self.created_at = datetime.now()
-#         super().__init__(timeout=timeout)
-#
-#     async def send_initial_message(self, ctx, date, ephemeral: bool = False, **kwargs) -> discord.Message:
-#         self.date = date
-#         self.ephemeral = ephemeral
-#         data = await self.cog.get_history(self.date)
-#         embed = discord.Embed.from_dict(data)
-#         self.message = await ctx.send(view=self, embed=embed, ephemeral=self.ephemeral, **kwargs)
-#         return self.message
-#
-#     async def interaction_check(self, interaction: discord.Interaction):
-#         if interaction.user.id == self.user_id:
-#             return True
-#         td = datetime.now() - self.created_at
-#         if td.seconds >= self.owner_only_sec:
-#             return True
-#         remaining = self.owner_only_sec - td.seconds
-#         msg = (f"\U000026D4 The creator has control for {remaining} more seconds...\n"
-#                f"You can create your own response with the `/history` command.")  # ⛔
-#         await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
-#         return False
-#
-#     async def on_timeout(self):
-#         for child in self.children:
-#             child.style = discord.ButtonStyle.gray
-#             child.disabled = True
-#         await self.message.edit(view=self)
-#
-#     @discord.ui.button(label='Prev', style=discord.ButtonStyle.green)
-#     async def prev_button(self, interaction, button):
-#         self.date = self.date - timedelta(days=1)
-#         data = await self.cog.get_history(self.date)
-#         embed = discord.Embed.from_dict(data)
-#         await interaction.response.edit_message(embed=embed)
-#
-#     @discord.ui.button(label='Next', style=discord.ButtonStyle.green)
-#     async def next_button(self, interaction, button):
-#         self.date = self.date + timedelta(days=1)
-#         data = await self.cog.get_history(self.date)
-#         embed = discord.Embed.from_dict(data)
-#         await interaction.response.edit_message(embed=embed)
-#
-#     @discord.ui.button(label='Delete', style=discord.ButtonStyle.red)
-#     async def delete_button(self, interaction, button):
-#         if not interaction.user.id == self.user_id:
-#             msg = ("\U000026D4 Looks like you didn't create this response.\n"
-#                    f"You can create your own response with the `/history` command.")  # ⛔
-#             await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
-#             return
-#         await interaction.message.delete()
-#         await interaction.response.send_message('\U00002705 Your wish is my command!',
-#                                                 ephemeral=True, delete_after=10)  # ✅
+class ListView(discord.ui.View):
+    """Embeds View"""
+    def __init__(self, cog,
+                 author: Union[int, discord.Member, discord.User], data_list: List[dict],
+                 timeout: int = 60*60*2):
+        self.cog: AviationSafetyNetwork = cog
+        self.user_id: int = author.id if hasattr(author, 'id') else int(author)
+        self.data_list: List[dict] = data_list
+        self.message: Optional[discord.Message] = None
+        self.index: int = 0
+        self.ephemeral: bool = False
+        self.owner_only_sec: int = 120
+        self.created_at = datetime.now()
+        super().__init__(timeout=timeout)
+
+    async def send_initial_message(self, ctx, index: int = 0, ephemeral: bool = False, **kwargs) -> discord.Message:
+        self.index = index
+        self.ephemeral = ephemeral
+        accidents = self.data_list[self.index]
+        entry = await self.cog.get_wiki_entry(accidents['href'])
+        embed = await self.cog.gen_embed(entry)
+        self.message = await ctx.send(view=self, embed=embed, ephemeral=self.ephemeral, **kwargs)
+        return self.message
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id == self.user_id:
+            return True
+        td = datetime.now() - self.created_at
+        if td.seconds >= self.owner_only_sec:
+            return True
+        remaining = self.owner_only_sec - td.seconds
+        msg = (f"\U000026D4 The creator has control for {remaining} more seconds...\n"
+               f"You can create your own response with the `/history` command.")  # ⛔
+        await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
+        return False
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.style = discord.ButtonStyle.gray
+            child.disabled = True
+        await self.message.edit(view=self)
+
+    @discord.ui.button(label='Prev', style=discord.ButtonStyle.green)
+    async def prev_button(self, interaction, button):
+        if not self.index < len(self.data_list) - 1:
+            log.debug('end of list: %s', self.index)
+            await interaction.response.edit_message()
+            return
+
+        await interaction.response.defer()
+        log.debug('prev.index.before: %s', self.index)
+        self.index = self.index + 1
+        log.debug('prev.index.after: %s', self.index)
+        accidents = self.data_list[self.index]
+        entry = await self.cog.get_wiki_entry(accidents['href'])
+        embed = await self.cog.gen_embed(entry)
+        await self.message.edit(embed=embed)
+
+    @discord.ui.button(label='Next', style=discord.ButtonStyle.green)
+    async def next_button(self, interaction, button):
+        if self.index < 1:
+            log.debug('beginning of list: %s', self.index)
+            await interaction.response.edit_message()
+            return
+
+        await interaction.response.defer()
+        log.debug('next.index.before: %s', self.index)
+        self.index = self.index - 1
+        log.debug('next.index.after: %s', self.index)
+        accidents = self.data_list[self.index]
+        entry = await self.cog.get_wiki_entry(accidents['href'])
+        embed = await self.cog.gen_embed(entry)
+        await self.message.edit(embed=embed)
+
+    @discord.ui.button(label='Delete', style=discord.ButtonStyle.red)
+    async def delete_button(self, interaction, button):
+        if not interaction.user.id == self.user_id:
+            msg = ("\U000026D4 Looks like you didn't create this response.\n"
+                   f"You can create your own response with the `/history` command.")  # ⛔
+            await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
+            return
+        await interaction.message.delete()
+        await interaction.response.send_message('\U00002705 Your wish is my command!',
+                                                ephemeral=True, delete_after=10)  # ✅
