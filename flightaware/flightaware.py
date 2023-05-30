@@ -165,7 +165,7 @@ class Flightaware(commands.Cog):
         #     return
 
         embeds = []
-        index = None
+        index = 0
         content = f'Flights for **{ident}**'
         for i, d in enumerate(reversed(fdata['flights'])):
             em = discord.Embed(
@@ -178,11 +178,10 @@ class Flightaware(commands.Cog):
             off_dt = datetime.strptime(off, '%Y-%m-%dT%H:%M:%SZ')
             if off_dt:
                 em.timestamp = off_dt
-                if index is not None:
+                if not index:
                     if datetime.now() < off_dt:
                         log.debug('set index on DATETIME')
                         index = i-1
-            index = 0 if not index else index
             oper_icao = d['operator_icao'] or d['operator'] or d['operator_iata']
             msgs = []
             matches = ['on the way', 'en route', 'taxiing']
@@ -439,7 +438,7 @@ class EmbedsView(discord.ui.View):
         self.oper_icao: str = oper_icao
         self.index: int = index
         self.message: Optional[discord.Message] = None
-        self.owner_only_sec: int = 180
+        self.owner_only_sec: int = 120
         self.created_at = datetime.now()
         super().__init__(timeout=timeout)
 
