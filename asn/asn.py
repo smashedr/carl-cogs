@@ -24,7 +24,7 @@ class AviationSafetyNetwork(commands.Cog):
     faa_reg_url = 'https://registry.faa.gov/AircraftInquiry/Search/NNumberResult?nNumberTxt='
     base_url = 'https://aviation-safety.net'
     wiki_n = f'{base_url}/wikibase/dblist.php?Country=N'
-    embed_color = 0xF1C40F  # Color for embed
+    record_url = f'{base_url}/database/record.php?id='
     send_hour_utc = 20  # Auto post at this hour
     sleep_sec = 60*10  # Must be less than 1 hour
     cache_short = 10  # Minutes
@@ -82,7 +82,7 @@ class AviationSafetyNetwork(commands.Cog):
     @_asn.command(name='last', aliases=['l', 'latest'],
                   description="Post the latest entry from Aviation Safety Network")
     @commands.cooldown(rate=1, per=15, type=commands.BucketType.channel)
-    async def _asn_post(self, ctx: commands.Context):
+    async def _asn_last(self, ctx: commands.Context):
         """Post the latest entry from Aviation Safety Network"""
         await ctx.defer()
         data = json.loads(await self.client.get('asn:latest') or '{}')
@@ -93,30 +93,54 @@ class AviationSafetyNetwork(commands.Cog):
         view = ListView(self, ctx.author, data)
         await view.send_initial_message(ctx, 0)
 
+    @_asn.command(name='post', aliases=['p'],
+                  description="Post a specific incident to the current channel")
+    @app_commands.describe(entry='Wikibase URL or ID Number')
+    @commands.cooldown(rate=1, per=15, type=commands.BucketType.channel)
+    async def _asn_post(self, ctx: commands.Context, entry: str):
+        """Post a specific incident to the current channel"""
+        m = re.search('[0-9-]{4,10}', entry)
+        if not m or not m.group(0):
+            await ctx.send(f'\U0001F534 Unable to parse ID from entry: {entry}', ephemeral=True, delete_after=10)  # 🔴
+            return
+
+        if '-' in m.group(0):
+            await ctx.send(f'\U0001F534 Database Entry Records are not currently supported: {entry}', ephemeral=True, delete_after=10)  # 🔴
+            return
+
+        await ctx.defer()
+        href = f'/wikibase/{m.group(0)}'
+        entry = await self.get_wiki_entry(href)
+        if not entry:
+            await ctx.send(f'\U0001F534 No data for entry: {entry}', ephemeral=True, delete_after=10)  # 🔴
+            return
+        embed = await self.gen_embed(entry)
+        await ctx.send(embed=embed)
+
     async def gen_embed(self, data):
         log.debug('--- BEGIN entry/data  ---')
         log.debug(data)
         log.debug('--- END entry/data  ---')
         d = data
-
+        dlist = []
         em = discord.Embed(
             title=d['Registration'] or d['Type'] or 'Unknown',
             url=f"{self.base_url}{data['href']}",
+            colour=discord.Colour.blue(),
         )
+        if d['fatal']:
+            em.colour = discord.Colour.red()
         if d['Owner/operator']:
             url = f"{self.faa_reg_url}{d['Registration']}" if d['Registration'] else None
             em.set_author(name=d['Owner/operator'], url=url)
         if d['type_img']:
             em.set_thumbnail(url=f"{self.base_url}{d['type_img']}")
-
-        dlist = []
-
-        if d['fatal']:
-            dlist.append(f"\U0001F534 **Fatal/Total/Other:** "
-                         f"{d['Fatalities']} / {d['Occupants']} / {d['Other fatalities']}")  # 🔴
-        else:
-            dlist.append(f"**Fatal/Total/Other:** "
-                         f"{d['Fatalities']} / {d['Occupants']} / {d['Other fatalities']}")
+        dlist.append(f"**Fatal/Total/Other:** "
+                     f"{d['Fatalities']} / {d['Occupants']} / {d['Other fatalities']}")
+        if d['Date']:
+            dlist.append(f"**Date**: {d['Date']}")
+        if d['Time']:
+            dlist.append(f"**Time**: {d['Time']}")
         if d['Location']:
             dlist.append(f"**Location**: {d['Location']}")
         if d['Phase']:
@@ -197,10 +221,6 @@ class AviationSafetyNetwork(commands.Cog):
                     data[key] = value
                 elif key == 'Location':
                     data[key] = value.replace('United States of America', '').strip('- ')
-                elif key == 'Time':
-                    m = re.search('[0-9]{2}:[0-9]{2}', value)
-                    if m and m.group(0):
-                        data[key] = m.group(0)
                 else:
                     data[key] = value
 
@@ -225,7 +245,9 @@ class AviationSafetyNetwork(commands.Cog):
         data['href'] = href
 
         if data['Date'] and data['Time']:
-            _str = f"{data['Date']} {data['Time']}"
+            m = re.search('[0-9]{2}:[0-9]{2}', data['Time'])
+            time = m.group(0) if (m and m.group(0)) else '00:00'
+            _str = f"{data['Date']} {m.group(0)}"
             _fmt = '%d-%b-%Y %H:%M'
         elif data['Date']:
             _str = f"{data['Date']}"
@@ -323,7 +345,7 @@ class ListView(discord.ui.View):
             return True
         remaining = self.owner_only_sec - td.seconds
         msg = (f"\U000026D4 The creator has control for {remaining} more seconds...\n"
-               f"You can create your own response with the `/history` command.")  # ⛔
+               f"You can create your own response with the `/asn` command.")  # ⛔
         await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
         return False
 
@@ -331,10 +353,11 @@ class ListView(discord.ui.View):
         for child in self.children:
             child.style = discord.ButtonStyle.gray
             child.disabled = True
+        self.stop()
         await self.message.edit(view=self)
 
     @discord.ui.button(label='Prev', style=discord.ButtonStyle.green)
-    async def prev_button(self, interaction, button):
+    async def prev_button(self, interaction: discord.Interaction, button):
         if not self.index < len(self.data_list) - 1:
             log.debug('end of list: %s', self.index)
             msg = 'At the end, use: `Next`'
@@ -351,7 +374,7 @@ class ListView(discord.ui.View):
         await self.message.edit(embed=embed)
 
     @discord.ui.button(label='Next', style=discord.ButtonStyle.green)
-    async def next_button(self, interaction, button):
+    async def next_button(self, interaction: discord.Interaction, button):
         if self.index < 1:
             log.debug('beginning of list: %s', self.index)
             msg = 'At the beginning, use: `Prev`'
@@ -368,12 +391,13 @@ class ListView(discord.ui.View):
         await self.message.edit(embed=embed)
 
     @discord.ui.button(label='Delete', style=discord.ButtonStyle.red)
-    async def delete_button(self, interaction, button):
+    async def delete_button(self, interaction: discord.Interaction, button):
         if not interaction.user.id == self.user_id:
             msg = ("\U000026D4 Looks like you didn't create this response.\n"
                    f"You can create your own response with the `/history` command.")  # ⛔
             await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
             return
+        self.stop()
         await interaction.message.delete()
         await interaction.response.send_message('\U00002705 Your wish is my command!',
                                                 ephemeral=True, delete_after=10)  # ✅
