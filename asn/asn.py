@@ -27,7 +27,8 @@ class AviationSafetyNetwork(commands.Cog):
     embed_color = 0xF1C40F  # Color for embed
     send_hour_utc = 20  # Auto post at this hour
     sleep_sec = 60*10  # Must be less than 1 hour
-    cache_minutes = 15  # Must be less than 1 hour
+    cache_short = 10  # Minutes
+    cache_long = 60*2  # Minutes
 
     http_options = {'follow_redirects': True, 'timeout': 30}
     chrome_agent = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
@@ -83,18 +84,11 @@ class AviationSafetyNetwork(commands.Cog):
     @commands.cooldown(rate=1, per=15, type=commands.BucketType.channel)
     async def _asn_post(self, ctx: commands.Context):
         """Post the latest entry from Aviation Safety Network"""
-        # TODO: Make this a function
         await ctx.defer()
         data = json.loads(await self.client.get('asn:latest') or '{}')
         if not data:
             await ctx.send('Uhh... No ASN data. Something is wrong...')
             return
-        # last: dict = data[0]
-        # log.debug('--- BEGIN last ---')
-        # log.debug(last)
-        # log.debug('--- END last ---')
-        # entry = await self.get_wiki_entry(last)
-        # embed = await self.gen_embed(entry)
 
         view = ListView(self, ctx.author, data)
         await view.send_initial_message(ctx, 0)
@@ -146,20 +140,9 @@ class AviationSafetyNetwork(commands.Cog):
         if image_url:
             em.set_image(url=image_url)
 
-        if data['Date'] and data['Time']:
-            string = f"{data['Date']} {data['Time']}"
-            format = '%d-%b-%Y %H:%M'
-        elif data['Date']:
-            string = f"{data['Date']}"
-            format = '%d-%b-%Y'
-
-        if data['Date']:
-            try:
-                dt = datetime.strptime(string, format)
-                em.timestamp = dt
-            except Exception as error:
-                log.exception(error)
-                pass
+        if data['datetime']:
+            dt = datetime.fromisoformat(data['datetime'])
+            em.timestamp = dt
 
         em.description = '\n'.join(dlist)
         return em
@@ -241,9 +224,28 @@ class AviationSafetyNetwork(commands.Cog):
         data['fatal'] = data['Fatalities'] or data['Other fatalities']
         data['href'] = href
 
+        if data['Date'] and data['Time']:
+            _str = f"{data['Date']} {data['Time']}"
+            _fmt = '%d-%b-%Y %H:%M'
+        elif data['Date']:
+            _str = f"{data['Date']}"
+            _fmt = '%d-%b-%Y'
+        data['datetime'] = None
+        cache_min = self.cache_short
+        if data['Date']:
+            try:
+                dt = datetime.strptime(_str, _fmt)
+                data['datetime'] = dt.isoformat()
+                diff = datetime.now() - dt
+                if diff.days >= 1:
+                    cache_min = self.cache_long
+            except Exception as error:
+                log.exception(error)
+                pass
+
         await self.client.setex(
             f"asn:{data['href']}",
-            timedelta(minutes=self.cache_minutes),
+            timedelta(minutes=cache_min),
             json.dumps(data),
         )
         return data
