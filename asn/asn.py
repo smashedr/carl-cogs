@@ -337,7 +337,8 @@ class ListView(discord.ui.View):
     async def prev_button(self, interaction, button):
         if not self.index < len(self.data_list) - 1:
             log.debug('end of list: %s', self.index)
-            await interaction.response.edit_message()
+            msg = 'At the end, use: `Next`'
+            await interaction.response.send_message(msg, ephemeral=True, delete_after=4)
             return
 
         await interaction.response.defer()
@@ -353,7 +354,8 @@ class ListView(discord.ui.View):
     async def next_button(self, interaction, button):
         if self.index < 1:
             log.debug('beginning of list: %s', self.index)
-            await interaction.response.edit_message()
+            msg = 'At the beginning, use: `Prev`'
+            await interaction.response.send_message(msg, ephemeral=True, delete_after=4)
             return
 
         await interaction.response.defer()
