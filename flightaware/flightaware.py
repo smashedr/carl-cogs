@@ -18,7 +18,7 @@ from redbot.core.utils import chat_formatting as cf
 
 from .fa import FlightAware
 
-log = logging.getLogger('red.captcha')
+log = logging.getLogger('red.flightaware')
 
 
 class Flightaware(commands.Cog):
@@ -372,8 +372,8 @@ class Flightaware(commands.Cog):
             icao_type = columns[0].text.strip()
             model_href = columns[2].find('a')['href']
             aircraft_data[icao_type] = model_href
-        log.debug('-'*20)
-        log.debug(aircraft_data)
+        # log.debug('-'*20)
+        # log.debug(aircraft_data)
         await self.client.setex(
             'fa:wiki_aircraft_type',
             timedelta(days=7),

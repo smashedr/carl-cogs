@@ -1,4 +1,3 @@
-import asyncio
 import discord
 import httpx
 import json
@@ -9,6 +8,7 @@ from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 from typing import Optional, Union, Dict, Any
 
+from discord.ext import tasks
 from redbot.core import commands, app_commands, Config
 from redbot.core.bot import Red
 from redbot.core.utils import AsyncIter
@@ -25,7 +25,6 @@ class DayInHistory(commands.Cog):
     history_url = f'{base_url}/this-day-in-history'
     embed_color = 0xF1C40F  # Color for embed
     send_hour_utc = 20  # Auto post at this hour
-    sleep_sec = 60*10  # Must be less than 1 hour
     cache_days = 7  # Must be less than 1 hour
 
     global_default = {
@@ -40,7 +39,6 @@ class DayInHistory(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_global(**self.global_default)
         self.config.register_guild(**self.guild_default)
-        self.loop: Optional[asyncio.Task] = None
         self.client: Optional[redis.Redis] = None
 
     async def cog_load(self):
@@ -53,46 +51,41 @@ class DayInHistory(commands.Cog):
             password=data['pass'] if 'pass' in data else None,
         )
         await self.client.ping()
-        self.loop = asyncio.create_task(self.history_loop())
+        self.main_loop.start()
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
+        self.main_loop.cancel()
 
-    async def history_loop(self):
-        log.info('%s: Start Main Loop', self.__cog_name__)
-        while self is self.bot.get_cog('DayInHistory'):
-            log.info(f'Sleeping for {self.sleep_sec} seconds...')
-            await asyncio.sleep(self.sleep_sec)
-            now = datetime.now()
-            current_time = now.time()
-            if current_time.hour != self.send_hour_utc:
-                log.debug('%s != %s', current_time.hour, self.send_hour_utc)
+    @tasks.loop(minutes=60.0)
+    async def main_loop(self):
+        log.info('%s: Run Loop: main_loop', self.__cog_name__)
+        now = datetime.now()
+        current_time = now.time()
+        if current_time.hour != self.send_hour_utc:
+            return
+        last = await self.config.last()
+        if last:
+            last = datetime.fromisoformat(last)
+            if last.day == now.day:
+                return
+
+        log.debug('loop: START')
+        await self.config.last.set(now.isoformat())
+        log.debug('config.last.set(now.isoformat())')
+        all_guilds: dict = await self.config.all_guilds()
+        log.debug('all_guilds: %s', all_guilds)
+        for guild_id, data in await AsyncIter(all_guilds.items(), delay=10, steps=5):
+            log.debug('guild_id: %s', guild_id)
+            if not data['channel']:
                 continue
-            last = await self.config.last()
-            if last:
-                last = datetime.fromisoformat(last)
-                if last.day == now.day:
-                    log.debug('%s == %s', last.day, now.day)
-                    continue
-
-            log.debug('START')
-            await self.config.last.set(now.isoformat())
-            log.debug('config.last.set(now.isoformat())')
-            all_guilds: dict = await self.config.all_guilds()
-            log.debug('all_guilds: %s', all_guilds)
-            for guild_id, data in await AsyncIter(all_guilds.items()):
-                log.debug('guild_id: %s', guild_id)
-                if not data['channel']:
-                    continue
-                guild: discord.Guild = self.bot.get_guild(guild_id)
-                channel: discord.TextChannel = guild.get_channel(data['channel'])
-                data: Dict[str, Any] = await self.get_history(now)
-                em = discord.Embed.from_dict(data)
-                await channel.send(embed=em)
-                log.debug('sleep 5')
-                await asyncio.sleep(5)
-            log.debug('DONE')
+            guild: discord.Guild = self.bot.get_guild(guild_id)
+            channel: discord.TextChannel = guild.get_channel(data['channel'])
+            data: Dict[str, Any] = await self.get_history(now)
+            em = discord.Embed.from_dict(data)
+            await channel.send(embed=em)
+        log.debug('loop: DONE')
 
     @commands.hybrid_group(name='history', aliases=['dayinhistory', 'thisdayinhistory'],
                            description='Today In History in Discord Commands')
@@ -106,6 +99,7 @@ class DayInHistory(commands.Cog):
     async def history_post(self, ctx: commands.Context, *, date: Optional[str]):
         """Post Today's history, or a specific day, in Current Channel"""
         # TODO: Make this a function
+        await ctx.defer()
         dt = datetime.now()
         if date:
             log.debug('date: %s', date)
@@ -128,6 +122,7 @@ class DayInHistory(commands.Cog):
     async def history_show(self, ctx: commands.Context, *, date: Optional[str]):
         """Show Today's history, or a specific day, to You Only"""
         # TODO: Make this a function
+        await ctx.defer()
         dt = datetime.now()
         if date:
             log.debug('date: %s', date)
@@ -202,7 +197,7 @@ class DayInHistory(commands.Cog):
             r.raise_for_status()
         soup = BeautifulSoup(r.content, 'html.parser')
         meta_tag = soup.find('meta', {'name': 'description'})
-        description = meta_tag['content']
+        description = meta_tag['content'] if meta_tag else 'No Meta Description.'
         log.debug('description: %s', description)
         meta_tag = soup.find('meta', {'property': 'og:title'})
         title = meta_tag.get('content')

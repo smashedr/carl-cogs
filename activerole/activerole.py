@@ -1,10 +1,10 @@
-import asyncio
 import discord
 import logging
 import redis.asyncio as redis
 from datetime import timedelta
 from typing import Optional
 
+from discord.ext import tasks
 from redbot.core import commands, Config
 from redbot.core.bot import Red
 from redbot.core.utils import AsyncIter
@@ -27,46 +27,40 @@ class ActiveRole(commands.Cog):
         self.bot: Red = bot
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(**self.guild_default)
-        self.loop: Optional[asyncio.Task] = None
-        self.client: Optional[redis.Redis] = None
+        self.redis: Optional[redis.Redis] = None
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
         data = await self.bot.get_shared_api_tokens('redis')
-        self.client = redis.Redis(
+        self.redis = redis.Redis(
             host=data['host'] if 'host' in data else 'redis',
             port=int(data['port']) if 'port' in data else 6379,
             db=int(data['db']) if 'db' in data else 0,
             password=data['pass'] if 'pass' in data else None,
         )
-        await self.client.ping()
-        self.loop = asyncio.create_task(self.cleanup_loop())
+        await self.redis.ping()
+        self.main_loop.start()
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
-        if self.loop and not self.loop.cancelled():
-            log.info('Stopping Loop')
-            self.loop.cancel()
+        self.main_loop.cancel()
 
-    async def cleanup_loop(self):
-        # This loops through all guilds since only one loop runs
-        log.info('%s: Starting Loop in 10 seconds', self.__cog_name__)
-        await asyncio.sleep(10)
-        log.info('%s: Start Main Loop', self.__cog_name__)
-        while self is self.bot.get_cog('Activerole'):
-            all_guilds = await self.config.all_guilds()
-            for guild_id, data in await AsyncIter(all_guilds.items()):
-                guild = self.bot.get_guild(guild_id)
-                role = guild.get_role(data['active_role'])
-                for member in role.members:
-                    key = f'active:{guild.id}-{member.id}'
-                    # log.debug(key)
-                    if not await self.client.exists(key):
-                        log.debug('Inactive Remove Role: "%s"', member.name)
-                        reason = f'Activerole user inactive.'
-                        await member.remove_roles(role, reason=reason)
-            await asyncio.sleep(self.sleep_sec)
+    @tasks.loop(minutes=1.0)
+    async def main_loop(self):
+        # log.debug('%s: Run Loop: main_loop', self.__cog_name__)
+        all_guilds = await self.config.all_guilds()
+        for guild_id, data in await AsyncIter(all_guilds.items()):
+            guild = self.bot.get_guild(guild_id)
+            role = guild.get_role(data['active_role'])
+            # log.debug('role.id: %s', role.id)
+            for member in role.members:
+                key = f'active:{guild.id}-{member.id}'
+                # log.debug('key: %s', key)
+                if not await self.redis.exists(key):
+                    log.debug('Inactive Remove Role: "%s"', member.name)
+                    reason = f'Activerole user inactive.'
+                    await member.remove_roles(role, reason=reason)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -81,7 +75,8 @@ class ActiveRole(commands.Cog):
         guild: discord.Guild = message.guild
         if member.bot:
             return
-        config = await self.config.guild(guild).all()
+        config: dict = await self.config.guild(guild).all()
+        # log.debug('config: %s', config)
         if not config['active_role']:
             return
         active_role: discord.Role = member.guild.get_role(config['active_role'])
@@ -102,7 +97,7 @@ class ActiveRole(commands.Cog):
 
         key = f'active:{member.guild.id}-{member.id}'
         expire = timedelta(minutes=config['active_minutes'])
-        await self.client.setex(key, expire, 1)
+        await self.redis.setex(key, expire, 1)
         if needs_role:
             log.debug('Applying Role "%s" to "%s"',
                       active_role.name, member.name)

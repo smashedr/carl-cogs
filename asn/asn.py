@@ -1,4 +1,3 @@
-import asyncio
 import discord
 import httpx
 import json
@@ -9,9 +8,9 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from typing import Optional, Union, Dict, Any, List
 
+from discord.ext import tasks
 from redbot.core import commands, app_commands, Config
 from redbot.core.bot import Red
-from redbot.core.utils import AsyncIter
 
 from .converters import CarlChannelConverter
 
@@ -21,12 +20,10 @@ log = logging.getLogger('red.asn')
 class AviationSafetyNetwork(commands.Cog):
     """Carl's Aviation Safety Cog"""
 
-    faa_reg_url = 'https://registry.faa.gov/AircraftInquiry/Search/NNumberResult?nNumberTxt='
     base_url = 'https://aviation-safety.net'
     wiki_n = f'{base_url}/wikibase/dblist.php?Country=N'
     record_url = f'{base_url}/database/record.php?id='
-    send_hour_utc = 20  # Auto post at this hour
-    sleep_sec = 60*10  # Must be less than 1 hour
+    faa_reg_url = 'https://registry.faa.gov/AircraftInquiry/Search/NNumberResult?nNumberTxt='
     cache_short = 10  # Minutes
     cache_long = 60*2  # Minutes
 
@@ -48,31 +45,29 @@ class AviationSafetyNetwork(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_global(**self.global_default)
         self.config.register_guild(**self.guild_default)
-        self.loop: Optional[asyncio.Task] = None
-        self.client: Optional[redis.Redis] = None
+        self.redis: Optional[redis.Redis] = None
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
         data = await self.bot.get_shared_api_tokens('redis')
-        self.client = redis.Redis(
+        self.redis = redis.Redis(
             host=data['host'] if 'host' in data else 'redis',
             port=int(data['port']) if 'port' in data else 6379,
             db=int(data['db']) if 'db' in data else 0,
             password=data['pass'] if 'pass' in data else None,
         )
-        await self.client.ping()
-        self.loop = asyncio.create_task(self.asn_loop())
+        await self.redis.ping()
+        self.main_loop.start()
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
+        self.main_loop.cancel()
 
-    async def asn_loop(self):
-        log.info('%s: Start Main Loop', self.__cog_name__)
-        while self is self.bot.get_cog('DayInHistory'):
-            log.debug('loop')
-            await self.gen_wiki_data()
-            await asyncio.sleep(self.sleep_sec)
+    @tasks.loop(minutes=30.0)
+    async def main_loop(self):
+        log.info('%s: Run Loop: main_loop', self.__cog_name__)
+        await self.gen_wiki_data()
 
     @commands.hybrid_group(name='asn', aliases=['aviationsafety', 'aviationsafetynetwork'],
                            description='Aviation Safety Network Commands')
@@ -85,7 +80,7 @@ class AviationSafetyNetwork(commands.Cog):
     async def _asn_last(self, ctx: commands.Context):
         """Post the latest entry from Aviation Safety Network"""
         await ctx.defer()
-        data = json.loads(await self.client.get('asn:latest') or '{}')
+        data = json.loads(await self.redis.get('asn:latest') or '{}')
         if not data:
             await ctx.send('Uhh... No ASN data. Something is wrong...')
             return
@@ -175,7 +170,7 @@ class AviationSafetyNetwork(commands.Cog):
         log.debug('get_wiki_entry')
         log.debug('href: %s', href)
 
-        data = json.loads(await self.client.get(f'asn:{href}') or '{}')
+        data = json.loads(await self.redis.get(f'asn:{href}') or '{}')
         if data:
             log.debug('--- cache call ---')
             return data
@@ -265,7 +260,7 @@ class AviationSafetyNetwork(commands.Cog):
                 log.exception(error)
                 pass
 
-        await self.client.setex(
+        await self.redis.setex(
             f"asn:{data['href']}",
             timedelta(minutes=cache_min),
             json.dumps(data),
@@ -310,7 +305,7 @@ class AviationSafetyNetwork(commands.Cog):
         # log.debug('--- BEGIN entries  ---')
         # log.debug(entries)
         # log.debug('--- END entries  ---')
-        await self.client.set('asn:latest', json.dumps(entries))
+        await self.redis.set('asn:latest', json.dumps(entries))
 
 
 class ListView(discord.ui.View):
