@@ -17,7 +17,7 @@ class VoiceText(commands.Cog):
 
     guild_default = {
         'enabled': False,
-        'secret': True,
+        'secret': True,  # not implemented, always private
         'archive': 0,
         'channels': [],
         'categories': [],
@@ -61,16 +61,16 @@ class VoiceText(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
     @commands.admin()
-    async def vt(self, ctx: commands.Context):
+    async def _vt(self, ctx: commands.Context):
         """Voice Text Commands"""
 
-    @vt.command(name='ignore', aliases=['i'],
+    @_vt.command(name='ignore', aliases=['i'],
                 description='Ignore a VoiceChannel or Category from VoiceText Creation')
     @app_commands.describe(name='VoiceChannel or Category to be Ignored')
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
     @commands.admin()
-    async def vt_ignore(self, ctx: commands.Context, name: CarlChannelConverter):
+    async def _vt_ignore(self, ctx: commands.Context, name: CarlChannelConverter):
         """Ignore a VoiceChannel or Category from VoiceText Creation"""
         name: Union[discord.VoiceChannel, discord.StageChannel, discord.CategoryChannel]
         log.debug('vt_ignore')
@@ -88,13 +88,13 @@ class VoiceText(commands.Cog):
         msg = f'\U00002705 {name.type.title()} `{name}` now ignored from VoiceText creation.'  # ✅
         await ctx.send(msg, ephemeral=True)
 
-    @vt.command(name='unignore', aliases=['u'],
+    @_vt.command(name='unignore', aliases=['u'],
                 description='Unignore a VoiceChannel or Category from VoiceText Creation')
     @app_commands.describe(name='VoiceChannel or Category to be Unignored')
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
     @commands.admin()
-    async def vt_unignore(self, ctx: commands.Context, name: CarlChannelConverter):
+    async def _vt_unignore(self, ctx: commands.Context, name: CarlChannelConverter):
         """Unignore a VoiceChannel or Category from VoiceText Creation"""
         name: Union[discord.VoiceChannel, discord.StageChannel, discord.CategoryChannel]
         log.debug('vt_unignore')
@@ -112,13 +112,13 @@ class VoiceText(commands.Cog):
         msg = f'\U00002705 {name.type.title()} `{name}` no longer ignored from VoiceText creation.'  # ✅
         await ctx.send(msg, ephemeral=True)
 
-    @vt.command(name='archive', aliases=['a'],
+    @_vt.command(name='archive', aliases=['a'],
                 description='Archive Category for Ended Chats')
     @app_commands.describe(category='Set the Archive Category for Ended Chats')
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
     @commands.admin()
-    async def vt_archive(self, ctx: commands.Context, category: discord.CategoryChannel):
+    async def _vt_archive(self, ctx: commands.Context, category: discord.CategoryChannel):
         """Set the Archive Category for Ended Chats"""
         category: discord.CategoryChannel
         log.debug('vt_archive')
@@ -127,11 +127,11 @@ class VoiceText(commands.Cog):
         msg = f'\U00002705 Archive Category set to: {category.name}'  # ✅
         await ctx.send(msg, ephemeral=True)
 
-    @vt.command(name='enable', aliases=['e', 'on'], description='Enable VoiceText in the Guild')
+    @_vt.command(name='enable', aliases=['e', 'on'], description='Enable VoiceText in the Guild')
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
     @commands.admin()
-    async def vt_enable(self, ctx: commands.Context):
+    async def _vt_enable(self, ctx: commands.Context):
         """Enable VoiceText in the Guild"""
         log.debug('vt_enable')
         # enabled: bool = await self.config.guild(ctx.guild).enabled()
@@ -148,11 +148,11 @@ class VoiceText(commands.Cog):
             await self.config.guild(ctx.guild).enabled.set(True)
             await ctx.send('VoiceText has been enabled.', ephemeral=True)
 
-    @vt.command(name='disable', aliases=['d', 'off'], description='Disable VoiceText in the Guild')
+    @_vt.command(name='disable', aliases=['d', 'off'], description='Disable VoiceText in the Guild')
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
     @commands.admin()
-    async def vt_disable(self, ctx: commands.Context):
+    async def _vt_disable(self, ctx: commands.Context):
         """Disable VoiceText in the Guild"""
         log.debug('vt_disable')
         enabled: bool = await self.config.guild(ctx.guild).enabled()
@@ -163,11 +163,11 @@ class VoiceText(commands.Cog):
             await self.config.guild(ctx.guild).enabled.set(False)
             await ctx.send('\U00002705 VoiceText has been disabled.', ephemeral=True)
 
-    @vt.command(name='status', aliases=['s', 'settings'], description='Show VoiceText Status in Guild')
+    @_vt.command(name='status', aliases=['s', 'settings'], description='Show VoiceText Status in Guild')
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
     @commands.admin()
-    async def vt_status(self, ctx: commands.Context):
+    async def _vt_status(self, ctx: commands.Context):
         """Show VoiceText Status in Guild"""
         log.debug('vt_status')
         config: dict = await self.config.guild(ctx.guild).all()

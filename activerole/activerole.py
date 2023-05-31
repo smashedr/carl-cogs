@@ -46,7 +46,7 @@ class ActiveRole(commands.Cog):
         log.info('%s: Cog Unload', self.__cog_name__)
         self.main_loop.cancel()
 
-    @tasks.loop(minutes=1.0)
+    @tasks.loop(minutes=2.0)
     async def main_loop(self):
         # log.debug('%s: Run Loop: main_loop', self.__cog_name__)
         all_guilds = await self.config.all_guilds()

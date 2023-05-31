@@ -21,31 +21,36 @@ If you run a bot compatible with Red Cogs:
 
 ### Public Cogs
 
-Cog | Description
------------- | -------------
-**[autochannels](autochannels/autochannels.py)** | Creates duplicate channels on the fly and cleans up when done.
-**[autodisconnect](autodisconnect/autodisconnect.py)** | Automatically disconnects users from the AFK channel.
-**[autoroles](autoroles/autoroles.py)** | Adds roles to new members on join.
-**[botutils](botutils/botutils.py)** | Custom stateless bot utilities for Carl Bot but useful for anyone.
-**[dictionary](dictionary/dictionary.py)** | Dictionary and Urban Dictionary lookups.
-**[liverole](liverole/liverole.py)** | Give a role to users when they go live in Discord.
-**[stickyroles](stickyroles/stickyroles.py)** | Remembers users roles and adds them on rejoin.
-**[userchannels](userchannels/userchannels.py)** | Creates custom user rooms on the fly and cleans up when done.
-**[warcraftlogs](warcraftlogs/warcraftlogs.py)** | Split Warcraft Logs into multiple channels with filters.
-**[welcome](welcome/welcome.py)** | Welcomes new users to your servers on join.
+| Cog                                                    | Description                                                              |
+|--------------------------------------------------------|--------------------------------------------------------------------------|
+| **[asn](asn/asn.py)**                                  | Aviation Safety Network entries post to a channel or view manually.      |
+| **[autochannels](autochannels/autochannels.py)**       | Creates duplicate channels on the fly and cleans up when done.           |
+| **[autodisconnect](autodisconnect/autodisconnect.py)** | Automatically disconnects users from the AFK channel.                    |
+| **[autoroles](autoroles/autoroles.py)**                | Adds roles to new members on join.                                       |
+| **[botutils](botutils/botutils.py)**                   | Custom stateless bot utilities for Carl Bot but useful for anyone.       |
+| **[dayinhistory](dayinhistory/dayinhistory.py)**       | This Day in History post to a channel or view manually.                  |
+| **[dictionary](dictionary/dictionary.py)**             | Dictionary and Urban Dictionary lookups.                                 |
+| **[liverole](liverole/liverole.py)**                   | Give a role to users when they go live in Discord.                       |
+| **[openai](openai/openai.py)**                         | **Redis**. Query OpenAI/ChatGPT and query off others previous questions. |
+| **[stickyroles](stickyroles/stickyroles.py)**          | Remembers users roles and adds them on rejoin.                           |
+| **[userchannels](userchannels/userchannels.py)**       | Creates custom user rooms on the fly and cleans up when done.            |
+| **[voicetext](voicetext/voicetext.py)**                | Automatically creates Text channels for occupied Voice Channels.         |
+| **[warcraftlogs](warcraftlogs/warcraftlogs.py)**       | Split Warcraft Logs into multiple channels with filters.                 |
+| **[welcome](welcome/welcome.py)**                      | Welcomes new users to your servers on join.                              |
 
 ### Internal/Hidden Cogs
 
-Cog | Description
------------- | -------------
-**[activerole](activerole/activerole.py)** | **WIP: Requires Redis**. Adds a role to active chatters.
-**[carlcog](carlcog/carlcog.py)**  | **Custom** Cog for Carl, has useful functions but may not stay here.
-**[openai](openai/openai.py)**  | **WIP** Query OpenAI/ChatGPT and query off others previous questions.
-**[createthings](createthings/createthings.py)** | **WIP**: Create pre-defined role and emoji sets.
-**[heartbeat](heartbeat/heartbeat.py)** | Sends a ping to a heartbeat service; **has hard coding**.
-**[lmgtfy](lmgtfy/lmgtfy.py)** | **WIP** Replies to the last query in chat with a real google link.
-**[pubsub](pubsub/pubsub.py)** | **Custom** Redis Pub/Sub for Carl Bot and Carl's website.
-**[reactroles](reactroles/reactroles.py)** | **WIP**: React Roles Cog; Working but not yet finished.
+| Cog                                              | Description                                                                                                 |
+|--------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| **[activerole](activerole/activerole.py)**       | **Redis**. Adds a role to active chatters.                                                                  |
+| **[captcha](captcha/captcha.py)**                | **API**. Protect Server with Human Verification for new members.                                            |
+| **[carlcog](carlcog/carlcog.py)**                | **Custom**. Cog for Carl, has useful functions but may not stay here.                                       |
+| **[createthings](createthings/createthings.py)** | **WIP**. Create pre-defined role and emoji sets.                                                            |
+| **[miscog](miscog/miscog.py)**                   | **Custom**. Miscellaneous Cog with specific and heavy commands.                                             |
+| **[heartbeat](heartbeat/heartbeat.py)**          | **WIP**. Sends a ping to a heartbeat service.                                                               |
+| **[lmgtfy](lmgtfy/lmgtfy.py)**                   | **WIP**. Replies to the last query in chat with a real google link.                                         |
+| **[pubsub](pubsub/pubsub.py)**                   | **Custom**. Redis Pub/Sub for Carl Bot and Carl's website.                                                  |
+| **[reactroles](reactroles/reactroles.py)**       | **Deprecated**. Recommended Alternative: [Trusty-cogs/roletools](https://github.com/TrustyJAID/Trusty-cogs) |
 
 # Additional Setup Information
 
@@ -64,3 +69,7 @@ pass    onlyifrequired
 ```
 Above information are the defaults. Password defaults to `None`.
 DO NOT enter a password in the config unless you require one.
+
+## API
+
+**Coming Soon**. New API will be posted soon.

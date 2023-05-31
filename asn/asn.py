@@ -74,7 +74,7 @@ class AviationSafetyNetwork(commands.Cog):
     async def _asn(self, ctx: commands.Context):
         """Aviation Safety Network Commands"""
 
-    @_asn.command(name='last', aliases=['l', 'latest'],
+    @_asn.command(name='last', aliases=['l'],
                   description="Post the latest entry from Aviation Safety Network")
     @commands.cooldown(rate=1, per=15, type=commands.BucketType.channel)
     async def _asn_last(self, ctx: commands.Context):
@@ -87,6 +87,20 @@ class AviationSafetyNetwork(commands.Cog):
 
         view = ListView(self, ctx.author, data)
         await view.send_initial_message(ctx, 0)
+
+    @_asn.command(name='show', aliases=['s'],
+                  description="Show the latest entry from Aviation Safety Network to You Only!")
+    @commands.cooldown(rate=1, per=15, type=commands.BucketType.channel)
+    async def _asn_last(self, ctx: commands.Context):
+        """Post the latest entry from Aviation Safety Network"""
+        await ctx.defer(ephemeral=True)
+        data = json.loads(await self.redis.get('asn:latest') or '{}')
+        if not data:
+            await ctx.send('Uhh... No ASN data. Something is wrong...')
+            return
+
+        view = ListView(self, ctx.author, data)
+        await view.send_initial_message(ctx, 0, True)
 
     @_asn.command(name='post', aliases=['p'],
                   description="Post a specific incident to the current channel")
@@ -325,7 +339,9 @@ class ListView(discord.ui.View):
 
     async def send_initial_message(self, ctx, index: int = 0, ephemeral: bool = False, **kwargs) -> discord.Message:
         self.index = index
+        log.debug('ephemeral: %s', ephemeral)
         self.ephemeral = ephemeral
+        log.debug('self.ephemeral: %s', self.ephemeral)
         accidents = self.data_list[self.index]
         entry = await self.cog.get_wiki_entry(accidents['href'])
         embed = await self.cog.gen_embed(entry)
