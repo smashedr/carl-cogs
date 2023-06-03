@@ -3,7 +3,7 @@
   "author": ["Shane#0816"],
   "short": "Carl's Heartbeat Module.",
   "description": "Pings a Heartbeat service every X seconds.",
-  "install_msg": "You need to look under the hood to use this...",
+  "install_msg": "This works out of the box with Uptime Kuma. Look under the hood for more info.",
   "end_user_data_statement": "Caveat Emptor.",
   "required_cogs": {},
   "requirements": ["httpx"],

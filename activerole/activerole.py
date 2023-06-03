@@ -15,7 +15,6 @@ log = logging.getLogger('red.activerole')
 class ActiveRole(commands.Cog):
     """Carl's ActiveRole Cog"""
 
-    sleep_sec = 60
     guild_default = {
         'active_role': None,
         'active_minutes': 10,
@@ -48,6 +47,7 @@ class ActiveRole(commands.Cog):
 
     @tasks.loop(minutes=2.0)
     async def main_loop(self):
+        await self.bot.wait_until_ready()
         # log.debug('%s: Run Loop: main_loop', self.__cog_name__)
         all_guilds = await self.config.all_guilds()
         for guild_id, data in await AsyncIter(all_guilds.items()):

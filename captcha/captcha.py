@@ -58,10 +58,11 @@ class Captcha(commands.Cog):
         self.loop.cancel()
 
     async def captcha_loop(self):
+        await self.bot.wait_until_ready()
         log.info('%s: Start Main Loop', self.__cog_name__)
         await self.pubsub.subscribe('red.captcha')
         while self is self.bot.get_cog('Captcha'):
-            log.info('captcha_loop:while')
+            log.debug('captcha_loop:while')
             message = await self.pubsub.get_message(timeout=None)
             if message:
                 await self.process_message(message)

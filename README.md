@@ -21,22 +21,22 @@ If you run a bot compatible with Red Cogs:
 
 ### Public Cogs
 
-| Cog                                                    | Description                                                              |
-|--------------------------------------------------------|--------------------------------------------------------------------------|
-| **[asn](asn/asn.py)**                                  | Aviation Safety Network entries post to a channel or view manually.      |
-| **[autochannels](autochannels/autochannels.py)**       | Creates duplicate channels on the fly and cleans up when done.           |
-| **[autodisconnect](autodisconnect/autodisconnect.py)** | Automatically disconnects users from the AFK channel.                    |
-| **[autoroles](autoroles/autoroles.py)**                | Adds roles to new members on join.                                       |
-| **[botutils](botutils/botutils.py)**                   | Custom stateless bot utilities for Carl Bot but useful for anyone.       |
-| **[dayinhistory](dayinhistory/dayinhistory.py)**       | This Day in History post to a channel or view manually.                  |
-| **[dictionary](dictionary/dictionary.py)**             | Dictionary and Urban Dictionary lookups.                                 |
-| **[liverole](liverole/liverole.py)**                   | Give a role to users when they go live in Discord.                       |
-| **[openai](openai/openai.py)**                         | **Redis**. Query OpenAI/ChatGPT and query off others previous questions. |
-| **[stickyroles](stickyroles/stickyroles.py)**          | Remembers users roles and adds them on rejoin.                           |
-| **[userchannels](userchannels/userchannels.py)**       | Creates custom user rooms on the fly and cleans up when done.            |
-| **[voicetext](voicetext/voicetext.py)**                | Automatically creates Text channels for occupied Voice Channels.         |
-| **[warcraftlogs](warcraftlogs/warcraftlogs.py)**       | Split Warcraft Logs into multiple channels with filters.                 |
-| **[welcome](welcome/welcome.py)**                      | Welcomes new users to your servers on join.                              |
+| Cog                                                    | Description                                                                    |
+|--------------------------------------------------------|--------------------------------------------------------------------------------|
+| **[asn](asn/asn.py)**                                  | **Redis**. Aviation Safety Network entries post to a channel or view manually. |
+| **[autochannels](autochannels/autochannels.py)**       | Creates duplicate channels on the fly and cleans up when done.                 |
+| **[autodisconnect](autodisconnect/autodisconnect.py)** | Automatically disconnects users from the AFK channel.                          |
+| **[autoroles](autoroles/autoroles.py)**                | Adds roles to new members on join.                                             |
+| **[botutils](botutils/botutils.py)**                   | Custom stateless bot utilities for Carl Bot but useful for anyone.             |
+| **[dayinhistory](dayinhistory/dayinhistory.py)**       | **Redis**. This Day in History post to a channel or view manually.             |
+| **[dictionary](dictionary/dictionary.py)**             | Dictionary and Urban Dictionary lookups.                                       |
+| **[liverole](liverole/liverole.py)**                   | Give a role to users when they go live in Discord.                             |
+| **[openai](openai/openai.py)**                         | **Redis**. Query OpenAI/ChatGPT and query off others previous questions.       |
+| **[stickyroles](stickyroles/stickyroles.py)**          | Remembers users roles and adds them on rejoin.                                 |
+| **[userchannels](userchannels/userchannels.py)**       | Creates custom user rooms on the fly and cleans up when done.                  |
+| **[voicetext](voicetext/voicetext.py)**                | Automatically creates Text channels for occupied Voice Channels.               |
+| **[warcraftlogs](warcraftlogs/warcraftlogs.py)**       | Split Warcraft Logs into multiple channels with filters.                       |
+| **[welcome](welcome/welcome.py)**                      | Welcomes new users to your servers on join.                                    |
 
 ### Internal/Hidden Cogs
 
@@ -55,7 +55,12 @@ If you run a bot compatible with Red Cogs:
 # Additional Setup Information
 
 ## Redis
-To setup Redis, use the `set api` command.   
+
+Many Cogs use Redis for data caching and setting expiry keys.  
+Redis has a small footprint and is very fast.  
+Running the docker Redis container will work with these cogs out of the box.  
+To configure specific Redis settings, use the `set api` command.  
+
 ```agsl
 [p]set api
 ```

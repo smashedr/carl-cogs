@@ -14,21 +14,26 @@ log = logging.getLogger('red.heartbeat')
 class Heartbeat(commands.Cog):
     """Carl's Heartbeat Cog"""
 
-    sleep = 60
-    url = 'https://intranet-proxy.cssnr.com/api/push/0EzRBO5tb3?msg={msg}&ping={ping}'
     http_options = {
         'follow_redirects': True,
         'verify': False,
-        'timeout': 30,
+        'timeout': 10,
     }
 
     def __init__(self, bot):
         self.bot = bot
         self.loop: Optional[asyncio.Task] = None
+        self.url: Optional[str] = None
+        self.sleep: int = 60
 
     async def cog_load(self):
         log.info('%s: Cog Load', self.__cog_name__)
-        self.loop = asyncio.create_task(self.heartbeat_loop())
+        data = await self.bot.get_shared_api_tokens('heartbeat')
+        self.url = data['url'] if 'url' in data else self.sleep
+        log.info('url: %s', self.url)
+        self.sleep = int(data['sleep']) if 'sleep' in data else self.sleep
+        log.info('sleep: %s', self.sleep)
+        self.loop = asyncio.create_task(self.main_loop())
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
@@ -36,10 +41,14 @@ class Heartbeat(commands.Cog):
             log.info('Stopping Loop')
             self.loop.cancel()
 
-    async def heartbeat_loop(self):
-        log.info('Starting Heartbeat Loop in %s seconds...', round(60 - time.time() % 60))
-        await asyncio.sleep(60 - time.time() % 60)
+    async def main_loop(self):
+        await self.bot.wait_until_ready()
+        log.info('%s: Start Main Loop', self.__cog_name__)
         while self is self.bot.get_cog('Heartbeat'):
+            await asyncio.sleep(self.sleep - time.time() % self.sleep)
+            if not self.url:
+                log.warning('url NOT set for heartbeat. Use the [p]api set command.')
+                continue
             bot_delta = datetime.datetime.utcnow() - self.bot.uptime
             msg = 'Uptime: {}'.format(cf.humanize_timedelta(timedelta=bot_delta))
             ping = str(round(self.bot.latency * 1000, 2))
@@ -47,9 +56,7 @@ class Heartbeat(commands.Cog):
             try:
                 async with httpx.AsyncClient(**self.http_options) as client:
                     r = await client.get(url)
-                    log.debug(r.content)
                 if not r.is_success:
                     r.raise_for_status()
             except Exception as error:
                 log.exception(error)
-            await asyncio.sleep(self.sleep - time.time() % 60)

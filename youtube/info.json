@@ -1,0 +1,15 @@
+{
+  "name": "Captcha",
+  "author": ["Shane#0816"],
+  "short": "Carl's CAPTCHA Module.",
+  "description": "Protect server with CAPTCHA.",
+  "install_msg": "**Requires API.** Get started with `[p]captcha`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "required_cogs": {},
+  "requirements": [],
+  "min_bot_version": "3.5.0",
+  "min_python_version" : [3,8,0],
+  "disabled": false,
+  "hidden": true,
+  "type": "COG"
+}

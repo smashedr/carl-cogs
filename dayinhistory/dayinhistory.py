@@ -43,7 +43,7 @@ class DayInHistory(commands.Cog):
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
-        data = await self.bot.get_shared_api_tokens('redis')
+        data: dict = await self.bot.get_shared_api_tokens('redis')
         self.client = redis.Redis(
             host=data['host'] if 'host' in data else 'redis',
             port=int(data['port']) if 'port' in data else 6379,
@@ -73,7 +73,6 @@ class DayInHistory(commands.Cog):
 
         log.debug('loop: START')
         await self.config.last.set(now.isoformat())
-        log.debug('config.last.set(now.isoformat())')
         all_guilds: dict = await self.config.all_guilds()
         log.debug('all_guilds: %s', all_guilds)
         for guild_id, data in await AsyncIter(all_guilds.items(), delay=10, steps=5):
@@ -201,14 +200,15 @@ class DayInHistory(commands.Cog):
         log.debug('description: %s', description)
         meta_tag = soup.find('meta', {'property': 'og:title'})
         title = meta_tag.get('content')
+        title = title.replace('HISTORY', '').strip('| ')
         log.debug('title: %s', title)
         meta_tag = soup.find('meta', {'property': 'og:image'})
         image_url = meta_tag.get('content')
         log.debug('image_url: %s', image_url)
-        today_url = f"{self.history_url}/day/{now.strftime('%B-%-d').lower()}"
+        # today_url = f"{self.history_url}/day/{now.strftime('%B-%-d').lower()}"
         description = (f"**Headline: {title}**\n"
                        f"{description}  [read more...]({feat_url})\n"
-                       f"**[View Today's History]({today_url})**")
+                       f"**[View Today's History]({self.history_url})**")
         data = {
             'title': f'This Day in History - {date.strftime("%B %-d")}',
             'url': day_url,
@@ -221,7 +221,7 @@ class DayInHistory(commands.Cog):
                 'text': 'This Day in Discord',
                 'icon_url': 'https://www.history.com/assets/images/history/favicon.ico',
             },
-            'timestamp': date.isoformat(),
+            'timestamp': date.date().isoformat(),
         }
         await self.client.setex(
             f'history:{date.strftime("%m%d")}',

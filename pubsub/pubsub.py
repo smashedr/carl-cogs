@@ -39,10 +39,11 @@ class Pubsub(commands.Cog):
             self.loop.cancel()
 
     async def pubsub_loop(self):
+        await self.bot.wait_until_ready()
         log.info('%s: Start Main Loop', self.__cog_name__)
         await self.pubsub.subscribe('red.pubsub')
         while self is self.bot.get_cog('Pubsub'):
-            log.info('pubsub_loop:while')
+            log.debug('pubsub_loop:while')
             message = await self.pubsub.get_message(timeout=None)
             if message:
                 await self.process_message(message)

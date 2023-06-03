@@ -11,6 +11,7 @@ from typing import Optional, Union, Dict, Any, List
 from discord.ext import tasks
 from redbot.core import commands, app_commands, Config
 from redbot.core.bot import Red
+from redbot.core.utils import AsyncIter
 
 from .converters import CarlChannelConverter
 
@@ -34,7 +35,7 @@ class AviationSafetyNetwork(commands.Cog):
     http_headers = {'user-agent': chrome_agent}
 
     global_default = {
-        'last': None,
+        'last': [],
     }
     guild_default = {
         'channel': 0,
@@ -66,8 +67,41 @@ class AviationSafetyNetwork(commands.Cog):
 
     @tasks.loop(minutes=30.0)
     async def main_loop(self):
+        await self.bot.wait_until_ready()
         log.info('%s: Run Loop: main_loop', self.__cog_name__)
         await self.gen_wiki_data()
+        data: List[dict] = json.loads(await self.redis.get('asn:latest') or '{}')
+        if not data:
+            log.error('No ASN Data.')
+            return
+
+        last: list = await self.config.last()
+        if not last:
+            log.debug('No last, setting now.')
+            newlast = [x['id'] for x in data]
+            await self.config.last.set(newlast)
+            return
+
+        for d in data:
+            if d['id'] not in last:
+                last.insert(0, d['id'])
+                await self.config.last.set(last[:200])
+                await self.process_post_entry(d)
+
+    async def process_post_entry(self, entry: Dict[str, Any]):
+        log.debug('Start Entry ID: %s', entry['id'])
+        wiki_data = await self.get_wiki_entry(entry['href'])
+        embed = await self.gen_embed(wiki_data)
+        all_guilds: dict = await self.config.all_guilds()
+        for guild_id, data in await AsyncIter(all_guilds.items(), delay=10, steps=5):
+            if not data['channel']:
+                log.debug('disabled: guild_id: %s', guild_id)
+                continue
+            log.debug('enabled: guild_id: %s', guild_id)
+            guild: discord.Guild = self.bot.get_guild(guild_id)
+            channel: discord.TextChannel = guild.get_channel(data['channel'])
+            await channel.send(embed=embed)
+        log.debug('Finish Entry ID: %s', entry['id'])
 
     @commands.hybrid_group(name='asn', aliases=['aviationsafety', 'aviationsafetynetwork'],
                            description='Aviation Safety Network Commands')
@@ -89,10 +123,10 @@ class AviationSafetyNetwork(commands.Cog):
         await view.send_initial_message(ctx, 0)
 
     @_asn.command(name='show', aliases=['s'],
-                  description="Show the latest entry from Aviation Safety Network to You Only!")
+                  description="Show the latest entry from Aviation Safety Network to You Only")
     @commands.cooldown(rate=1, per=15, type=commands.BucketType.channel)
     async def _asn_last(self, ctx: commands.Context):
-        """Post the latest entry from Aviation Safety Network"""
+        """Show the latest entry from Aviation Safety Network to You Only"""
         await ctx.defer(ephemeral=True)
         data = json.loads(await self.redis.get('asn:latest') or '{}')
         if not data:
@@ -125,6 +159,30 @@ class AviationSafetyNetwork(commands.Cog):
             return
         embed = await self.gen_embed(entry)
         await ctx.send(embed=embed)
+
+    @_asn.command(name='channel', aliases=['c'],
+                     description='Admin Only: Set Channel for Auto Posting ASN Entries')
+    @app_commands.describe(channel='Channel to Post ASN Entries Too')
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    @commands.guild_only()
+    @commands.admin()
+    async def _asn_channel(self, ctx: commands.Context, channel: Optional[CarlChannelConverter] = None):
+        """Admin Only: Set Channel for Auto Posting ASN Entries"""
+        channel: discord.TextChannel
+        if not channel:
+            await self.config.guild(ctx.guild).channel.set(0)
+            await ctx.send(f'\U0001F7E2 Disabled. Specify a channel to Enable.', ephemeral=True)  # :green_circle:
+            return
+
+        log.debug('channel: %s', channel)
+        log.debug('channel.type: %s', channel.type)
+        if not str(channel.type) == 'text':
+            await ctx.send('\U0001F534 Channel must be a Text Channel.', ephemeral=True)  # 🔴
+            return
+
+        await self.config.guild(ctx.guild).channel.set(channel.id)
+        msg = f'\U0001F7E2 Will post ASN updates to channel: {channel.name}'  # :green_circle:
+        await ctx.send(msg, ephemeral=True)
 
     async def gen_embed(self, data):
         log.debug('--- BEGIN entry/data  ---')
@@ -307,8 +365,10 @@ class AviationSafetyNetwork(commands.Cog):
                 if header in ['date']:
                     row_data[header] = cell.text.strip()
                     link = cell.find('a')
-                    if link:
-                        row_data['href'] = link['href']
+                    if not link:
+                        continue
+                    row_data['href'] = link['href']
+                    row_data['id'] = link['href'].split('/')[2]
                 if header in ['flag']:
                     img = cell.find('img')
                     row_data[header] = img['src'] if img else None
