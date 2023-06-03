@@ -139,6 +139,7 @@ class YouTube(commands.Cog):
     @commands.admin_or_can_manage_channel()
     async def _yt_add(self, ctx: commands.Context, *, names):
         """Add one or more YouTube channels to auto post in current channel"""
+        await ctx.defer()
         log.debug('names: %s', names)
         names_split = names.split(' ')
         # await self.config.channel(discord_channel).clear()
@@ -189,51 +190,6 @@ class YouTube(commands.Cog):
 
         chans_str = '\n'.join(chans)
         await ctx.send(f'YouTube Configurations:\n```ini\n{chans_str}```', ephemeral=True, delete_after=120)
-
-    # @_yt.command(name='channel', aliases=['c'], description='Set Channel for Auto Posting YouTube Videos')
-    # @commands.max_concurrency(1, commands.BucketType.guild)
-    # @commands.guild_only()
-    # @commands.admin()
-    # async def _yt_channel(self, ctx: commands.Context, channel: Optional[CarlChannelConverter] = None):
-    #     """Set Channel for Auto Posting YouTube Videos"""
-    #     channel: discord.TextChannel
-    #     if not channel:
-    #         await self.config.guild(ctx.guild).channel.set(0)
-    #         await ctx.send(f'\U00002705 Disabled. Specify a channel to Enable.', ephemeral=True)  # ✅
-    #         return
-    #
-    #     log.debug('channel: %s', channel)
-    #     log.debug('channel.type: %s', channel.type)
-    #     if not str(channel.type) == 'text':
-    #         await ctx.send('\U000026D4 Channel must be a Text Channel.', ephemeral=True)  # ⛔
-    #         return
-    #
-    #     await self.config.guild(ctx.guild).channel.set(channel.id)
-    #     msg = f'\U00002705 Will post daily history in channel: {channel.name}'  # ✅
-    #     await ctx.send(msg, ephemeral=True)
-    #
-    # @_yt.command(name='enable', aliases=['e', 'on'])
-    # async def _yt_enable(self, ctx: commands.Context):
-    #     """Enables YouTube."""
-    #     role_id = await self.config.guild(ctx.guild).verified()
-    #     enabled = await self.config.guild(ctx.guild).enabled()
-    #     if not role_id:
-    #         await ctx.send('⛔ YouTube role not set. Please set first.')
-    #     elif enabled:
-    #         await ctx.send('✅ YouTube module already enabled.')
-    #     else:
-    #         await self.config.guild(ctx.guild).enabled.set(True)
-    #         await ctx.send('✅ YouTube module enabled.')
-    #
-    # @_yt.command(name='disable', aliases=['d', 'off'])
-    # async def _yt_disable(self, ctx: commands.Context):
-    #     """Disable YouTube."""
-    #     enabled = await self.config.guild(ctx.guild).enabled()
-    #     if not enabled:
-    #         await ctx.send('✅ YouTube module already disabled.')
-    #     else:
-    #         await self.config.guild(ctx.guild).enabled.set(False)
-    #         await ctx.send('✅ YouTube module disabled.')
 
     async def sub_to_channel(self, channel_id: str) -> httpx.Response:
         log.debug('sub_to_channel: %s', channel_id)
