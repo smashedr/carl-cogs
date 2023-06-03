@@ -37,6 +37,8 @@ class Pubsub(commands.Cog):
         if self.loop and not self.loop.cancelled():
             log.info('Stopping Loop')
             self.loop.cancel()
+        if self.pubsub:
+            await self.pubsub.close()
 
     async def pubsub_loop(self):
         await self.bot.wait_until_ready()

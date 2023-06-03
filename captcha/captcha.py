@@ -55,7 +55,10 @@ class Captcha(commands.Cog):
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
-        self.loop.cancel()
+        if self.loop and not self.loop.cancelled():
+            self.loop.cancel()
+        if self.pubsub:
+            await self.pubsub.close()
 
     async def captcha_loop(self):
         await self.bot.wait_until_ready()

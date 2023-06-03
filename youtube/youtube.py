@@ -5,12 +5,10 @@ import json
 import logging
 import redis.asyncio as redis
 from bs4 import BeautifulSoup
-from typing import Optional, Union, Dict, Any, List
+from typing import Optional, Union, Dict, List, Any
 
 from redbot.core import commands, Config
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.menus import start_adding_reactions
-from redbot.core.utils.predicates import ReactionPredicate
 from redbot.core.utils import chat_formatting as cf
 
 from .converters import CarlChannelConverter
@@ -64,7 +62,10 @@ class YouTube(commands.Cog):
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
-        self.loop.cancel()
+        if self.loop and not self.loop.cancelled():
+            self.loop.cancel()
+        if self.pubsub:
+            await self.pubsub.close()
 
     async def main_loop(self):
         await self.bot.wait_until_ready()
@@ -72,7 +73,7 @@ class YouTube(commands.Cog):
         channel = 'red.youtube'
         log.info('Listening PubSub Channel: %s', channel)
         await self.pubsub.subscribe(channel)
-        while self is self.bot.get_cog('Captcha'):
+        while self is self.bot.get_cog('YouTube'):
             message = await self.pubsub.get_message(timeout=None)
             log.debug('message: %s', message)
             if message:
@@ -97,14 +98,30 @@ class YouTube(commands.Cog):
             # log.debug('user_id: %s', user_id)
             # member: discord.Member = await guild.fetch_member(int(user_id))
 
-            resp = {'success': True, 'message': 'null'}
-            log.debug('resp: %s', resp)
+            if 'new' in data['requests']:
+                asyncio.create_task(self.process_new(data))
+            resp = {'success': True, 'message': '202'}
             pr = await self.redis.publish(channel, json.dumps(resp, default=str))
             log.debug('pr: %s', pr)
 
         except Exception as error:
             log.error('Exception processing message.')
             log.exception(error)
+
+    async def process_new(self, raw_data):
+        log.debug('Start: process_new: %s', raw_data)
+        # embed = await self.gen_embed(data)
+        all_guilds: dict = await self.config.all_guilds()
+        for guild_id, data in await AsyncIter(all_guilds.items(), delay=10, steps=5):
+            if not data['channel']:
+                log.debug('disabled: guild_id: %s', guild_id)
+                continue
+            log.debug('enabled: guild_id: %s', guild_id)
+            guild: discord.Guild = self.bot.get_guild(guild_id)
+            channel: discord.TextChannel = guild.get_channel(data['channel'])
+            # await channel.send(embed=embed)
+            await channel.send(content=f'```{raw_data}```')
+        log.debug('Finish: process_new')
 
     @commands.group(name='youtube', aliases=['yt'])
     @commands.guild_only()
