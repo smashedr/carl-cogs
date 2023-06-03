@@ -11,8 +11,6 @@ from redbot.core import commands, Config
 from redbot.core.utils import AsyncIter
 from redbot.core.utils import chat_formatting as cf
 
-from .converters import CarlChannelConverter
-
 log = logging.getLogger('red.youtube')
 
 
@@ -22,17 +20,15 @@ class YouTube(commands.Cog):
     global_default = {
         'channels': [],
     }
-
-    guild_default = {
+    channel_default = {
         'channels': {},
-        'channel': 0,
     }
 
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_global(**self.global_default)
-        self.config.register_guild(**self.guild_default)
+        self.config.register_channel(**self.channel_default)
         self.loop: Optional[asyncio.Task] = None
         self.redis: Optional[redis.Redis] = None
         self.pubsub: Optional[redis.client.PubSub] = None
@@ -105,22 +101,27 @@ class YouTube(commands.Cog):
             log.debug('pr: %s', pr)
 
         except Exception as error:
-            log.error('Exception processing message.')
+            log.error('Exception Processing Message')
             log.exception(error)
 
     async def process_new(self, raw_data):
         log.debug('Start: process_new: %s', raw_data)
-        # embed = await self.gen_embed(data)
-        all_guilds: dict = await self.config.all_guilds()
-        for guild_id, data in await AsyncIter(all_guilds.items(), delay=10, steps=5):
-            if not data['channel']:
-                log.debug('disabled: guild_id: %s', guild_id)
-                continue
-            log.debug('enabled: guild_id: %s', guild_id)
-            guild: discord.Guild = self.bot.get_guild(guild_id)
-            channel: discord.TextChannel = guild.get_channel(data['channel'])
-            # await channel.send(embed=embed)
-            await channel.send(content=f'```{raw_data}```')
+        yt_channel_id = raw_data['feed']['entry']['yt:channelId']
+        log.debug('yt_channel_id: %s', yt_channel_id)
+        url = raw_data['feed']['entry']['link']['@href']
+        log.debug('url: %s', url)
+        name = raw_data['feed']['entry']['author']['name']
+        log.debug('name: %s', name)
+        msg = f'New Video from: **{name}**\n{url}'
+        log.debug('msg: %s', msg)
+
+        all_channels = await self.config.all_channels()
+        for chan_id, yt_channels in await AsyncIter(all_channels.items(), delay=10, steps=5):
+            log.debug('chan_id: %s', chan_id)
+            log.debug('yt_channels: %s', yt_channels)
+            if yt_channel_id in yt_channels['channels']:
+                channel: discord.TextChannel = self.bot.get_channel(chan_id)
+                await channel.send(msg)
         log.debug('Finish: process_new')
 
     @commands.group(name='youtube', aliases=['yt'])
@@ -133,51 +134,55 @@ class YouTube(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.default)
     @commands.guild_only()
     @commands.admin()
-    async def _yt_add(self, ctx: commands.Context, channel: str):
+    async def _yt_add(self, ctx: commands.Context, discord_channel: discord.TextChannel, *, yt_channels):
         """Add a YouTube channel for notifications."""
-        log.debug('channel: %s', channel)
-
-        chan_id = await self.get_channel_data(channel)
-        guild_channels: dict = await self.config.guild(ctx.guild).channels()
-        if chan_id in guild_channels:
-            await ctx.send(f'⛔ Channel already added: {channel}: {chan_id}')
-            return
-        r = await self.sub_to_channel(chan_id)
-        if not r.is_success:
-            await ctx.send(f'⛔ Error subscribing to channel: {channel}: {chan_id}\n'
-                           f'```{r.content.decode("utf-8").strip()}```')
-            return
+        log.debug('discord_channel: %s', discord_channel)
+        log.debug('yt_channels: %s', yt_channels)
+        yt_channels = yt_channels.split(' ')
+        # await self.config.channel(discord_channel).clear()
+        chan_data = [await self.get_channel_data(x) for x in yt_channels]
+        chan_conf: dict = await self.config.channel(discord_channel).channels()
+        for chan in chan_data:
+            cid = list(chan.keys())[0]
+            name = chan[cid]
+            if cid not in chan_conf:
+                chan_conf.update(chan)
+                r = await self.sub_to_channel(cid)
+                if not r.is_success:
+                    continue  # TODO: Process Error
+                await self.config.channel(discord_channel).channels.set(chan_conf)
 
         all_channels: list = await self.config.channels()
-        if chan_id not in all_channels:
-            all_channels.append(chan_id)
-            await self.config.channels.set(all_channels)
-        guild_channels.update({chan_id: channel})
-        await self.config.guild(ctx.guild).channels.set(guild_channels)
-        await ctx.send(f'✅ Added Channel {channel}: {chan_id}')
+        for chan in chan_data:
+            cid = list(chan.keys())[0]
+            if cid not in all_channels:
+                all_channels.append(cid)
+        await self.config.channels.set(all_channels)
+        await ctx.send(f'✅ Added YouTube Channels: **{cf.humanize_list(yt_channels)}** '
+                       f'to Discord Channel: `{discord_channel.name}`')
 
-    @_yt.command(name='channel', aliases=['c'], description='Set Channel for Auto Posting YouTube Videos')
-    @commands.max_concurrency(1, commands.BucketType.guild)
-    @commands.guild_only()
-    @commands.admin()
-    async def _yt_channel(self, ctx: commands.Context, channel: Optional[CarlChannelConverter] = None):
-        """Set Channel for Auto Posting YouTube Videos"""
-        channel: discord.TextChannel
-        if not channel:
-            await self.config.guild(ctx.guild).channel.set(0)
-            await ctx.send(f'\U00002705 Disabled. Specify a channel to Enable.', ephemeral=True)  # ✅
-            return
-
-        log.debug('channel: %s', channel)
-        log.debug('channel.type: %s', channel.type)
-        if not str(channel.type) == 'text':
-            await ctx.send('\U000026D4 Channel must be a Text Channel.', ephemeral=True)  # ⛔
-            return
-
-        await self.config.guild(ctx.guild).channel.set(channel.id)
-        msg = f'\U00002705 Will post daily history in channel: {channel.name}'  # ✅
-        await ctx.send(msg, ephemeral=True)
-
+    # @_yt.command(name='channel', aliases=['c'], description='Set Channel for Auto Posting YouTube Videos')
+    # @commands.max_concurrency(1, commands.BucketType.guild)
+    # @commands.guild_only()
+    # @commands.admin()
+    # async def _yt_channel(self, ctx: commands.Context, channel: Optional[CarlChannelConverter] = None):
+    #     """Set Channel for Auto Posting YouTube Videos"""
+    #     channel: discord.TextChannel
+    #     if not channel:
+    #         await self.config.guild(ctx.guild).channel.set(0)
+    #         await ctx.send(f'\U00002705 Disabled. Specify a channel to Enable.', ephemeral=True)  # ✅
+    #         return
+    #
+    #     log.debug('channel: %s', channel)
+    #     log.debug('channel.type: %s', channel.type)
+    #     if not str(channel.type) == 'text':
+    #         await ctx.send('\U000026D4 Channel must be a Text Channel.', ephemeral=True)  # ⛔
+    #         return
+    #
+    #     await self.config.guild(ctx.guild).channel.set(channel.id)
+    #     msg = f'\U00002705 Will post daily history in channel: {channel.name}'  # ✅
+    #     await ctx.send(msg, ephemeral=True)
+    #
     # @_yt.command(name='enable', aliases=['e', 'on'])
     # async def _yt_enable(self, ctx: commands.Context):
     #     """Enables YouTube."""
@@ -204,25 +209,27 @@ class YouTube(commands.Cog):
     @_yt.command(name='status', aliases=['s', 'settings'])
     async def _yt_status(self, ctx: commands.Context):
         """Get YouTube status."""
-        config: Dict[str, Any] = await self.config.guild(ctx.guild).all()
-        enabled = 'Enabled' if config['channel'] else 'Disabled'
-        channel: Optional[discord.TextChannel] = None
-        if config['channel']:
-            channel = ctx.guild.get_channel(config['channel'])
-        names: List[str] = []
-        if config['channels']:
-            names = [v for k,v in config['channels'].items()]
-        out = (
-            f'Youtube Settings:\n'
-            '```ini\n'
-            f'[Status]: {enabled}\n'
-            f'[Channel]: {channel}\n'
-            f'[Channels]: {cf.humanize_list(names)}'
-            '```'
-        )
-        await ctx.send(out)
+        all_channels = await self.config.all_channels()
+        chans = []
+        guild_channel_ids = [channel.id for channel in ctx.guild.text_channels]
+        for chan_id, yt_channels in await AsyncIter(all_channels.items(), delay=10, steps=5):
+            log.debug('chan_id: %s', chan_id)
+            log.debug('yt_channels: %s', yt_channels['channels'])
+            if chan_id in guild_channel_ids:
+                chan = ctx.guild.get_channel(chan_id)
+                clist = list(yt_channels["channels"].values())
+                chans.append(f'[{chan.name}]: {cf.humanize_list(clist)}')
+
+        if not chans:
+            await ctx.send('⛔ No configurations found.')
+            return
+
+        chans_str = '\n'.join(chans)
+        msg = f'YouTube Configurations:\n```ini\n{chans_str}```'
+        await ctx.send(msg)
 
     async def sub_to_channel(self, channel_id: str) -> httpx.Response:
+        log.debug('sub_to_channel: %s', channel_id)
         if not self.callback_url:
             raise ValueError('self.callback_url Not Defined')
         url = 'https://pubsubhubbub.appspot.com/subscribe'
@@ -245,7 +252,7 @@ class YouTube(commands.Cog):
         return r
 
     @staticmethod
-    async def get_channel_data(name: str) -> Optional[str]:
+    async def get_channel_data(name: str) -> Optional[dict]:
         try:
             log.debug('name: %s', name)
             url = f'https://www.youtube.com/c/{name}'
@@ -254,22 +261,17 @@ class YouTube(commands.Cog):
             async with httpx.AsyncClient(**http_options) as client:
                 r = await client.get(url)
             if not r.is_success:
-                r.raise_for_status()
+                url = f'https://www.youtube.com/user/{name}'
+                log.debug('url: %s', url)
+                async with httpx.AsyncClient(**http_options) as client:
+                    r = await client.get(url)
+                if not r.is_success:
+                    r.raise_for_status()
             soup = BeautifulSoup(r.text, 'html.parser')
             meta_tag = soup.find('meta', itemprop='identifier')
             channel_id = meta_tag['content']
             log.debug('channel_id: %s', channel_id)
-            # meta_tag = soup.find('meta', itemprop='name')
-            # channel_name = meta_tag['content'].strip('- ')
-            # log.debug('channel_name: %s', channel_name)
-            # channel_name = channel_name.strip('- ')
-            # log.debug('channel_name: %s', channel_name)
-            # if channel_name.lower() != name.lower():
-            #     log.warning('Error parsing Channel Name')
-            #     channel_name = name
-            # resp = channel_id, channel_name
-            log.debug('channel_id: %s', channel_id)
-            return channel_id
+            return {channel_id: name}
         except Exception as error:
             log.debug(error)
             return None
