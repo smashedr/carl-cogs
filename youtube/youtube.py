@@ -102,22 +102,36 @@ class YouTube(commands.Cog):
 
     async def process_new(self, raw_data):
         log.debug('Start: process_new: %s', raw_data)
-        yt_channel_id = raw_data['feed']['entry']['yt:channelId']
-        log.debug('yt_channel_id: %s', yt_channel_id)
-        url = raw_data['feed']['entry']['link']['@href']
-        log.debug('url: %s', url)
-        name = raw_data['feed']['entry']['author']['name']
-        log.debug('name: %s', name)
-        msg = f'New Video from: **{name}**\n{url}'
-        log.debug('msg: %s', msg)
+
+        if isinstance(raw_data['feed']['entry'], dict):
+            entries = [raw_data['feed']['entry']]
+        else:
+            entries = raw_data['feed']['entry']
 
         all_channels = await self.config.all_channels()
-        for chan_id, yt_channels in await AsyncIter(all_channels.items(), delay=10, steps=5):
-            log.debug('chan_id: %s', chan_id)
-            log.debug('yt_channels: %s', yt_channels)
-            if yt_channel_id in yt_channels['channels']:
-                channel: discord.TextChannel = self.bot.get_channel(chan_id)
-                await channel.send(msg)
+        for entry in entries:
+            log.debug('-'*20)
+            log.debug('entry: %s', entry)
+            log.debug('-'*20)
+            log.debug('published: %s', entry['published'])
+            log.debug('updated: %s', entry['updated'])
+            if entry['published'] != entry['updated']:
+                log.warning('UPDATE DETECTED, SKIPPING!!!')
+                continue
+            yt_channel_id = entry['yt:channelId']
+            log.debug('yt_channel_id: %s', yt_channel_id)
+            url = entry['link']['@href']
+            log.debug('url: %s', url)
+            name = entry['author']['name']
+            log.debug('name: %s', name)
+            message = f'New Video from: **{name}**\n{url}'
+            log.debug('message: %s', message)
+            for chan_id, yt_channels in await AsyncIter(all_channels.items(), delay=10, steps=5):
+                log.debug('chan_id: %s', chan_id)
+                log.debug('yt_channels: %s', yt_channels)
+                if yt_channel_id in yt_channels['channels']:
+                    channel: discord.TextChannel = self.bot.get_channel(chan_id)
+                    await channel.send(message)
         log.debug('Finish: process_new')
 
     @commands.hybrid_group(name='youtube', aliases=['yt'],
@@ -128,19 +142,19 @@ class YouTube(commands.Cog):
         """Options for manging YouTube"""
 
     @_yt.command(name='add', aliases=['a'],
-                 description='Add one or more YouTube channels to auto post in current channel')
-    @app_commands.describe(names='Name or Names of YouTube Channel(s) to add, space seperated')
+                 description='Add one or more YouTube channels to current channel')
+    @app_commands.describe(names='Name or Names of YouTube Channel(s) to add')
     @commands.max_concurrency(1, commands.BucketType.default)
     @commands.guild_only()
     @commands.admin_or_can_manage_channel()
     async def _yt_add(self, ctx: commands.Context, *, names):
-        """Add one or more YouTube channels to auto post in current channel"""
+        """Add one or more YouTube channels to current channel"""
         await ctx.defer()
         # await self.config.channel(ctx.channel).clear()
         # await ctx.send('clear', ephemeral=True, delete_after=10)
         # return
         log.debug('names: %s', names)
-        names_split = names.split()
+        names_split = names.replace(',', ' ').split()
         names_split = [x.lstrip('@') for x in names_split]
         log.debug('names_split: %s', names_split)
         # clean_names = []
@@ -180,7 +194,7 @@ class YouTube(commands.Cog):
         all_channels: list = await self.config.channels()
         for chan in chan_data:
             cid = list(chan.keys())[0]
-            r = await self.sub_to_channel(cid)
+            r = await self.sub_to_channel(cid)  # TODO: DEBUG: always sub for test
             if cid not in all_channels:
                 # r = await self.sub_to_channel(cid)
                 # if not r.is_success:
