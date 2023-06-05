@@ -27,6 +27,8 @@ times = [
 class YouTube(commands.Cog):
     """Carl's YouTube Cog"""
 
+    http_options = {'follow_redirects': True, 'timeout': 10}
+
     global_default = {
         'channels': [],
         'videos': {},
@@ -161,8 +163,8 @@ class YouTube(commands.Cog):
 
     @tasks.loop(hours=1)
     async def update_channels_list(self):
-        log.info('%s: Update Chan Task - Delay 60 Seconds', self.__cog_name__)
-        await asyncio.sleep(60)
+        log.info('%s: Update Chan Task - Delay 30 Seconds', self.__cog_name__)
+        await asyncio.sleep(30)
         log.info('%s: Update Chan Task - Start', self.__cog_name__)
         new_channels = []
         all_channels: dict = await self.config.all_channels()
@@ -177,6 +179,23 @@ class YouTube(commands.Cog):
         await self.config.channels.set(new_channels)
         log.debug('new_channels: %s', new_channels)
         log.info('%s: Update Chan Task - Finish', self.__cog_name__)
+
+    # @tasks.loop(hours=1)
+    # async def poll_new_videos(self):
+    #     log.info('%s: Poll Videos Task - Delay 60 Seconds', self.__cog_name__)
+    #     await asyncio.sleep(60)
+    #     log.info('%s: Poll Videos Task - Start', self.__cog_name__)
+    #     channels: list = await self.config.channels()
+    #     for channel_id in channels:
+    #         log.debug('channel_id: %s', channel_id)
+    #         video_feeds: dict = await self.get_feed_videos(channel_id, True)
+    #         all_videos: dict = await self.config.videos()
+    #         for video in all_videos[channel_id]:
+    #             if video not in video_feeds[channel_id]:
+    #                 log.debug('Found New Video: %s', video)
+    #                 all_videos[channel_id].append(video)
+    #         # log.debug('all_videos: %s', all_videos)
+    #     log.info('%s: Poll Videos Task - Finish', self.__cog_name__)
 
     @commands.hybrid_group(name='youtube', aliases=['yt'],
                            description='Options for manging YouTube')
@@ -344,18 +363,10 @@ class YouTube(commands.Cog):
         log.debug('sub_to_channel: %s', channel_id)
         if not self.callback_url:
             raise ValueError('self.callback_url Not Defined')
-        http_options = {'follow_redirects': True, 'timeout': 10}
-        all_videos = await self.config.videos()
         topic_url = f'https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}'
+        all_videos = await self.config.videos()
         if channel_id not in all_videos:
-            async with httpx.AsyncClient(**http_options) as client:
-                r = await client.get(topic_url)
-                r.raise_for_status()
-            log.debug('r.status_code: %s', r.status_code)
-            feed = xmltodict.parse(r.text)
-            video_list = []
-            for entry in feed['feed']['entry']:
-                video_list.append(entry['yt:videoId'])
+            video_list = await self.get_feed_videos(channel_id)
             all_videos[channel_id] = video_list
             await self.config.videos.set(all_videos)
         data = {
@@ -368,20 +379,36 @@ class YouTube(commands.Cog):
             'hub.lease_numbers': '',
         }
         url = 'https://pubsubhubbub.appspot.com/subscribe'
-        async with httpx.AsyncClient(**http_options) as client:
+        async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.post(url, data=data)
             r.raise_for_status()
         log.debug('r.status_code: %s', r.status_code)
         return r
 
-    @staticmethod
-    async def get_channel_data(name: str) -> Optional[dict]:
+    async def get_feed_videos(self, channel_id, as_dict=False) -> Union[list, dict]:
+        topic_url = f'https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}'
+        async with httpx.AsyncClient(**self.http_options) as client:
+            r = await client.get(topic_url)
+            r.raise_for_status()
+        log.debug('r.status_code: %s', r.status_code)
+        feed = xmltodict.parse(r.text)
+        if as_dict:
+            video_data = {}
+            for entry in feed['feed']['entry']:
+                video_data[entry['yt:videoId']] = entry
+            return video_data
+        else:
+            video_list = []
+            for entry in feed['feed']['entry']:
+                video_list.append(entry['yt:videoId'])
+            return video_list
+
+    async def get_channel_data(self, name: str) -> Optional[dict]:
         try:
             log.debug('name: %s', name)
             url = f'https://www.youtube.com/@{name}'
             log.debug('url: %s', url)
-            http_options = {'follow_redirects': True, 'timeout': 10}
-            async with httpx.AsyncClient(**http_options) as client:
+            async with httpx.AsyncClient(**self.http_options) as client:
                 r = await client.get(url)
                 r.raise_for_status()
             soup = BeautifulSoup(r.text, 'html.parser')
