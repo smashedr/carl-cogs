@@ -4,6 +4,7 @@ import discord
 import httpx
 import json
 import logging
+import xmltodict
 import redis.asyncio as redis
 from bs4 import BeautifulSoup
 from typing import Optional, Union, Dict, List, Any
@@ -21,6 +22,7 @@ class YouTube(commands.Cog):
 
     global_default = {
         'channels': [],
+        'videos': {},
     }
     channel_default = {
         'channels': {},
@@ -35,6 +37,7 @@ class YouTube(commands.Cog):
         self.redis: Optional[redis.Redis] = None
         self.pubsub: Optional[redis.client.PubSub] = None
         self.callback_url: Optional[str] = None
+        self.channel: str = 'red.youtube'
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
@@ -66,12 +69,11 @@ class YouTube(commands.Cog):
     async def main_loop(self):
         await self.bot.wait_until_ready()
         log.info('%s: Start Main Loop', self.__cog_name__)
-        channel = 'red.youtube'
-        log.info('Listening PubSub Channel: %s', channel)
-        await self.pubsub.subscribe(channel)
+        log.info('Listening on PubSub Channel: %s', self.channel)
+        await self.pubsub.subscribe(self.channel)
         while self is self.bot.get_cog('YouTube'):
             message = await self.pubsub.get_message(timeout=None)
-            log.debug('message: %s', message)
+            # log.debug('message: %s', message)
             if message:
                 await self.process_message(message)
             await asyncio.sleep(0.01)
@@ -79,17 +81,17 @@ class YouTube(commands.Cog):
     async def process_message(self, message: dict) -> None:
         try:
             data = json.loads(message['data'].decode('utf-8'))
-            log.debug('data: %s', data)
+            # log.debug('data: %s', data)
 
-            channel = data['channel']
-            log.debug('channel: %s', channel)
-            requests = data['requests']
-            log.debug('requests: %s', requests)
+            # channel = data['channel']
+            # log.debug('channel: %s', channel)
+            # requests = data['requests']
+            # log.debug('requests: %s', requests)
 
             if 'new' in data['requests']:
                 asyncio.create_task(self.process_new(data))
             resp = {'success': True, 'message': '202'}
-            pr = await self.redis.publish(channel, json.dumps(resp, default=str))
+            pr = await self.redis.publish(data['channel'], json.dumps(resp, default=str))
             log.debug('pr: %s', pr)
 
         except Exception as error:
@@ -97,33 +99,33 @@ class YouTube(commands.Cog):
             log.exception(error)
 
     async def process_new(self, raw_data):
-        log.debug('Start: process_new: %s', raw_data)
+        log.debug('Start: process_new')
+        # log.debug(raw_data)
 
         if isinstance(raw_data['feed']['entry'], dict):
             entries = [raw_data['feed']['entry']]
         else:
             entries = raw_data['feed']['entry']
 
+        # yt_channel_id = None
         all_channels = await self.config.all_channels()
         for entry in entries:
-            log.debug('-'*20)
-            log.debug('entry: %s', entry)
-            log.debug('-'*20)
-            log.debug('published: %s', entry['published'])
-            log.debug('updated: %s', entry['updated'])
-            if entry['published'] != entry['updated']:
-                log.debug('-'*40)
-                log.debug('-'*40)
-                log.debug('-'*40)
-                log.warning('UPDATE DETECTED, SKIPPING!!!')
-                log.warning('UPDATE DETECTED, SKIPPING!!!')
-                log.warning('UPDATE DETECTED, SKIPPING!!!')
-                log.debug('-'*40)
-                log.debug('-'*40)
-                log.debug('-'*40)
-                continue
+            # log.debug('-'*20)
+            # log.debug('entry: %s', entry)
+            # log.debug('-'*20)
+            log.debug('name: %s', entry['author']['name'] if 'name' in entry['author'] else None)
+            log.debug('url: %s', entry['author']['url'] if 'url' in entry['author'] else None)
+            yt_video_id = entry['yt:videoId']
+            log.debug('yt_video_id: %s', yt_video_id)
             yt_channel_id = entry['yt:channelId']
             log.debug('yt_channel_id: %s', yt_channel_id)
+            all_videos = await self.config.videos()
+            # log.debug('all_videos: %s', all_videos)
+            if yt_video_id in all_videos[yt_channel_id]:
+                log.warning('----- UPDATE DETECTED, SKIPPING!!! -----')
+                continue
+            all_videos[yt_channel_id].append(yt_video_id)
+            await self.config.videos.set(all_videos)
             url = entry['link']['@href']
             log.debug('url: %s', url)
             name = entry['author']['name']
@@ -131,11 +133,13 @@ class YouTube(commands.Cog):
             message = f'New Video from: **{name}**\n{url}'
             log.debug('message: %s', message)
             for chan_id, yt_channels in await AsyncIter(all_channels.items(), delay=10, steps=5):
-                log.debug('chan_id: %s', chan_id)
-                log.debug('yt_channels: %s', yt_channels)
+                # log.debug('chan_id: %s', chan_id)
+                # log.debug('yt_channels: %s', yt_channels)
                 if yt_channel_id in yt_channels['channels']:
                     channel: discord.TextChannel = self.bot.get_channel(chan_id)
                     await channel.send(message)
+        # if yt_channel_id:
+        #     await self.sub_to_channel(yt_channel_id)
         log.debug('Finish: process_new')
 
     @tasks.loop(time=datetime.time(hour=12, tzinfo=datetime.timezone.utc))
@@ -187,6 +191,7 @@ class YouTube(commands.Cog):
             log.debug('chan: %s', chan)
             cid = list(chan.keys())[0]
             # name = chan[cid]
+            r = await self.sub_to_channel(cid)
             if cid not in chan_conf:
                 chan_conf.update(chan)
                 await self.config.channel(ctx.channel).channels.set(chan_conf)
@@ -194,14 +199,77 @@ class YouTube(commands.Cog):
         for chan in chan_data:
             cid = list(chan.keys())[0]
             if cid not in all_channels:
-                r = await self.sub_to_channel(cid)
-                if not r.is_success:
-                    continue  # TODO: Process Error
+                # r = await self.sub_to_channel(cid)
+                # if not r.is_success:
+                #     continue  # TODO: Process Error
                 all_channels.append(cid)
                 await asyncio.sleep(0.1)
         await self.config.channels.set(all_channels)
         await ctx.send(f'✅ Added YouTube Channels: **{cf.humanize_list(names_split)}** '
                        f'to Discord Channel: `{ctx.channel.name}`', ephemeral=True, delete_after=60)
+
+    @_yt.command(name='remove', aliases=['r'],
+                 description='Remove all YouTube Channels from the Current Channel')
+    @commands.max_concurrency(1, commands.BucketType.default)
+    @commands.guild_only()
+    @commands.admin_or_can_manage_channel()
+    async def _yt_remove(self, ctx: commands.Context):
+        """Remove all YouTube Channels from the Current Channel"""
+        await ctx.defer()
+        channels = await self.config.channel(ctx.channel).channels()
+        log.debug('channels: %s', channels)
+        await self.config.channel(ctx.channel).clear()
+        clist = list(channels.values()) if channels else 'None'
+        await ctx.send(f'All Channels Removed from This Channel: {clist}',
+                       ephemeral=True, delete_after=60)
+
+    # @_yt.command(name='remove', aliases=['r'],
+    #              description='Remove one or more YouTube channels')
+    # @app_commands.describe(names='Name or Names of YouTube Channel(s) to remove')
+    # @commands.max_concurrency(1, commands.BucketType.default)
+    # @commands.guild_only()
+    # @commands.admin_or_can_manage_channel()
+    # async def _yt_remove(self, ctx: commands.Context, *, names):
+    #     """Remove one or more YouTube channels"""
+    #     await ctx.defer()
+    #     log.debug('names: %s', names)
+    #     names_split = names.replace(',', ' ').split()
+    #     names_split = [x.lstrip('@') for x in names_split]
+    #     log.debug('names_split: %s', names_split)
+    #     try:
+    #         chan_data = [await self.get_channel_data(x) for x in names_split]
+    #         if not chan_data or not chan_data[0]:
+    #             await ctx.send(f'⛔ No channels found for one or more passed channels: `{names}`',
+    #                            ephemeral=True, delete_after=15)
+    #             return
+    #     except Exception as error:
+    #         log.debug(error)
+    #         await ctx.send(f'⛔ Error processing one or more passed channels: `{names}`',
+    #                        ephemeral=True, delete_after=15)
+    #         return
+    #
+    #     chan_conf: dict = await self.config.channel(ctx.channel).channels()
+    #     log.debug('chan_conf: %s', chan_conf)
+    #     log.debug('chan_data: %s', chan_data)
+    #     for chan in chan_data:
+    #         log.debug('chan: %s', chan)
+    #         cid = list(chan.keys())[0]
+    #         # name = chan[cid]
+    #         if cid not in chan_conf:
+    #             chan_conf.update(chan)
+    #             await self.config.channel(ctx.channel).channels.set(chan_conf)
+    #     all_channels: list = await self.config.channels()
+    #     for chan in chan_data:
+    #         cid = list(chan.keys())[0]
+    #         if cid not in all_channels:
+    #             r = await self.sub_to_channel(cid)
+    #             if not r.is_success:
+    #                 continue  # TODO: Process Error
+    #             all_channels.append(cid)
+    #             await asyncio.sleep(0.1)
+    #     await self.config.channels.set(all_channels)
+    #     await ctx.send(f'✅ Removed YouTube Channels: **{cf.humanize_list(names_split)}** ',
+    #                    ephemeral=True, delete_after=60)
 
     @_yt.command(name='status', aliases=['s', 'settings'],
                  description='Show all configured YouTube Channels')
@@ -210,6 +278,7 @@ class YouTube(commands.Cog):
     @commands.admin_or_can_manage_channel()
     async def _yt_status(self, ctx: commands.Context):
         """Get YouTube status."""
+        await ctx.defer()
         all_channels: dict = await self.config.all_channels()
         guild_channel_ids = [channel.id for channel in ctx.guild.text_channels]
         chans = []
@@ -236,6 +305,8 @@ class YouTube(commands.Cog):
     # async def _yt_status(self, ctx: commands.Context):
     #     """Super Powerful Test Command. Do NOT Use!"""
     #     await ctx.defer()
+    #     all_videos = await self.config.videos()
+    #     log.debug('all_videos: %s', all_videos)
     #     await self.sub_bub_task()
     #     await ctx.send('Pub Done, Bub.')
 
@@ -243,9 +314,23 @@ class YouTube(commands.Cog):
         log.debug('sub_to_channel: %s', channel_id)
         if not self.callback_url:
             raise ValueError('self.callback_url Not Defined')
+        http_options = {'follow_redirects': True, 'timeout': 10}
+        all_videos = await self.config.videos()
+        topic_url = f'https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}'
+        if channel_id not in all_videos:
+            async with httpx.AsyncClient(**http_options) as client:
+                r = await client.get(topic_url)
+                r.raise_for_status()
+            log.debug('r.status_code: %s', r.status_code)
+            feed = xmltodict.parse(r.text)
+            video_list = []
+            for entry in feed['feed']['entry']:
+                video_list.append(entry['yt:videoId'])
+            all_videos[channel_id] = video_list
+            await self.config.videos.set(all_videos)
         data = {
             'hub.callback': self.callback_url,
-            'hub.topic': f'https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}',
+            'hub.topic': topic_url,
             'hub.verify': 'async',
             'hub.mode': mode,
             'hub.verify_token': '',
@@ -253,9 +338,9 @@ class YouTube(commands.Cog):
             'hub.lease_numbers': '',
         }
         url = 'https://pubsubhubbub.appspot.com/subscribe'
-        http_options = {'follow_redirects': True, 'timeout': 30}
         async with httpx.AsyncClient(**http_options) as client:
             r = await client.post(url, data=data)
+            r.raise_for_status()
         log.debug('r.status_code: %s', r.status_code)
         return r
 
@@ -265,7 +350,7 @@ class YouTube(commands.Cog):
             log.debug('name: %s', name)
             url = f'https://www.youtube.com/@{name}'
             log.debug('url: %s', url)
-            http_options = {'follow_redirects': True, 'timeout': 30}
+            http_options = {'follow_redirects': True, 'timeout': 10}
             async with httpx.AsyncClient(**http_options) as client:
                 r = await client.get(url)
                 r.raise_for_status()

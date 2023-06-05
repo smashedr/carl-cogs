@@ -94,7 +94,12 @@ class AviationSafetyNetwork(commands.Cog):
 
     async def process_post_entry(self, entry: Dict[str, Any]):
         log.debug('Start Entry ID: %s', entry['id'])
-        wiki_data = await self.get_wiki_entry(entry['href'])
+        try:
+            wiki_data = await self.get_wiki_entry(entry['href'])
+        except Exception as error:
+            log.error('Error getting Wiki Data: %s', error)
+            return
+
         embed = await self.gen_embed(wiki_data)
         all_guilds: dict = await self.config.all_guilds()
         for guild_id, data in await AsyncIter(all_guilds.items(), delay=10, steps=5):

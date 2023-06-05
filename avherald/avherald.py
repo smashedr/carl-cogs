@@ -60,7 +60,7 @@ class AVHerald(commands.Cog):
     @tasks.loop(minutes=30.0)
     async def main_loop(self):
         await self.bot.wait_until_ready()
-        log.info('%s: Run Loop: main_loop', self.__cog_name__)
+        log.info('%s: Start Loop: main_loop', self.__cog_name__)
         try:
             await self.gen_wiki_data()
         except Exception as error:
@@ -80,9 +80,11 @@ class AVHerald(commands.Cog):
 
         for d in data:
             if d['id'] not in last:
+                log.info('%s not in last, sending notification now.', d['id'])
                 last.insert(0, d['id'])
                 await self.config.last.set(last[:200])
                 await self.process_post_entry(d)
+        log.info('%s: Finish Loop: main_loop', self.__cog_name__)
 
     async def process_post_entry(self, entry: Dict[str, Any]):
         log.debug('Start Entry ID: %s', entry['id'])
@@ -99,8 +101,7 @@ class AVHerald(commands.Cog):
             await channel.send(embed=embed)
         log.debug('Finish Entry ID: %s', entry['id'])
 
-    @commands.hybrid_group(name='avherald', aliases=['avh'],
-                           description='AVHerald Commands')
+    @commands.hybrid_group(name='avherald', aliases=['avh'], description='AVHerald Commands')
     async def _avherald(self, ctx: commands.Context):
         """AVHerald Commands"""
 
