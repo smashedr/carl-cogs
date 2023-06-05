@@ -359,9 +359,8 @@ class Flightaware(commands.Cog):
         }
         async with httpx.AsyncClient(**http_options) as client:
             r = await client.get(url)
-        if not r.is_success:
             r.raise_for_status()
-        html = r.content.decode('utf-8')
+        html = r.text
         soup = BeautifulSoup(html, 'html.parser')
         rows = soup.find('table').find('tbody').find_all('tr')
         aircraft_data = {}

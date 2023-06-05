@@ -183,6 +183,5 @@ class Createthings(commands.Cog):
         log.debug('fetching url: %s', url)
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.get(url)
-        if not r.is_success:
             r.raise_for_status()
         return r.content

@@ -69,7 +69,11 @@ class AviationSafetyNetwork(commands.Cog):
     async def main_loop(self):
         await self.bot.wait_until_ready()
         log.info('%s: Run Loop: main_loop', self.__cog_name__)
-        await self.gen_wiki_data()
+        try:
+            await self.gen_wiki_data()
+        except Exception as error:
+            log.error('Error Generating Wiki Data: %s', error)
+            return
         data: List[dict] = json.loads(await self.redis.get('asn:latest') or '{}')
         if not data:
             log.error('No ASN Data.')
@@ -251,10 +255,9 @@ class AviationSafetyNetwork(commands.Cog):
         url = f"{self.base_url}/{href}"
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.get(url, headers=self.http_headers)
-        if not r.is_success:
             r.raise_for_status()
 
-        html = r.content.decode('utf-8')
+        html = r.text
         # log.debug('--- BEGIN html  ---')
         # log.debug(html)
         # log.debug('--- END html  ---')
@@ -314,7 +317,7 @@ class AviationSafetyNetwork(commands.Cog):
         if data['Date'] and data['Time']:
             m = re.search('[0-9]{2}:[0-9]{2}', data['Time'])
             time = m.group(0) if (m and m.group(0)) else '00:00'
-            _str = f"{data['Date']} {m.group(0)}"
+            _str = f"{data['Date']} {time}"
             _fmt = '%d-%b-%Y %H:%M'
         elif data['Date']:
             _str = f"{data['Date']}"
@@ -344,9 +347,8 @@ class AviationSafetyNetwork(commands.Cog):
         log.debug('--- remote call ---')
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.get(self.wiki_n, headers=self.http_headers)
-        if not r.is_success:
             r.raise_for_status()
-        html = r.content.decode('utf-8')
+        html = r.text
         # log.debug('--- BEGIN html  ---')
         # log.debug(html)
         # log.debug('--- END html  ---')

@@ -178,11 +178,10 @@ class DayInHistory(commands.Cog):
         log.debug('day_url: %s', day_url)
         async with httpx.AsyncClient(**http_options) as client:
             r = await client.get(day_url)
-        if not r.is_success:
             r.raise_for_status()
-        html = r.content.decode('utf-8')
+        html = r.text
         if not html:
-            raise Exception('r.content is None')
+            raise Exception('r.text is None')
         soup = BeautifulSoup(html, 'html.parser')
         a_tag = soup.find('a', {'class': 'tdih-featured__title'})
         log.debug('a_tag: %s', a_tag)
@@ -192,9 +191,8 @@ class DayInHistory(commands.Cog):
         log.debug('feat_url: %s', feat_url)
         async with httpx.AsyncClient(**http_options) as client:
             r = await client.get(feat_url)
-        if not r.is_success:
             r.raise_for_status()
-        soup = BeautifulSoup(r.content, 'html.parser')
+        soup = BeautifulSoup(r.text, 'html.parser')
         meta_tag = soup.find('meta', {'name': 'description'})
         description = meta_tag['content'] if meta_tag else 'No Meta Description.'
         log.debug('description: %s', description)

@@ -62,7 +62,6 @@ class Dictionary(commands.Cog):
         try:
             async with httpx.AsyncClient(**self.http_options) as client:
                 r = await client.get(url)
-            if not r.is_success:
                 r.raise_for_status()
         except Exception as error:
             log.exception(error)
@@ -115,7 +114,6 @@ class Dictionary(commands.Cog):
         try:
             async with httpx.AsyncClient(**self.http_options) as client:
                 r = await client.get(url)
-            if not r.is_success:
                 r.raise_for_status()
         except Exception as error:
             log.exception(error)

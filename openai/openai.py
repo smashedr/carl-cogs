@@ -442,7 +442,6 @@ class OpenAI(commands.Cog):
         data = {'model': 'gpt-3.5-turbo', 'messages': messages}
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.post(url=url, headers=self.headers, json=data)
-        if not r.is_success:
             log.error('r.status_code: %s', r.status_code)
             r.raise_for_status()
         return r.json()
@@ -454,7 +453,6 @@ class OpenAI(commands.Cog):
         # Fix the spelling and grammar errors ??? box -> thinking
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.post(url=url, headers=self.headers, json=data)
-        if not r.is_success:
             log.error('r.status_code: %s', r.status_code)
             r.raise_for_status()
         return r.json()
@@ -464,7 +462,6 @@ class OpenAI(commands.Cog):
         data = {'prompt': query, 'size': size, 'n': n}
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.post(url=url, headers=self.headers, json=data)
-        if not r.is_success:
             log.error('r.status_code: %s', r.status_code)
             r.raise_for_status()
         return r.json()
@@ -476,7 +473,6 @@ class OpenAI(commands.Cog):
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.post(url=url, headers=self.headers, data=data,
                                   files={'image': file})
-        if not r.is_success:
             log.error('r.status_code: %s', r.status_code)
             r.raise_for_status()
         return r.json()

@@ -50,9 +50,8 @@ class FlightAware(object):
         p = {'query': query}
         async with self.get_client() as client:
             r = await client.get(url, params=p)
-            if not r.is_success:
-                r.raise_for_status()
-            return r.json()
+            r.raise_for_status()
+        return r.json()
 
     # async def flights_search_ident(self, ident: str):
     #     data = await self.flights_search(f'-idents "{ident}"')
@@ -77,9 +76,8 @@ class FlightAware(object):
         p.update(params or {})
         async with self.get_client() as client:
             r = await client.get(url, params=p)
-            if not r.is_success:
-                r.raise_for_status()
-            return r.json()
+            r.raise_for_status()
+        return r.json()
 
     async def flights_map(self, fa_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -89,9 +87,8 @@ class FlightAware(object):
         url = f'{self.url}/flights/{fa_id}/map'
         async with self.get_client() as client:
             r = await client.get(url)
-            if not r.is_success:
-                r.raise_for_status()
-            return r.json()
+            r.raise_for_status()
+        return r.json()
 
     async def operators_id(self, operator_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -102,9 +99,8 @@ class FlightAware(object):
         print(url)
         async with self.get_client() as client:
             r = await client.get(url)
-            if not r.is_success:
-                r.raise_for_status()
-            return r.json()
+            r.raise_for_status()
+        return r.json()
 
     async def owner_ident(self, ident: str) -> Dict[str, Any]:
         """
@@ -114,9 +110,8 @@ class FlightAware(object):
         url = f'{self.url}/aircraft/{ident.upper()}/owner'
         async with self.get_client() as client:
             r = await client.get(url)
-            if not r.is_success:
-                r.raise_for_status()
-            return r.json()
+            r.raise_for_status()
+        return r.json()
 
 
 async def main():

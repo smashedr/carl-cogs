@@ -1,0 +1,15 @@
+{
+  "name": "AviationSafetyNetwork",
+  "author": ["Shane#0816"],
+  "short": "Carl's AviationSafetyNetwork Module.",
+  "description": "Get and post ASN data to Discord.",
+  "install_msg": "Manage this command with `[p]asn`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "required_cogs": {},
+  "requirements": [],
+  "min_bot_version": "3.4.0",
+  "min_python_version" : [3,8,0],
+  "disabled": false,
+  "hidden": false,
+  "type": "COG"
+}
