@@ -16,6 +16,13 @@ from redbot.core.utils import chat_formatting as cf
 
 log = logging.getLogger('red.youtube')
 
+times = [
+    datetime.time(hour=0, tzinfo=datetime.timezone.utc),
+    datetime.time(hour=6, tzinfo=datetime.timezone.utc),
+    datetime.time(hour=12, tzinfo=datetime.timezone.utc),
+    datetime.time(hour=18, tzinfo=datetime.timezone.utc)
+]
+
 
 class YouTube(commands.Cog):
     """Carl's YouTube Cog"""
@@ -142,7 +149,7 @@ class YouTube(commands.Cog):
         #     await self.sub_to_channel(yt_channel_id)
         log.debug('Finish: process_new')
 
-    @tasks.loop(time=datetime.time(hour=12, tzinfo=datetime.timezone.utc))
+    @tasks.loop(time=times)
     async def sub_bub_task(self):
         log.info('%s: Sub Bub Task - Start', self.__cog_name__)
         data: list = await self.config.channels()
@@ -151,6 +158,25 @@ class YouTube(commands.Cog):
             await self.sub_to_channel(chan)
             await asyncio.sleep(1)
         log.info('%s: Sub Bub Task - Finish', self.__cog_name__)
+
+    @tasks.loop(hours=1)
+    async def update_channels_list(self):
+        log.info('%s: Update Chan Task - Delay 60 Seconds', self.__cog_name__)
+        await asyncio.sleep(60)
+        log.info('%s: Update Chan Task - Start', self.__cog_name__)
+        new_channels = []
+        all_channels: dict = await self.config.all_channels()
+        log.debug('all_channels: %s', all_channels)
+        for _, chans in all_channels.items():
+            for chan, name in chans['channels'].items():
+                if chan not in new_channels:
+                    new_channels.append(chan)
+
+        before = await self.config.channels()
+        log.debug('before: %s', before)
+        await self.config.channels.set(new_channels)
+        log.debug('new_channels: %s', new_channels)
+        log.info('%s: Update Chan Task - Finish', self.__cog_name__)
 
     @commands.hybrid_group(name='youtube', aliases=['yt'],
                            description='Options for manging YouTube')
@@ -302,13 +328,17 @@ class YouTube(commands.Cog):
     # @commands.max_concurrency(1, commands.BucketType.default)
     # @commands.guild_only()
     # @commands.is_owner()
-    # async def _yt_status(self, ctx: commands.Context):
+    # async def _yt_test(self, ctx: commands.Context):
     #     """Super Powerful Test Command. Do NOT Use!"""
     #     await ctx.defer()
+    #     channels = await self.config.channels()
+    #     log.debug('channels: %s', channels)
     #     all_videos = await self.config.videos()
     #     log.debug('all_videos: %s', all_videos)
-    #     await self.sub_bub_task()
-    #     await ctx.send('Pub Done, Bub.')
+    #     # await self.sub_bub_task()
+    #     # await ctx.send('Pub Done, Bub.')
+    #     # await self.update_channels_list()
+    #     # await ctx.send('Update Done, Bub.')
 
     async def sub_to_channel(self, channel_id: str, mode: str = 'subscribe') -> httpx.Response:
         log.debug('sub_to_channel: %s', channel_id)

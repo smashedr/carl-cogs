@@ -53,7 +53,7 @@ class Flightaware(commands.Cog):
             return
         if not message.content:
             return
-        if 3 > len(message.content) > 7:
+        if not (3 <= len(message.content) <= 7):
             return
         split = message.content.split()
         if len(split) > 1:
