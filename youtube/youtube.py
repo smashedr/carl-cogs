@@ -16,13 +16,6 @@ from redbot.core.utils import chat_formatting as cf
 
 log = logging.getLogger('red.youtube')
 
-times = [
-    datetime.time(hour=0, tzinfo=datetime.timezone.utc),
-    datetime.time(hour=6, tzinfo=datetime.timezone.utc),
-    datetime.time(hour=12, tzinfo=datetime.timezone.utc),
-    datetime.time(hour=18, tzinfo=datetime.timezone.utc)
-]
-
 
 class YouTube(commands.Cog):
     """Carl's YouTube Cog"""
@@ -66,10 +59,14 @@ class YouTube(commands.Cog):
         await self.redis.ping()
         self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
         self.loop = asyncio.create_task(self.main_loop())
+        self.sub_bub_task.start()
+        self.poll_new_videos.start()
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
+        self.sub_bub_task.cancel()
+        self.poll_new_videos.cancel()
         if self.loop and not self.loop.cancelled():
             self.loop.cancel()
         if self.pubsub:
@@ -90,13 +87,6 @@ class YouTube(commands.Cog):
     async def process_message(self, message: dict) -> None:
         try:
             data = json.loads(message['data'].decode('utf-8'))
-            # log.debug('data: %s', data)
-
-            # channel = data['channel']
-            # log.debug('channel: %s', channel)
-            # requests = data['requests']
-            # log.debug('requests: %s', requests)
-
             if 'new' in data['requests']:
                 asyncio.create_task(self.process_new(data))
             resp = {'success': True, 'message': '202'}
@@ -110,26 +100,21 @@ class YouTube(commands.Cog):
     async def process_new(self, raw_data):
         log.debug('Start: process_new')
         # log.debug(raw_data)
-
         if isinstance(raw_data['feed']['entry'], dict):
             entries = [raw_data['feed']['entry']]
         else:
             entries = raw_data['feed']['entry']
 
-        # yt_channel_id = None
         all_channels = await self.config.all_channels()
         for entry in entries:
-            # log.debug('-'*20)
-            # log.debug('entry: %s', entry)
-            # log.debug('-'*20)
             log.debug('name: %s', entry['author']['name'] if 'name' in entry['author'] else None)
             log.debug('url: %s', entry['author']['url'] if 'url' in entry['author'] else None)
+
             yt_video_id = entry['yt:videoId']
             log.debug('yt_video_id: %s', yt_video_id)
             yt_channel_id = entry['yt:channelId']
             log.debug('yt_channel_id: %s', yt_channel_id)
             all_videos = await self.config.videos()
-            # log.debug('all_videos: %s', all_videos)
             if yt_video_id in all_videos[yt_channel_id]:
                 log.warning('----- UPDATE DETECTED, SKIPPING!!! -----')
                 continue
@@ -142,30 +127,51 @@ class YouTube(commands.Cog):
             message = f'New Video from: **{name}**\n{url}'
             log.debug('message: %s', message)
             for chan_id, yt_channels in await AsyncIter(all_channels.items(), delay=10, steps=5):
-                # log.debug('chan_id: %s', chan_id)
-                # log.debug('yt_channels: %s', yt_channels)
                 if yt_channel_id in yt_channels['channels']:
                     channel: discord.TextChannel = self.bot.get_channel(chan_id)
                     await channel.send(message)
-        # if yt_channel_id:
-        #     await self.sub_to_channel(yt_channel_id)
         log.debug('Finish: process_new')
 
-    @tasks.loop(time=times)
+    @tasks.loop(time=datetime.time(hour=18, minute=0, tzinfo=datetime.timezone.utc))
     async def sub_bub_task(self):
         log.info('%s: Sub Bub Task - Start', self.__cog_name__)
         data: list = await self.config.channels()
         log.debug(data)
         for chan in data:
             await self.sub_to_channel(chan)
-            await asyncio.sleep(1)
+            await asyncio.sleep(1.0)
         log.info('%s: Sub Bub Task - Finish', self.__cog_name__)
 
-    @tasks.loop(hours=1)
+    @tasks.loop(minutes=30.0)
+    async def poll_new_videos(self):
+        await self.update_channels_list()
+        log.debug('-'*40)
+        log.info('%s: Poll Videos Task - Start', self.__cog_name__)
+        channels: list = await self.config.channels()  # [channel_id]
+        for channel_id in channels:
+            log.debug('channel_id: %s', channel_id)
+            all_videos:  Dict[str, list] = await self.config.videos()  # 'channel_id': [video_id]
+            video_feeds: Dict[str, dict] = await self.get_feed_videos(channel_id, True)  # 'video_id': {entry}
+            for video_id, entry in video_feeds.items():
+                # log.debug('video_id: %s', video_id)  # 'video_id'
+                # log.debug('entry: %s', entry)  # {entry}
+                if video_id not in all_videos[channel_id]:
+                    log.debug('FOUND NEW VIDEO: %s - %s', channel_id, video_id)
+                    data = {'feed': {'entry': entry}}
+                    await self.process_new(data)
+            await asyncio.sleep(1.0)
+            # log.debug('yt:videoId: %s', entry['yt:videoId'])
+            # for video in all_videos[channel_id]:
+            #     if video not in video_feeds[channel_id]:
+            #         log.debug('Found New Video: %s', video)
+            #         all_videos[channel_id].append(video)
+            # log.debug('all_videos: %s', all_videos)
+        log.info('%s: Poll Videos Task - Finish', self.__cog_name__)
+        log.debug('-'*40)
+
+    # @tasks.loop(minutes=60)
     async def update_channels_list(self):
-        log.info('%s: Update Chan Task - Delay 30 Seconds', self.__cog_name__)
-        await asyncio.sleep(30)
-        log.info('%s: Update Chan Task - Start', self.__cog_name__)
+        log.info('%s: Update Chan - Start', self.__cog_name__)
         new_channels = []
         all_channels: dict = await self.config.all_channels()
         log.debug('all_channels: %s', all_channels)
@@ -173,29 +179,11 @@ class YouTube(commands.Cog):
             for chan, name in chans['channels'].items():
                 if chan not in new_channels:
                     new_channels.append(chan)
-
         before = await self.config.channels()
         log.debug('before: %s', before)
         await self.config.channels.set(new_channels)
         log.debug('new_channels: %s', new_channels)
-        log.info('%s: Update Chan Task - Finish', self.__cog_name__)
-
-    # @tasks.loop(hours=1)
-    # async def poll_new_videos(self):
-    #     log.info('%s: Poll Videos Task - Delay 60 Seconds', self.__cog_name__)
-    #     await asyncio.sleep(60)
-    #     log.info('%s: Poll Videos Task - Start', self.__cog_name__)
-    #     channels: list = await self.config.channels()
-    #     for channel_id in channels:
-    #         log.debug('channel_id: %s', channel_id)
-    #         video_feeds: dict = await self.get_feed_videos(channel_id, True)
-    #         all_videos: dict = await self.config.videos()
-    #         for video in all_videos[channel_id]:
-    #             if video not in video_feeds[channel_id]:
-    #                 log.debug('Found New Video: %s', video)
-    #                 all_videos[channel_id].append(video)
-    #         # log.debug('all_videos: %s', all_videos)
-    #     log.info('%s: Poll Videos Task - Finish', self.__cog_name__)
+        log.info('%s: Update Chan - Finish', self.__cog_name__)
 
     @commands.hybrid_group(name='youtube', aliases=['yt'],
                            description='Options for manging YouTube')
@@ -236,20 +224,22 @@ class YouTube(commands.Cog):
             log.debug('chan: %s', chan)
             cid = list(chan.keys())[0]
             # name = chan[cid]
-            r = await self.sub_to_channel(cid)
+            # r = await self.sub_to_channel(cid)
             if cid not in chan_conf:
+                chan_conf: dict = await self.config.channel(ctx.channel).channels()
                 chan_conf.update(chan)
                 await self.config.channel(ctx.channel).channels.set(chan_conf)
         all_channels: list = await self.config.channels()
         for chan in chan_data:
             cid = list(chan.keys())[0]
             if cid not in all_channels:
-                # r = await self.sub_to_channel(cid)
-                # if not r.is_success:
-                #     continue  # TODO: Process Error
+                r = await self.sub_to_channel(cid)
+                if not r.is_success:
+                    continue  # TODO: Process Error
+                all_channels: list = await self.config.channels()
                 all_channels.append(cid)
+                await self.config.channels.set(all_channels)
                 await asyncio.sleep(0.1)
-        await self.config.channels.set(all_channels)
         await ctx.send(f'✅ Added YouTube Channels: **{cf.humanize_list(names_split)}** '
                        f'to Discord Channel: `{ctx.channel.name}`', ephemeral=True, delete_after=60)
 
@@ -268,54 +258,6 @@ class YouTube(commands.Cog):
         await ctx.send(f'All Channels Removed from This Channel: {clist}',
                        ephemeral=True, delete_after=60)
 
-    # @_yt.command(name='remove', aliases=['r'],
-    #              description='Remove one or more YouTube channels')
-    # @app_commands.describe(names='Name or Names of YouTube Channel(s) to remove')
-    # @commands.max_concurrency(1, commands.BucketType.default)
-    # @commands.guild_only()
-    # @commands.admin_or_can_manage_channel()
-    # async def _yt_remove(self, ctx: commands.Context, *, names):
-    #     """Remove one or more YouTube channels"""
-    #     await ctx.defer()
-    #     log.debug('names: %s', names)
-    #     names_split = names.replace(',', ' ').split()
-    #     names_split = [x.lstrip('@') for x in names_split]
-    #     log.debug('names_split: %s', names_split)
-    #     try:
-    #         chan_data = [await self.get_channel_data(x) for x in names_split]
-    #         if not chan_data or not chan_data[0]:
-    #             await ctx.send(f'⛔ No channels found for one or more passed channels: `{names}`',
-    #                            ephemeral=True, delete_after=15)
-    #             return
-    #     except Exception as error:
-    #         log.debug(error)
-    #         await ctx.send(f'⛔ Error processing one or more passed channels: `{names}`',
-    #                        ephemeral=True, delete_after=15)
-    #         return
-    #
-    #     chan_conf: dict = await self.config.channel(ctx.channel).channels()
-    #     log.debug('chan_conf: %s', chan_conf)
-    #     log.debug('chan_data: %s', chan_data)
-    #     for chan in chan_data:
-    #         log.debug('chan: %s', chan)
-    #         cid = list(chan.keys())[0]
-    #         # name = chan[cid]
-    #         if cid not in chan_conf:
-    #             chan_conf.update(chan)
-    #             await self.config.channel(ctx.channel).channels.set(chan_conf)
-    #     all_channels: list = await self.config.channels()
-    #     for chan in chan_data:
-    #         cid = list(chan.keys())[0]
-    #         if cid not in all_channels:
-    #             r = await self.sub_to_channel(cid)
-    #             if not r.is_success:
-    #                 continue  # TODO: Process Error
-    #             all_channels.append(cid)
-    #             await asyncio.sleep(0.1)
-    #     await self.config.channels.set(all_channels)
-    #     await ctx.send(f'✅ Removed YouTube Channels: **{cf.humanize_list(names_split)}** ',
-    #                    ephemeral=True, delete_after=60)
-
     @_yt.command(name='status', aliases=['s', 'settings'],
                  description='Show all configured YouTube Channels')
     @commands.max_concurrency(1, commands.BucketType.default)
@@ -333,7 +275,7 @@ class YouTube(commands.Cog):
             if chan_id in guild_channel_ids:
                 chan: discord.TextChannel = ctx.guild.get_channel(chan_id)
                 chans.append(f'{chan.mention}')
-                clist = list(yt_channels["channels"].values())
+                # clist = list(yt_channels["channels"].values())
                 for cid, name in yt_channels['channels'].items():
                     chans.append(f'- {name}: <https://www.youtube.com/channel/{cid}>')
         if not chans:
@@ -350,14 +292,21 @@ class YouTube(commands.Cog):
     # async def _yt_test(self, ctx: commands.Context):
     #     """Super Powerful Test Command. Do NOT Use!"""
     #     await ctx.defer()
+    #     log.debug('-'*40)
     #     channels = await self.config.channels()
     #     log.debug('channels: %s', channels)
     #     all_videos = await self.config.videos()
     #     log.debug('all_videos: %s', all_videos)
     #     # await self.sub_bub_task()
     #     # await ctx.send('Pub Done, Bub.')
+    #     # log.debug('-'*40)
     #     # await self.update_channels_list()
     #     # await ctx.send('Update Done, Bub.')
+    #     # log.debug('-'*40)
+    #     # await self.poll_new_videos()
+    #     # await ctx.send('Poll Done, Bub.')
+    #     log.debug(str(datetime.datetime.now()))
+    #     await ctx.send(str(datetime.datetime.now()))
 
     async def sub_to_channel(self, channel_id: str, mode: str = 'subscribe') -> httpx.Response:
         log.debug('sub_to_channel: %s', channel_id)

@@ -78,7 +78,10 @@ class AVHerald(commands.Cog):
             await self.config.last.set(newlast)
             return
 
+        log.debug('last: %s', last)
+        last: list = await self.config.last()
         for d in data:
+            # log.debug('id: %s', d['id'])
             if d['id'] not in last:
                 log.info('%s not in last, sending notification now.', d['id'])
                 last.insert(0, d['id'])
