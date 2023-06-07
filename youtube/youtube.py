@@ -30,6 +30,8 @@ class YouTube(commands.Cog):
         'channels': {},
     }
 
+    channel = 'red.youtube'
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
@@ -39,7 +41,6 @@ class YouTube(commands.Cog):
         self.redis: Optional[redis.Redis] = None
         self.pubsub: Optional[redis.client.PubSub] = None
         self.callback_url: Optional[str] = None
-        self.channel: str = 'red.youtube'
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
