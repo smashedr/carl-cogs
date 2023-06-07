@@ -1,4 +1,5 @@
 import discord
+import html2text
 import httpx
 import json
 import logging
@@ -212,10 +213,11 @@ class AVHerald(commands.Cog):
         if d['date']:
             dlist.append(f"**Date**: {d['date']}")
         if d['posted']:
-            dlist.append(f"**Posted**: {d['posted']}")
+            dlist.append(f"**Updated**: {d['posted']}")
 
-        dlist.append(f"**{data['title']}:**\n")
-        dlist.append(data['text'])
+        dlist.append(f"\n**{data['title']}:**\n")
+        text = data['text'][:3400] + '...\n' if len(data['text']) > 3400 else data['text']
+        dlist.append(text)
 
         if data['links']:
             for link in data['links']:
@@ -253,8 +255,6 @@ class AVHerald(commands.Cog):
 
         html = r.text
         soup = BeautifulSoup(html, 'html.parser')
-
-        # sitetext_span = soup.find('span', class_='sitetext')
         div_element = soup.find('div', attrs={'align': 'left'})
         sitetext_span = div_element.find('span', class_='sitetext')
         anchor_tags = sitetext_span.find_all('a')
@@ -264,11 +264,14 @@ class AVHerald(commands.Cog):
         img_tags = sitetext_span.find_all('img')
         images = [img_tag.get('src') for img_tag in img_tags]
 
-        data = {
-            'text': sitetext_span.get_text(),
-            'links': links,
-            'images': images,
-        }
+        log.debug('-'*40)
+        h = html2text.HTML2Text()
+        h.body_width = 0
+        text = h.handle(str(sitetext_span))
+        text = text.strip()
+        log.debug(text)
+        log.debug('-'*40)
+        data = {'text': text, 'links': links, 'images': images}
         data.update(entry)
         await self.redis.setex(
             f'avherald:{data["href"]}',

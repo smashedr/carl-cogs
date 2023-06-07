@@ -1,4 +1,5 @@
 import discord
+import html2text
 import httpx
 import json
 import logging
@@ -225,7 +226,8 @@ class AviationSafetyNetwork(commands.Cog):
             dlist.append(f"**Type**: {d['Type']}")
 
         dlist.append('')
-        dlist.append(data['Narrative'])
+        text = data['Narrative'][:3400] + '...' if len(data['Narrative']) > 3400 else data['Narrative']
+        dlist.append(text)
 
         image_url = None
         if 'Sources' in data and data['Sources']:
@@ -301,7 +303,15 @@ class AviationSafetyNetwork(commands.Cog):
 
         narrative = soup.find('span', class_='caption', string='Narrative:')
         if narrative:
-            data['Narrative'] = narrative.find_next_sibling('span').get_text() + '\n'
+            span = narrative.find_next_sibling('span')
+            log.debug('-'*40)
+            h = html2text.HTML2Text()
+            h.body_width = 0
+            text = h.handle(str(span))
+            log.debug(text)
+            log.debug('-'*40)
+            # data['Narrative'] = narrative.find_next_sibling('span').get_text() + '\n'
+            data['Narrative'] = text.strip() + '\n'
 
         sources_div = soup.find('div', class_='captionhr', string='Sources:')
         if sources_div:

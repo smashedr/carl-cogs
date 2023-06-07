@@ -6,7 +6,7 @@
   "install_msg": "Manage this command with `[p]asn`",
   "end_user_data_statement": "Caveat Emptor.",
   "required_cogs": {},
-  "requirements": [],
+  "requirements": ["html2text", "httpx", "bs4", "redis"],
   "min_bot_version": "3.4.0",
   "min_python_version" : [3,8,0],
   "disabled": false,
