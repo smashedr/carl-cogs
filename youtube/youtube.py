@@ -132,6 +132,10 @@ class YouTube(commands.Cog):
             for chan_id, yt_channels in await AsyncIter(all_channels.items(), delay=2, steps=10):
                 if yt_channel_id in yt_channels['channels']:
                     channel: discord.TextChannel = self.bot.get_channel(chan_id)
+                    if not channel:
+                        log.warning('404: Deleting Channel Config: %s: %s', chan_id, yt_channels)
+                        await self.config.channel_from_id(int(chan_id)).clear()
+                        continue
                     await channel.send(message)
             log.debug('-'*40)
         log.debug('Finish: process_new')
