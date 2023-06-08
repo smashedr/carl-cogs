@@ -86,7 +86,7 @@ class ColorMe(commands.Cog):
     @commands.cooldown(3, 20, commands.BucketType.user)
     @commands.max_concurrency(1, commands.BucketType.user)
     @app_commands.describe(color='Optional: Hex Value, CSS Name, or Discord Color Name')
-    async def color_command(self, ctx: commands.Context, color: Optional[str]):
+    async def color_command(self, ctx: commands.Context, *, color: Optional[str]):
         """Change the color of your name.
         `newcolor` must be a hex code like `#990000` or `990000`, a [Discord color name](https://discordpy.readthedocs.io/en/latest/api.html#colour),
         or a [CSS3 color name](https://www.w3.org/TR/2018/REC-css-color-3-20180619/#svg-color).
@@ -111,9 +111,11 @@ class ColorMe(commands.Cog):
                     log.debug('Removing Role %s from Member %s', role.name, user.name)
                     await user.remove_roles(role, reason='Removing Color Role')
             if removed:
-                await ctx.send(f'✅ Color Removed: {removed.name}', ephemeral=True, delete_after=60)
+                await ctx.send(f'✅ Color Removed: {removed.name}. Use `/color HEX` to set.',
+                               ephemeral=True, delete_after=60)
             else:
-                await ctx.send(f'⛔ No Color Roles Found.', ephemeral=True, delete_after=60)
+                await ctx.send(f'⛔ No Color Roles Found. Use `/color HEX` to set.',
+                               ephemeral=True, delete_after=60)
             return
 
         # Validate color passed
@@ -124,7 +126,7 @@ class ColorMe(commands.Cog):
                 '⛔ Not a valid color code. Use a hex code like #990000, '
                 'a Discord color name or a CSS3 color name.\n'
                 '<https://discordpy.readthedocs.io/en/latest/api.html#colour>\n'
-                '<https://www.w3.org/TR/2018/REC-css-color-3-20180619/#svg-color>'
+                '<https://www.w3.org/TR/css-color-3/#svg-color>'
             )
             await ctx.send(msg, ephemeral=True, delete_after=60)
             return
@@ -141,7 +143,7 @@ class ColorMe(commands.Cog):
                 await ctx.send(msg, ephemeral=True, delete_after=60)
                 return
             if role.id in blocked_roles:
-                msg = '⛔ You have a role that is protected from color changes.'
+                msg = '⛔ You have a role that is blocked from color changes.'
                 await ctx.send(msg, ephemeral=True, delete_after=60)
                 return
             if role.name.startswith(self.prefix):
