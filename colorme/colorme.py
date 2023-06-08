@@ -41,18 +41,17 @@ class ColorMe(commands.Cog):
         all_guilds: Dict[int, dict] = await self.config.all_guilds()
         async for guild_id, data in AsyncIter(all_guilds.items(), delay=2, steps=10):
             if not data['enabled']:
-                log.debug('Guild Disabled: %s', guild_id)
                 continue
             guild: discord.Guild = self.bot.get_guild(int(guild_id))
             if not guild:
-                log.debug('404 - Guild Not Found: %s', guild_id)
+                log.warning('404 - Guild Not Found: %s', guild_id)
                 continue
             async for role in AsyncIter(guild.roles, delay=2, steps=20):
                 role: discord.Role
                 if role.name.startswith(self.prefix):
                     if len(role.members) == 0:
-                        log.debug('Guild: %s Removed Color Role: %s', guild.name, role.name)
-                        await role.delete(reason='Color Role Cleanup')
+                        log.debug('Guild "%s" Delete Color Role %s', guild.name, role.name)
+                        await role.delete(reason='Cleanup Color Role')
 
     @staticmethod
     def _color_converter(hex_code_or_color_word: str) -> Optional[str]:
@@ -110,7 +109,7 @@ class ColorMe(commands.Cog):
                 if role.name.startswith(self.prefix):
                     removed = role
                     log.debug('Removing Role %s from Member %s', role.name, user.name)
-                    await user.remove_roles(role, reason='Removing Color Role')
+                    await user.remove_roles(role, reason='Remove Color Role')
             if removed:
                 await ctx.send(f'✅ Color Removed: {removed.name}. Use `/color HEX` to set.',
                                ephemeral=True, delete_after=60)
@@ -149,14 +148,14 @@ class ColorMe(commands.Cog):
                 return
             if role.name.startswith(self.prefix):
                 log.debug('Removing Role %s from Member %s', role.name, user.name)
-                await user.remove_roles(role, reason='Removing Color Role')
+                await user.remove_roles(role, reason='Remove Color Role')
 
         # Get or create new color role
         log.debug('role_name: %s', role_name)
         role: discord.Role = discord.utils.get(guild.roles, name=role_name)
         if not role:
             role: discord.Role = await guild.create_role(
-                reason='Custom Color Role',
+                reason='Create Color Role',
                 name=role_name,
                 colour=discord.Colour(int(newcolor, 16)),
                 permissions=discord.Permissions.none(),
@@ -164,7 +163,7 @@ class ColorMe(commands.Cog):
             log.debug('Created new role: %s - %s', role.id, role.name)
 
         # Add color role to user
-        await user.add_roles(role)
+        await user.add_roles(role, reason='Add Color Role')
         log.debug('Added Role %s to User %s', role.name, user.name)
         msg = f'✅ Color Updated: **{newcolor}**\n{self.color_info_url}{colorhex}'
         await ctx.send(msg, ephemeral=True, delete_after=60)
@@ -216,7 +215,7 @@ class ColorMe(commands.Cog):
     #             if role.name.startswith(self.prefix):
     #                 removed = role
     #                 log.debug('Removing Role %s from Member %s', role.name, user.name)
-    #                 await user.remove_roles(role, reason='Removing Color Role')
+    #                 await user.remove_roles(role, reason='Remove Color Role')
     #         if removed:
     #             await ctx.send(f'✅ Color Removed: {removed.name}', ephemeral=True, delete_after=60)
     #         else:
@@ -253,7 +252,7 @@ class ColorMe(commands.Cog):
     #             return
     #         if role.name.startswith(self.prefix):
     #             log.debug('Removing Role %s from Member %s', role.name, user.name)
-    #             await user.remove_roles(role, reason='Removing Color Role')
+    #             await user.remove_roles(role, reason='Remove Color Role')
     #
     #     # Get or create new color role
     #     log.debug('role_name: %s', role_name)
