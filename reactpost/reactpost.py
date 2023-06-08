@@ -4,6 +4,7 @@ from typing import Optional, Union
 
 from discord.ext import tasks
 from redbot.core import Config, checks, commands
+from redbot.core.utils import chat_formatting as cf
 
 log = logging.getLogger('red.reactpost')
 
@@ -53,33 +54,51 @@ class ReactPost(commands.Cog):
 
         maps: dict = await self.config.guild(guild).maps()
         log.debug('maps: %s', maps)
-        # for emoji, _ in maps:
-        #     emoji = await self._get_emoji(message.guild, emoji_type)
-        #     await message.add_reaction(emoji_tuple[0])
+        for emoji, _ in maps.items():
+            # emoji = await self._get_emoji(message.guild, emoji_type)
+            await message.add_reaction(emoji)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         """Watch for reactions added to a message."""
-        log.debug('payload: %s', payload)
-        log.debug('payload.emoji: %s', payload.emoji)
-        member = payload.member
+        member: discord.Member = payload.member
         if not member or member.bot:
+            log.debug(0)
             return
-        if not payload.guild_id or payload.channel_id or payload.message_id:
+        if not payload.guild_id or not payload.channel_id or not payload.message_id:
+            log.debug(1)
             return
-        guild = self.bot.get_guild(payload.guild_id)
+        guild: discord.Guild = self.bot.get_guild(payload.guild_id)
         if not guild:
+            log.debug(2)
             return
         channels: list = await self.config.guild(guild).channels()
         if payload.channel_id not in channels:
+            log.debug(3)
             return
-        channel = guild.get_channel(payload.channel_id)
+        channel: discord.TextChannel = guild.get_channel(payload.channel_id)
         if not channel:
+            # TODO: channel deleted, remove from config: channels
             log.error('404 - Channel Not Found: %s', payload.channel_id)
             return
+        maps: dict = await self.config.guild(guild).maps()
+        log.debug('maps: %s', maps)
+        if str(payload.emoji) not in maps:
+            log.debug(5)
+            return
+        destination: discord.TextChannel = guild.get_channel(maps[str(payload.emoji)])
+        if not destination:
+            # TODO: mapping channel deleted, remove from config: maps
+            log.error('404 - Channel Not Found: %s', maps[str(payload.emoji)])
+            return
 
-        log.debug('payload: %s', payload)
         log.debug('payload.emoji: %s', payload.emoji)
+        message: discord.Message = await channel.fetch_message(payload.message_id)
+        files = []
+        for attachment in message.attachments:
+            files.append(await attachment.to_file())
+        embeds = [e for e in message.embeds if e.type == 'rich']
+        await destination.send(message.content, embeds=embeds, files=files)
 
     @commands.group(name='reactpost', aliases=['react', 'rp'])
     @commands.guild_only()
@@ -87,40 +106,13 @@ class ReactPost(commands.Cog):
     async def _rp(self, ctx):
         """Manage the ReactPost Options"""
 
-    # @_rp.command(name='test', aliases=['t'])
-    # @checks.is_owner()
-    # async def _rp_test(self, ctx: commands.Context, emoji):
-    #     """DELETE THIS COMMAND - TOO POWERFUL"""
-    #     log.debug('TO ID')
-    #     log.debug('emoji: %s', emoji)
-    #     parsed = emoji.encode('unicode-escape').decode('ASCII').lstrip('\\')
-    #     log.debug('parsed: %s', parsed)
-    #     if parsed:
-    #         await ctx.send(parsed)
-    #
-    # @_rp.command(name='gest', aliases=['g'])
-    # @checks.is_owner()
-    # async def _rp_gest(self, ctx: commands.Context, emoji):
-    #     """DELETE THIS COMMAND - TOO POWERFUL"""
-    #     log.debug('TO EMOJI')
-    #     log.debug('argument: %s', emoji)
-    #     parsed = chr(int(emoji.encode('unicode-escape').decode('ASCII')[1:], 16))
-    #     log.debug('parsed: %s', parsed)
-    #     if parsed:
-    #         await ctx.send(parsed)
-
     @_rp.command(name='addmap', aliases=['a', 'amap'])
     async def _rp_addmap(self, ctx: commands.Context,
                          emoji: Union[discord.Emoji, discord.PartialEmoji, str],
                          channel: discord.TextChannel):
-        """Add Emoji to Channel Mapping"""
-        log.debug('channel: %s', channel)
+        """Add Emoji to a Channel Mapping"""
         log.debug('emoji: %s', emoji)
-        log.debug('str(emoji): %s', str(emoji))
-        log.debug('type(emoji): %s', type(emoji))
-        log.debug('-'*40)
-        # emoji_id = emoji.encode('unicode-escape').decode('ASCII').lstrip('\\')
-        # log.debug('emoji_id: %s', emoji_id)
+        log.debug('channel: %s', channel)
         maps: dict = await self.config.guild(ctx.guild).maps()
         log.debug('maps: %s', maps)
         if emoji in maps:
@@ -135,7 +127,7 @@ class ReactPost(commands.Cog):
 
     @_rp.command(name='removemap', aliases=['r', 'rmap'])
     async def _rp_removemap(self, ctx: commands.Context, emoji: Union[discord.Emoji, discord.PartialEmoji, str]):
-        """Remove Emoji to Channel Mapping"""
+        """Remove Emoji from a Channel Mapping"""
         log.debug('emoji: %s', emoji)
         maps: dict = await self.config.guild(ctx.guild).maps()
         log.debug('maps: %s', maps)
@@ -153,6 +145,7 @@ class ReactPost(commands.Cog):
         """Enables ReactPost in the current channel or <channel>"""
         channel: discord.TextChannel = channel if channel else ctx.channel
         log.debug('channel: %s', channel)
+        log.debug('channel.id: %s', channel.id)
         channels: list = await self.config.guild(ctx.guild).channels()
         log.debug('channels: %s', channels)
         if channel.id in channels:
@@ -168,12 +161,40 @@ class ReactPost(commands.Cog):
         """Disable ReactPost in the current channel or <channel>"""
         channel: discord.TextChannel = channel if channel else ctx.channel
         log.debug('channel: %s', channel)
+        log.debug('channel.id: %s', channel.id)
         channels: list = await self.config.guild(ctx.guild).channels()
         log.debug('channels: %s', channels)
-        if channel.id in channels:
-            await ctx.send(f'⛔ Channel {channel.mention} already Enabled.')
+        if channel.id not in channels:
+            await ctx.send(f'⛔ Channel {channel.mention} already Disabled.')
             return
         channels.remove(channel.id)
         log.debug('channels: %s', channels)
         await self.config.guild(ctx.guild).enabled.set(True)
-        await ctx.send(f'✅ Enabled Channel {channel.mention}')
+        await ctx.send(f'✅ Disabled Channel {channel.mention}')
+
+    @_rp.command(name='status', aliases=['s', 'mapping', 'maps'])
+    async def _rp_status(self, ctx: commands.Context):
+        """Status of ReactPost Channels and Mapped Channels"""
+        config: dict = await self.config.guild(ctx.guild).all()
+        log.debug('maps: %s', config['maps'])
+        log.debug('channels: %s', config['channels'])
+        channels = []
+        for channel_id in config['channels']:
+            channel = ctx.guild.get_channel(channel_id)
+            channels.append(channel.mention)
+        mappings = []
+        for emoji, channel_id in config['maps'].items():
+            log.debug('emoji: %s', emoji)
+            log.debug('channel_id: %s', channel_id)
+            channel = ctx.guild.get_channel(channel_id)
+            mappings.append(f'{emoji} -> {channel.mention}')
+        mappings = '\n'.join(mappings) if mappings else 'No Mappings.'
+        channels = cf.humanize_list(channels) if channels else 'No Channels.'
+        msg = (
+            f'_ReactPost Settings._\n**Enabled Channels:**\n'
+            f'{channels}\n\n'
+            f'**Mappings:**\n'
+            f'{mappings}'
+        )
+        log.debug('msg: %s', msg)
+        await ctx.send(msg)
