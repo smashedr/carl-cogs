@@ -2,7 +2,7 @@ import discord
 import logging
 import re
 import webcolors
-from typing import Optional
+from typing import Optional, Union, Dict
 
 from discord.ext import tasks
 from redbot.core import Config, app_commands, checks, commands
@@ -38,7 +38,7 @@ class ColorMe(commands.Cog):
     @tasks.loop(minutes=30.0)
     async def cleanup_roles(self):
         log.info('%s: Cleanup Roles Task Run', self.__cog_name__)
-        all_guilds: dict = await self.config.all_guilds()
+        all_guilds: Dict[int, dict] = await self.config.all_guilds()
         async for guild_id, data in AsyncIter(all_guilds.items(), delay=2, steps=10):
             if not data['enabled']:
                 log.debug('Guild Disabled: %s', guild_id)
@@ -78,6 +78,7 @@ class ColorMe(commands.Cog):
             hex_code = webcolors.name_to_hex(hex_code_or_color_word, spec='css3')
             hex_code = hex_code.replace('#', '0x')
             return hex_code
+
         except ValueError:
             pass
 
@@ -123,10 +124,10 @@ class ColorMe(commands.Cog):
         log.debug('newcolor: %s', newcolor)
         if not newcolor:
             msg = (
-                '⛔ Not a valid color code. Use a hex code like #990000, '
-                'a Discord color name or a CSS3 color name.\n'
-                '<https://discordpy.readthedocs.io/en/latest/api.html#colour>\n'
-                '<https://www.w3.org/TR/css-color-3/#svg-color>'
+                '⛔ Not a valid color code. Use Hex, CSS3 Name or Discord Name.\n'
+                '**Examples:** `2ecc71` or `#009966` or `gold` or `dark_purple`\n'
+                '<https://www.w3.org/TR/css-color-3/#svg-color>\n'
+                '<https://discordpy.readthedocs.io/en/latest/api.html#colour>'
             )
             await ctx.send(msg, ephemeral=True, delete_after=60)
             return
@@ -138,7 +139,7 @@ class ColorMe(commands.Cog):
         blocked_roles = await self.config.guild(guild).blocked_roles()
         for role in user.roles:
             if role.name == role_name:
-                log.debug('User already has requested role: %s - %s', role.id, role.name)
+                # log.debug('User already has requested role: %s - %s', role.id, role.name)
                 msg = f'⛔ Looks like you already have color role: {role.name}'
                 await ctx.send(msg, ephemeral=True, delete_after=60)
                 return
@@ -158,13 +159,13 @@ class ColorMe(commands.Cog):
                 reason='Custom Color Role',
                 name=role_name,
                 colour=discord.Colour(int(newcolor, 16)),
-                permissions=discord.Permissions.none()
+                permissions=discord.Permissions.none(),
             )
             log.debug('Created new role: %s - %s', role.id, role.name)
 
         # Add color role to user
         await user.add_roles(role)
-        log.debug('Added Role: %s to User: %s', role.name, user.name)
+        log.debug('Added Role %s to User %s', role.name, user.name)
         msg = f'✅ Color Updated: **{newcolor}**\n{self.color_info_url}{colorhex}'
         await ctx.send(msg, ephemeral=True, delete_after=60)
 

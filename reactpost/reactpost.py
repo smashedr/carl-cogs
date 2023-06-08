@@ -1,3 +1,5 @@
+import asyncio
+
 import discord
 import logging
 from typing import Optional, Union, List, Dict
@@ -70,14 +72,29 @@ class ReactPost(commands.Cog):
             await self.config.guild(guild).maps.set(maps)
             return
 
-        # log.debug('payload.emoji: %s', payload.emoji)
         channel: discord.TextChannel = guild.get_channel(payload.channel_id)
         message: discord.Message = await channel.fetch_message(payload.message_id)
+        for reaction in message.reactions:
+            if isinstance(reaction.emoji, str):
+                emoji_string = reaction.emoji
+            else:
+                emoji_string = reaction.emoji.name
+            if emoji_string == payload.emoji.name:
+                if reaction.count > 2:
+                    await message.add_reaction('\U000026D4')
+                    await asyncio.sleep(3.0)
+                    await message.remove_reaction('\U000026D4', guild.me)
+                    return
+
         files = []
         for attachment in message.attachments:
             files.append(await attachment.to_file())
         embeds: List[discord.Embed] = [e for e in message.embeds if e.type == 'rich']
-        await dest.send(message.content, embeds=embeds, files=files)
+        content = f'**ReactPost** from {message.jump_url} by {payload.member.mention}\n{message.content}'
+        await dest.send(content, embeds=embeds, files=files)
+        await message.add_reaction('\U00002705')
+        await asyncio.sleep(3.0)
+        await message.remove_reaction('\U00002705', guild.me)
 
     @commands.group(name='reactpost', aliases=['react', 'rp'])
     @commands.guild_only()
