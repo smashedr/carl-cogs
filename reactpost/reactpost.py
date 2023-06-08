@@ -81,36 +81,33 @@ class ReactPost(commands.Cog):
         log.debug('payload: %s', payload)
         log.debug('payload.emoji: %s', payload.emoji)
 
-    def get_emoji_react(self, emoji) -> Optional[Union[discord.Emoji, str]]:
-        try:
-            if isinstance(emoji, discord.Emoji):
-                return emoji
-            if isinstance(emoji, str) and not emoji.isdigit():
-                return emoji.encode('unicode-escape').decode('ASCII')
-            if isinstance(emoji, int) or emoji.isdigit():
-                return self.bot.get_emoji(int(emoji))
-        except Exception as error:
-            log.error(error)
-            return None
-
-    @staticmethod
-    def get_emoji_id(emoji) -> Optional[Union[str, int]]:
-        try:
-            if isinstance(emoji, discord.Emoji):
-                return emoji.id
-            if isinstance(emoji, str) and not emoji.isdigit():
-                return emoji.encode('unicode-escape').decode('ASCII')
-            if isinstance(emoji, int) or emoji.isdigit():
-                return int(emoji)
-        except Exception as error:
-            log.error(error)
-            return None
-
     @commands.group(name='reactpost', aliases=['react', 'rp'])
     @commands.guild_only()
     @checks.admin_or_permissions(manage_guild=True)
     async def _rp(self, ctx):
         """Manage the ReactPost Options"""
+
+    # @_rp.command(name='test', aliases=['t'])
+    # @checks.is_owner()
+    # async def _rp_test(self, ctx: commands.Context, emoji):
+    #     """DELETE THIS COMMAND - TOO POWERFUL"""
+    #     log.debug('TO ID')
+    #     log.debug('emoji: %s', emoji)
+    #     parsed = emoji.encode('unicode-escape').decode('ASCII').lstrip('\\')
+    #     log.debug('parsed: %s', parsed)
+    #     if parsed:
+    #         await ctx.send(parsed)
+    #
+    # @_rp.command(name='gest', aliases=['g'])
+    # @checks.is_owner()
+    # async def _rp_gest(self, ctx: commands.Context, emoji):
+    #     """DELETE THIS COMMAND - TOO POWERFUL"""
+    #     log.debug('TO EMOJI')
+    #     log.debug('argument: %s', emoji)
+    #     parsed = chr(int(emoji.encode('unicode-escape').decode('ASCII')[1:], 16))
+    #     log.debug('parsed: %s', parsed)
+    #     if parsed:
+    #         await ctx.send(parsed)
 
     @_rp.command(name='addmap', aliases=['a', 'amap'])
     async def _rp_addmap(self, ctx: commands.Context,
@@ -122,17 +119,16 @@ class ReactPost(commands.Cog):
         log.debug('str(emoji): %s', str(emoji))
         log.debug('type(emoji): %s', type(emoji))
         log.debug('-'*40)
-        emoji = self.get_emoji_id(emoji)
-        log.debug('emoji ID: %s', emoji)
-
+        # emoji_id = emoji.encode('unicode-escape').decode('ASCII').lstrip('\\')
+        # log.debug('emoji_id: %s', emoji_id)
         maps: dict = await self.config.guild(ctx.guild).maps()
         log.debug('maps: %s', maps)
         if emoji in maps:
-            map_channel = ctx.guild.get_channel(maps[emoji])
+            map_channel = ctx.guild.get_channel(maps[str(emoji)])
             if map_channel:
-                await ctx.send(f'⛔ Emoji {self.get_emoji_react(emoji)} already mapped to {channel.mention}')
+                await ctx.send(f'⛔ Emoji {emoji} already mapped to {channel.mention}')
                 return
-        maps[emoji] = channel.id
+        maps[str(emoji)] = channel.id
         log.debug('maps: %s', maps)
         await self.config.guild(ctx.guild).maps.set(maps)
         await ctx.send(f'✅ Mapped Emoji {emoji} to post to channel {channel.mention}')
@@ -143,14 +139,14 @@ class ReactPost(commands.Cog):
         log.debug('emoji: %s', emoji)
         maps: dict = await self.config.guild(ctx.guild).maps()
         log.debug('maps: %s', maps)
-        # if emoji.id not in maps:
-        #     await ctx.send(f'⛔ Emoji {emoji} is not mapped to any channel.')
-        #     return
-        # channel = ctx.guild.get_channel(maps[emoji.id])
-        # del maps[emoji.id]
-        # log.debug('maps: %s', maps)
-        # await self.config.guild(ctx.guild).maps.set(maps)
-        # await ctx.send(f'✅ Removed Emoji {emoji} mapped to channel {channel.mention}')
+        if str(emoji) not in maps:
+            await ctx.send(f'⛔ Emoji {emoji} is not mapped to any channel.')
+            return
+        channel = ctx.guild.get_channel(maps[str(emoji)])
+        del maps[str(emoji)]
+        log.debug('maps: %s', maps)
+        await self.config.guild(ctx.guild).maps.set(maps)
+        await ctx.send(f'✅ Removed Emoji {emoji} mapped to channel {channel.mention}')
 
     @_rp.command(name='enable', aliases=['e', 'on'])
     async def _rp_enable(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
