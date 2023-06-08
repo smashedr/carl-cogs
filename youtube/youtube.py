@@ -109,12 +109,10 @@ class YouTube(commands.Cog):
         all_channels = await self.config.all_channels()
         for entry in reversed(entries):
             log.debug('-'*40)
-            name = entry['author']['name'] if 'name' in entry['author'] else None
-            log.debug('name: %s', name)
             yt_video_id = entry['yt:videoId']
-            log.debug('yt_video_id: %s', yt_video_id)
+            # log.debug('yt_video_id: %s', yt_video_id)
             yt_channel_id = entry['yt:channelId']
-            log.debug('yt_channel_id: %s', yt_channel_id)
+            # log.debug('yt_channel_id: %s', yt_channel_id)
             if yt_channel_id not in channels:
                 log.warning('----- CHANNEL NOT CONFIGURED -----')
                 continue
@@ -123,13 +121,15 @@ class YouTube(commands.Cog):
                 log.warning('----- VIDEO ALREADY PROCESSED -----')
                 continue
             all_videos[yt_channel_id].append(yt_video_id)
+            all_videos[yt_channel_id] = all_videos[yt_channel_id][-30:]
+            # log.debug(all_videos)
             await self.config.videos.set(all_videos)
+            log.debug('----- PROCESS NEW -----')
+            name = entry['author']['name'] if 'name' in entry['author'] else 'Unknown'
+            log.debug('name: %s', name)
             url = entry['link']['@href']
             log.debug('url: %s', url)
-            # name = entry['author']['name']
-            # log.debug('name: %s', name)
-            message = f'**{name}** - {url}'
-            log.debug('message: %s', message)
+            message = f'**{name}** {url}'
             for chan_id, yt_channels in await AsyncIter(all_channels.items(), delay=2, steps=10):
                 if yt_channel_id in yt_channels['channels']:
                     channel: discord.TextChannel = self.bot.get_channel(chan_id)
@@ -144,9 +144,10 @@ class YouTube(commands.Cog):
     @tasks.loop(time=datetime.time(hour=18, minute=0, tzinfo=datetime.timezone.utc))
     async def sub_bub_task(self):
         log.info('%s: Sub Bub Task - Start', self.__cog_name__)
-        data: list = await self.config.channels()
-        log.debug(data)
-        for chan in data:
+        await self.update_channels_list()
+        channels: list = await self.config.channels()
+        log.debug(channels)
+        for chan in channels:
             await self.sub_to_channel(chan)
             await asyncio.sleep(1.0)
         log.info('%s: Sub Bub Task - Finish', self.__cog_name__)
@@ -158,14 +159,14 @@ class YouTube(commands.Cog):
         log.info('%s: Poll Videos Task - Start', self.__cog_name__)
         channels: list = await self.config.channels()  # [channel_id]
         for channel_id in channels:
-            log.debug('channel_id: %s', channel_id)
-            all_videos:  Dict[str, list] = await self.config.videos()  # 'channel_id': [video_id]
+            # log.debug('channel_id: %s', channel_id)
+            all_videos: Dict[str, list] = await self.config.videos()  # 'channel_id': [video_id]
             video_feeds: Dict[str, dict] = await self.get_feed_videos(channel_id, True)  # 'video_id': {entry}
             for video_id, entry in reversed(video_feeds.items()):
                 # log.debug('video_id: %s', video_id)  # 'video_id'
                 # log.debug('entry: %s', entry)  # {entry}
                 if video_id not in all_videos[channel_id]:
-                    log.debug('FOUND NEW VIDEO: %s - %s', channel_id, video_id)
+                    log.debug('--- FOUND NEW VIDEO: %s - %s', channel_id, video_id)
                     data = {'feed': {'entry': entry}}
                     await self.process_new(data)
             # await asyncio.sleep(1.0)
@@ -192,6 +193,14 @@ class YouTube(commands.Cog):
         log.debug('before: %s', before)
         await self.config.channels.set(new_channels)
         log.debug('new_channels: %s', new_channels)
+        all_videos: Dict[str, list] = await self.config.videos()
+        new_videos: Dict[str, list] = {}
+        for channel_id, channels in all_videos.items():
+            if channel_id in new_channels:
+                new_videos[channel_id] = channels
+            else:
+                log.debug('Removing Channel: %s: %s', channel_id, channels)
+        await self.config.videos.set(new_videos)
         log.info('%s: Update Chan - Finish', self.__cog_name__)
 
     @commands.hybrid_group(name='youtube', aliases=['yt'],
