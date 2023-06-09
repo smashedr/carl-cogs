@@ -1,0 +1,15 @@
+{
+    "name": "ChatGraph",
+    "author": ["Shane#0816"],
+    "short": "Carl's ChatGraph Module.",
+    "description": "Generage Pie Graph of Messages in Current Channel.",
+    "install_msg": "Get started with `[p]chatgraph`",
+    "end_user_data_statement": "Caveat Emptor.",
+    "required_cogs": {},
+    "requirements": ["plotly", "pandas", "kaleido"],
+    "min_bot_version": "3.5.0",
+    "min_python_version" : [3,8,0],
+    "disabled": false,
+    "hidden": false,
+    "type": "COG"
+}
