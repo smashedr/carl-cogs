@@ -91,7 +91,7 @@ class ReactPost(commands.Cog):
             files.append(await attachment.to_file())
         embeds: List[discord.Embed] = [e for e in message.embeds if e.type == 'rich']
         content = f'**ReactPost** from {message.jump_url} by {payload.member.mention}\n{message.content}'
-        await dest.send(content, embeds=embeds, files=files)
+        await dest.send(content, embeds=embeds, files=files, allowed_mentions=discord.AllowedMentions.none())
         await message.add_reaction('\U00002705')
         await asyncio.sleep(3.0)
         await message.remove_reaction('\U00002705', guild.me)

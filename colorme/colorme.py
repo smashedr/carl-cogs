@@ -1,3 +1,5 @@
+import asyncio
+
 import discord
 import logging
 import re
@@ -66,44 +68,112 @@ class ColorMe(commands.Cog):
         log.debug('prefix: %s', prefix)
         log.debug('hex_code_or_color_word: %s', hex_or_color)
 
-        # Check Names from colors.py colors
-        if hex_or_color.lower() in names:
-            hex_code = f"{prefix}{names[hex_or_color.lower()]}"
-            return hex_code
-
         # #FFFFFF and FFFFFF to 0xFFFFFF
         hex_match = re.match(r'#?[a-f0-9]{6}', hex_or_color.lower())
         if hex_match:
-            hex_code = f"{prefix}{hex_or_color.lstrip('#')}"
-            return hex_code
+            log.debug('-- hex --')
+            return f"{prefix}{hex_or_color.lstrip('#')}"
 
         # discord.Color checking
         if hasattr(discord.Color, hex_or_color):
+            log.debug('-- discord --')
             hex_code = str(getattr(discord.Color, hex_or_color.replace(' ', '_'))())
-            hex_code = hex_code.replace('#', prefix)
-            return hex_code
+            return hex_code.replace('#', prefix)
 
         # CSS3 color name checking
         try:
-            hex_code = webcolors.name_to_hex(hex_or_color, spec='css3')
-            hex_code = hex_code.replace('#', prefix)
-            return hex_code
-
+            hex_code = webcolors.name_to_hex(hex_or_color)
+            log.debug('-- css3 --')
+            return hex_code.replace('#', prefix)
         except ValueError:
             pass
+
+        # Check Names from colors.py colors
+        if hex_or_color.lower() in names:
+            log.debug('-- names --')
+            return f"{prefix}{names[hex_or_color.lower()]}"
+
+    # @commands.Cog.listener()
+    # async def on_member_join(self, member: discord.Member):
+    #     # wait for stickyroles to be applied
+    #     await asyncio.sleep(10.0)
+    #     guild: discord.Guild = member.guild
+    #     config = await self.config.guild(guild).all()
+    #     if not config['enabled']:
+    #         return
+    #
+    #     log.debug('member.accent_color: %s', member.accent_color)
+    #     log.debug('member.color: %s', member.color)
+    #     member_color = member.accent_color or member.color or None
+    #     log.debug('member_color: %s', member_color)
+    #     color = self.color_converter(str(member_color))
+    #     log.debug('color: %s', color)
+    #     colorhex = color.replace('0x', '')
+    #     log.debug('colorhex: %s', colorhex)
+    #     role_name = f'{self.prefix}{colorhex}'
+    #     log.debug('role_name: %s', role_name)
+    #
+    #     if colorhex == '000000':
+    #         log.debug('%s has default color: %s', member.name, member_color)
+    #         return
+    #
+    #     # Check if already has a color role or blocked_roles
+    #     blocked_roles = await self.config.guild(guild).blocked_roles()
+    #     for role in member.roles:
+    #         if role.id in blocked_roles:
+    #             log.debug('%s has blocked role: %s', member.name, role.name)
+    #             return
+    #         if role.name.startswith(self.prefix):
+    #             log.debug('%s already has color role: %s', member.name, role.name)
+    #             await member.remove_roles(role, reason='Remove Color Role')
+    #             return
+    #
+    #     # Get or create new color role
+    #     log.debug('role_name: %s', role_name)
+    #     role: discord.Role = discord.utils.get(guild.roles, name=role_name)
+    #     if not role:
+    #         role: discord.Role = await guild.create_role(
+    #             reason='Create Color Role',
+    #             name=role_name,
+    #             colour=discord.Colour(int(color, 16)),
+    #             permissions=discord.Permissions.none(),
+    #         )
+    #         log.debug('Created new role: %s - %s', role.id, role.name)
+    #
+    #     # Add color role to user
+    #     await member.add_roles(role, reason='Add Color Role')
+    #     log.debug('Added Role %s to User %s', role.name, member.name)
 
     @commands.hybrid_command(name='hex')
     @commands.guild_only()
     @commands.cooldown(3, 20, commands.BucketType.user)
     @commands.max_concurrency(1, commands.BucketType.user)
-    @app_commands.describe(color='Optional: Hex Value, CSS Name, or Discord Color Name')
+    @app_commands.describe(color='Hex Value, CSS Name, or Discord Color Name')
     async def hex_command(self, ctx: commands.Context, *, color: str):
         """Get Color Name from <color>.
         **color** must be a hex, css, or Discord color.
         Examples: `2ecc71` or `#009966` or `gold` or `dark_purple`
         <https://www.w3.org/TR/css-color-3/#svg-color>
         """
-        # Validate color passed
+        # member: discord.Member = discord.utils.get(ctx.guild.members, username=color_or_user)
+        # if member:
+        #     colorhex = None
+        #     for role in member.roles:
+        #         if role.name.startswith(self.prefix):
+        #             colorhex = role.name.replace(self.prefix, '')
+        #             break
+        #     if not colorhex:
+        #         msg = f'No Color Roles found for user: {member}'
+        #         await ctx.send(msg, ephemeral=True, delete_after=30)
+        #         return
+        #     name = hexes[colorhex] if colorhex in hexes else 'unknown'
+        #     msg = (
+        #         f'{member} is using hex `{colorhex}` called **{name}**\n'
+        #         f'{self.color_info_url}{colorhex}'
+        #     )
+        #     await ctx.send(msg, ephemeral=True, delete_after=30)
+        #     return
+        # color: str = color_or_user
         colorhex = self.color_converter(color, None)
         log.debug('colorhex: %s', colorhex)
         if not colorhex:
@@ -131,7 +201,7 @@ class ColorMe(commands.Cog):
         Examples: `2ecc71` or `#009966` or `gold` or `dark_purple`
         <https://www.w3.org/TR/css-color-3/#svg-color>
         """
-        user = ctx.author
+        member = ctx.author
         guild = ctx.guild
 
         # Check if color command is enabled in guild
@@ -145,11 +215,11 @@ class ColorMe(commands.Cog):
         log.debug('color: %s', color)
         if not color:
             removed = None
-            for role in user.roles:
+            for role in member.roles:
                 if role.name.startswith(self.prefix):
                     removed = role
-                    log.debug('Removing Role %s from Member %s', role.name, user.name)
-                    await user.remove_roles(role, reason='Remove Color Role')
+                    log.debug('Removing Role %s from Member %s', role.name, member.name)
+                    await member.remove_roles(role, reason='Remove Color Role')
             if removed:
                 await ctx.send(f'✅ Color Removed: {removed.name}. Use `/color HEX` to set.',
                                ephemeral=True, delete_after=60)
@@ -176,7 +246,7 @@ class ColorMe(commands.Cog):
 
         # Check if already has role, blocked_roles, and remove other roles
         blocked_roles = await self.config.guild(guild).blocked_roles()
-        for role in user.roles:
+        for role in member.roles:
             if role.name == role_name:
                 # log.debug('User already has requested role: %s - %s', role.id, role.name)
                 msg = f'⛔ Looks like you already have color role: {role.name}'
@@ -187,8 +257,8 @@ class ColorMe(commands.Cog):
                 await ctx.send(msg, ephemeral=True, delete_after=30)
                 return
             if role.name.startswith(self.prefix):
-                log.debug('Removing Role %s from Member %s', role.name, user.name)
-                await user.remove_roles(role, reason='Remove Color Role')
+                log.debug('Removing Role %s from Member %s', role.name, member.name)
+                await member.remove_roles(role, reason='Remove Color Role')
 
         # Get or create new color role
         log.debug('role_name: %s', role_name)
@@ -203,8 +273,8 @@ class ColorMe(commands.Cog):
             log.debug('Created new role: %s - %s', role.id, role.name)
 
         # Add color role to user
-        await user.add_roles(role, reason='Add Color Role')
-        log.debug('Added Role %s to User %s', role.name, user.name)
+        await member.add_roles(role, reason='Add Color Role')
+        log.debug('Added Role %s to User %s', role.name, member.name)
         msg = f'✅ Color Updated: **{newcolor}**\n{self.color_info_url}{colorhex}'
         await ctx.send(msg, ephemeral=True, delete_after=60)
 

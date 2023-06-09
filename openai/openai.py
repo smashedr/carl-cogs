@@ -31,22 +31,54 @@ class OpenAI(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.client: Optional[redis.Redis] = None
+        self.redis: Optional[redis.Redis] = None
+        self.msg_chatgpt = discord.app_commands.ContextMenu(
+            name="AI ChatGPT",
+            callback=self.msg_chatgpt_callback,
+            type=discord.AppCommandType.message,
+        )
+        self.msg_spelling = discord.app_commands.ContextMenu(
+            name="AI Spelling",
+            callback=self.msg_spelling_callback,
+            type=discord.AppCommandType.message,
+        )
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
         data = await self.bot.get_shared_api_tokens('redis')
-        self.client = redis.Redis(
+        self.redis = redis.Redis(
             host=data['host'] if 'host' in data else 'redis',
             port=int(data['port']) if 'port' in data else 6379,
             db=int(data['db']) if 'db' in data else 0,
             password=data['pass'] if 'pass' in data else None,
         )
-        await self.client.ping()
+        await self.redis.ping()
+        self.bot.tree.add_command(self.msg_chatgpt)
+        self.bot.tree.add_command(self.msg_spelling)
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
+        self.bot.tree.remove_command("AI ChatGPT", type=discord.AppCommandType.message)
+        self.bot.tree.remove_command("AI Spelling", type=discord.AppCommandType.message)
+
+    async def msg_chatgpt_callback(self, interaction, message: discord.Message):
+        if not message.content:
+            return await interaction.response.send_message('Message has no content.',
+                                                           ephemeral=True, delete_after=60)
+        # ctx = await self.bot.get_context(interaction)
+        # await ctx.defer(ephemeral=True, thinking=False)
+        await interaction.response.defer()
+        await self.process_chatgpt(message)
+
+    async def msg_spelling_callback(self, interaction, message: discord.Message):
+        if not message.content:
+            return await interaction.response.send_message('Message has no content.',
+                                                           ephemeral=True, delete_after=60)
+        # ctx = await self.bot.get_context(interaction)
+        # await ctx.defer(ephemeral=True)
+        await interaction.response.send_message('\U0000231B', ephemeral=True, delete_after=1)
+        await self.process_fuck(message)
 
     @commands.Cog.listener(name='on_message_without_command')
     async def on_message_without_command(self, message: discord.Message):
@@ -57,29 +89,31 @@ class OpenAI(commands.Cog):
         if message.type == discord.MessageType.reply:
             await self.process_chatgpt_reply(message)
         if message.content.lower() == 'chatgpt':
-            await self.process_chatgpt(message)
+            await self.process_chatgpt(message, True)
         if message.content.lower() == 'fuck':
             await self.process_fuck(message)
         if message.content.lower() in ['aimage', 'aimg']:
             await self.process_aimage(message)
 
-    async def process_fuck(self, message: discord.Message) -> None:
+    async def process_fuck(self, message: discord.Message, search=False) -> None:
         """Listens for fuck."""
         channel: discord.TextChannel = message.channel
-        await message.delete()
-        match: discord.Message | None = None
-        async for m in message.channel.history(limit=10):
-            if message.id == m.id:
-                continue
-            if message.author.id == m.author.id:
-                match = m
-                break
-            if not m.content:
-                continue
+        if search:
+            await message.delete()
+            match: discord.Message | None = None
+            async for m in message.channel.history(limit=10):
+                if message.id == m.id:
+                    continue
+                if message.author.id == m.author.id:
+                    match = m
+                    break
+                if not m.content:
+                    continue
+        else:
+            match = message
 
         if not match:
-            await channel.send('No messages from you out of the last 10...',
-                               delete_after=10)
+            await channel.send('No messages from you out of the last 10...', delete_after=10)
             return
 
         data = await self.openai_edits(match.content)
@@ -90,22 +124,25 @@ class OpenAI(commands.Cog):
         """Listens for chatgpt replies."""
         pass
 
-    async def process_chatgpt(self, message: discord.Message) -> None:
+    async def process_chatgpt(self, message: discord.Message, search=False) -> None:
         """Listens for chatgpt."""
         channel: discord.TextChannel = message.channel
-        await message.delete()
-        match: discord.Message | None = None
-        async for m in message.channel.history(limit=5):
-            if m.author.bot:
-                continue
-            if m.id == message.id:
-                continue
-            if not m.content:
-                continue
-            # if m.author.id == message.author.id:
-            #     continue
-            match = m
-            break
+        if search:
+            await message.delete()
+            match: discord.Message | None = None
+            async for m in message.channel.history(limit=5):
+                if m.author.bot:
+                    continue
+                if m.id == message.id:
+                    continue
+                if not m.content:
+                    continue
+                # if m.author.id == message.author.id:
+                #     continue
+                match = m
+                break
+        else:
+            match = message
 
         if not match:
             await channel.send('No recent questions found...', delete_after=5)
@@ -211,7 +248,7 @@ class OpenAI(commands.Cog):
     @app_commands.describe(question='Question or Query to send to ChatGPT')
     async def ai_chat(self, ctx: commands.Context, *, question: str):
         """Continue or Start ChatGPT Session with <question>"""
-        messages = await self.client.get(f'chatgpt:{ctx.author.id}')
+        messages = await self.redis.get(f'chatgpt:{ctx.author.id}')
         messages = json.loads(messages) if messages else []
         await ctx.typing()
         if messages:
@@ -430,7 +467,7 @@ class OpenAI(commands.Cog):
         data = await self.openai_completions(messages)
         chat_response = data['choices'][0]['message']['content']
         messages.append({'role': 'assistant', 'content': chat_response})
-        await self.client.setex(
+        await self.redis.setex(
             f'chatgpt:{ctx.author.id}',
             timedelta(minutes=self.chat_expire_min),
             json.dumps(messages[-self.chat_max_messages:]),
