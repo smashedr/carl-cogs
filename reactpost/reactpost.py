@@ -91,7 +91,8 @@ class ReactPost(commands.Cog):
             files.append(await attachment.to_file())
         embeds: List[discord.Embed] = [e for e in message.embeds if e.type == 'rich']
         content = f'**ReactPost** from {message.jump_url} by {payload.member.mention}\n{message.content}'
-        await dest.send(content, embeds=embeds, files=files, allowed_mentions=discord.AllowedMentions.none())
+        await dest.send(content, embeds=embeds, files=files, silent=True,
+                        allowed_mentions=discord.AllowedMentions.none())
         await message.add_reaction('\U00002705')
         await asyncio.sleep(3.0)
         await message.remove_reaction('\U00002705', guild.me)
@@ -117,7 +118,8 @@ class ReactPost(commands.Cog):
                 await ctx.send(f'⛔ Emoji {emoji} already mapped to {channel.mention}',
                                ephemeral=True, delete_after=15)
                 return
-        maps[str(emoji)] = channel.id
+        maps.update({str(emoji): channel.id})
+        # maps[str(emoji)] = channel.id
         log.debug('maps: %s', maps)
         await self.config.guild(ctx.guild).maps.set(maps)
         await ctx.send(f'✅ Mapped Emoji {emoji} to post to channel {channel.mention}',

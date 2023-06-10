@@ -1,5 +1,6 @@
 import asyncio
 import discord
+import httpx
 import logging
 import plotly.express as px
 import plotly.io as pio
@@ -14,15 +15,31 @@ log = logging.getLogger('red.openai')
 class ChatGraph(commands.Cog):
     """Custom ChatGraph Cog."""
 
-    # guild_default = {
-    #     'blacklist': [],
-    #     'whitelist': [],
-    # }
+    guild_default = {
+        'blacklist': [],
+        'whitelist': [],
+    }
+    http_options = {
+        'follow_redirects': True,
+        'timeout': 6,
+    }
 
     def __init__(self, bot):
         self.bot = bot
-        # self.config = Config.get_conf(self, 1337, True)
-        # self.config.register_guild(**self.guild_default)
+        self.config = Config.get_conf(self, 1337, True)
+        self.config.register_guild(**self.guild_default)
+        self.url: Optional[str] = None
+
+    async def cog_load(self):
+        log.info('%s: Cog Load Start', self.__cog_name__)
+        data = await self.bot.get_shared_api_tokens('api')
+        if data and 'url' in data:
+            self.url = data['url'].rstrip('/') + '/plotly/'
+        log.info('%s: URL: %s', self.__cog_name__, self.url)
+        log.info('%s: Cog Load Finish', self.__cog_name__)
+
+    async def cog_unload(self):
+        log.info('%s: Cog Unload', self.__cog_name__)
 
     @staticmethod
     def calculate_data(history: List[discord.Message]) -> dict:
@@ -53,7 +70,7 @@ class ChatGraph(commands.Cog):
             if counter % 250 == 0:
                 new_embed = discord.Embed(
                     title=f'Fetching messages from #{channel.name}',
-                    description=f'This might take a while...\n{counter}/{messages} messages gathered',
+                    description=f'This may take a while...\n{counter}/{messages} messages gathered',
                     colour=await self.bot.get_embed_colour(location=channel),
                 )
                 await animation_message.edit(embed=new_embed)
@@ -100,22 +117,44 @@ class ChatGraph(commands.Cog):
             await animation_message.delete()
             return await ctx.send(f'No user history found in channel {channel.mention}')
 
-        # Gen Plotly Data, File, and Upload
+        # Gen Plotly Data
         users, totals = [], []
         for user, total in data['data'].items():
             users.append(user)
             totals.append(total)
         pio.templates.default = 'plotly_dark'
         df = {'messages': totals, 'users': users}
-        title = f'Stats for last {messages} messages in #{channel.name}'
+        title = f'{ctx.guild.name} - #{channel.name} last {data["messages"]} Messages'
+        msg = f'**{ctx.guild.name}** - {channel.mention} last **{data["messages"]}** Messages:'
         fig = px.pie(df, values='messages', names='users', title=title)
+
+        # Create file object
         file = BytesIO()
         file.write(fig.to_image())
         file.seek(0)
-        await animation_message.delete()
         file = discord.File(file, f'{channel.name}-{messages}.png')
-        msg = f'Stats for last **{messages}** messages in {channel.mention}'
+
+        # Set msg, check url, post data, update msg, and send
+        if self.url:
+            html = fig.to_html(include_plotlyjs='cdn', config={'displaylogo': False})
+            log.debug('html:type: %s', type(html))
+            href = await self.post_data(html)
+            log.debug('href: %s', href)
+            if href:
+                msg = f'{msg}\n<{self.url}{href}>'
+        await animation_message.delete()
         await ctx.send(msg, file=file)
+
+    async def post_data(self, html: str) -> Optional[str]:
+        try:
+            async with httpx.AsyncClient(**self.http_options) as client:
+                r = await client.post(url=self.url, content=html)
+                log.debug('r.status_code: %s', r.status_code)
+                r.raise_for_status()
+                return r.text
+        except Exception as error:
+            log.debug(error)
+            return None
 
     # @checks.mod_or_permissions(manage_guild=True)
     # @commands.guild_only()
