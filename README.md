@@ -49,23 +49,24 @@ If you run a bot compatible with Red Cogs:
 
 ### Internal/Hidden Cogs
 
-| Cog                                        | Description                                                                |
-|--------------------------------------------|----------------------------------------------------------------------------|
-| **[captcha](captcha/README.md)**           | **API** - Protect server with CAPTCHA.                                     |
-| **[carlcog](carlcog/README.md)**           | Custom commands for Carl Bot that could end up in their own module.        |
-| **[createthings](createthings/README.md)** | **WIP** - Create pre-defined or user-defined role/emoji sets.              |
-| **[miscog](miscog/README.md)**             | Miscellaneous commands for Carl Bot that could end up in their own module. |
-| **[pubsub](pubsub/README.md)**             | **API, Redis** - Custom Redis pubsub module for Red and Carl Bot.          |
-| **[youtube](youtube/README.md)**           | **WIP** - Auto post YouTube videos to specified channels.                  |
+| Cog                                        | Description                                                                       |
+|--------------------------------------------|-----------------------------------------------------------------------------------|
+| **[captcha](captcha/README.md)**           | **API** - Protect server with CAPTCHA.                                            |
+| **[carlcog](carlcog/README.md)**           | Custom commands for Carl Bot that could end up in their own module.               |
+| **[createthings](createthings/README.md)** | **WIP** - Create pre-defined or user-defined role/emoji sets.                     |
+| **[miscog](miscog/README.md)**             | Miscellaneous commands for Carl Bot that could end up in their own module.        |
+| **[pubsub](pubsub/README.md)**             | **Redis, API** - Custom Redis pubsub module for Red and Carl Bot.                 |
+| **[reactroles](reactroles/README.md)**     | **Deprecated** - Create Reaction Role sets to let users get roles from reactions. |
+| **[youtube](youtube/README.md)**           | **WIP** - Auto post YouTube videos to specified channels.                         |
 
 # Additional Setup Information
 
 ## Redis
 
-Many Cogs use Redis for data caching and setting expiry keys.  
-Redis has a small footprint and is very fast.  
-Running the docker Redis container will work with these cogs out of the box.  
-To configure specific Redis settings, use the `set api` command.  
+Many Cogs use Redis for data caching and setting expiry keys.
+Redis has a small footprint and is very fast.
+Running the docker Redis container will work with these cogs out of the box.
+To configure specific Redis settings, use the `set api` command.
 
 ### Running Redis
 
@@ -79,8 +80,7 @@ docker run --name redis -p 6379:6379 -d redis:alpine
 [p]set api
 ```
 
-Name: `redis`  
-Data:
+Name `redis` with data:
 ```text
 host    redis
 port    6379

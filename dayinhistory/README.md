@@ -22,8 +22,7 @@ Make sure to **NOT** set a password unless you need one.
 [p]set api
 ```
 
-Name: `redis`
-Data:
+Name `redis` with data:
 ```text
 host    redis
 port    6379
