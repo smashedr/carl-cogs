@@ -47,8 +47,6 @@ class ChatGraph(commands.Cog):
         data = {'messages': 0, 'users': 0, 'data': {}}
         for message in history:
             user: discord.User = message.author
-            if user.bot:
-                continue
             name: str = user.display_name or user.name
             data['messages'] += 1
             if name not in data['data']:
@@ -65,6 +63,8 @@ class ChatGraph(commands.Cog):
         counter = 0
         async for msg in channel.history(limit=messages):
             await asyncio.sleep(0.005)
+            if msg.author.bot:
+                continue
             history.append(msg)
             counter += 1
             if counter % 250 == 0:

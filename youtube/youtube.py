@@ -60,13 +60,13 @@ class YouTube(commands.Cog):
         await self.redis.ping()
         self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
         self.loop = asyncio.create_task(self.main_loop())
-        self.sub_bub_task.start()
+        # self.sub_bub_task.start()
         self.poll_new_videos.start()
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
-        self.sub_bub_task.cancel()
+        # self.sub_bub_task.cancel()
         self.poll_new_videos.cancel()
         if self.loop and not self.loop.cancelled():
             self.loop.cancel()
@@ -141,18 +141,18 @@ class YouTube(commands.Cog):
             log.debug('-'*40)
         log.debug('Finish: process_new')
 
-    @tasks.loop(time=datetime.time(hour=18, minute=0, tzinfo=datetime.timezone.utc))
-    async def sub_bub_task(self):
-        log.info('%s: Sub Bub Task - Start', self.__cog_name__)
-        await self.update_channels_list()
-        channels: list = await self.config.channels()
-        log.debug(channels)
-        for chan in channels:
-            await self.sub_to_channel(chan)
-            await asyncio.sleep(1.0)
-        log.info('%s: Sub Bub Task - Finish', self.__cog_name__)
+    # @tasks.loop(time=datetime.time(hour=18, minute=0, tzinfo=datetime.timezone.utc))
+    # async def sub_bub_task(self):
+    #     log.info('%s: Sub Bub Task - Start', self.__cog_name__)
+    #     await self.update_channels_list()
+    #     channels: list = await self.config.channels()
+    #     log.debug(channels)
+    #     for chan in channels:
+    #         await self.sub_to_channel(chan)
+    #         await asyncio.sleep(1.0)
+    #     log.info('%s: Sub Bub Task - Finish', self.__cog_name__)
 
-    @tasks.loop(minutes=15.0)
+    @tasks.loop(minutes=30.0)
     async def poll_new_videos(self):
         await self.update_channels_list()
         log.debug('-'*40)

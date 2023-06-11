@@ -145,9 +145,6 @@ class ColorMe(commands.Cog):
     #     log.debug('Added Role %s to User %s', role.name, member.name)
 
     @commands.hybrid_command(name='hex')
-    @commands.guild_only()
-    @commands.cooldown(3, 20, commands.BucketType.user)
-    @commands.max_concurrency(1, commands.BucketType.user)
     @app_commands.describe(color='Hex Value, CSS Name, or Discord Color Name')
     async def hex_command(self, ctx: commands.Context, *, color: str):
         """Get Color Name from <color>.
@@ -195,7 +192,7 @@ class ColorMe(commands.Cog):
     @commands.cooldown(3, 20, commands.BucketType.user)
     @commands.max_concurrency(1, commands.BucketType.user)
     @app_commands.describe(color='Optional: Hex Value, CSS Name, or Discord Color Name')
-    async def color_command(self, ctx: commands.Context, *, color: Optional[str]):
+    async def color_command(self, ctx: commands.Context, *, color: str):
         """Change the color of your name.
         **color** must be a hex, css, or Discord color.
         Examples: `2ecc71` or `#009966` or `gold` or `dark_purple`
@@ -213,7 +210,7 @@ class ColorMe(commands.Cog):
 
         # Remove color if no color passed
         log.debug('color: %s', color)
-        if not color:
+        if color.lower() in ['remove', 'delete', 'del']:
             removed = None
             for role in member.roles:
                 if role.name.startswith(self.prefix):

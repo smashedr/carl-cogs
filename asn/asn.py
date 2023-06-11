@@ -66,7 +66,7 @@ class AviationSafetyNetwork(commands.Cog):
         log.info('%s: Cog Unload', self.__cog_name__)
         self.main_loop.cancel()
 
-    @tasks.loop(minutes=30.0)
+    @tasks.loop(minutes=60.0)
     async def main_loop(self):
         await self.bot.wait_until_ready()
         log.info('%s: Run Loop: main_loop', self.__cog_name__)
