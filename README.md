@@ -44,7 +44,7 @@ If you run a bot compatible with Red Cogs:
 | **[stickyroles](stickyroles/stickyroles.py)**          | Remembers users roles and adds them on rejoin.                                  |
 | **[userchannels](userchannels/userchannels.py)**       | Creates custom user rooms on the fly and cleans up when done.                   |
 | **[voicetext](voicetext/voicetext.py)**                | **WIP** - Creates Text Channels for Active Voice Channels and Cleans Up.        |
-| **[warcraftlogs](warcraftlogs/warcraftlogs.py)**       | Split Warcraft Logs into multiple channels with filters.                        |
+| **[warcraftlogs](warcraftlogs/warcraftlogs.py)**       | **WIP** - Split Warcraft Logs into multiple channels with filters.              |
 | **[welcome](welcome/welcome.py)**                      | Welcomes new users to your servers on join.                                     |
 
 ### Internal/Hidden Cogs
