@@ -22,41 +22,41 @@ If you run a bot compatible with Red Cogs:
 
 ### Public Cogs
 
-| Cog                                                    | Description                                                                     |
-|--------------------------------------------------------|---------------------------------------------------------------------------------|
-| **[activerole](activerole/activerole.py)**             | **Redis** - Adds a role to active chatters.                                     |
-| **[asn](asn/asn.py)**                                  | **Redis** - Aviation Safety Network entries post to a channel or view manually. |
-| **[autochannels](autochannels/autochannels.py)**       | Creates duplicate channels on the fly and cleans up when done.                  |
-| **[autodisconnect](autodisconnect/autodisconnect.py)** | Automatically disconnects users from the AFK channel.                           |
-| **[autoroles](autoroles/autoroles.py)**                | Adds roles to new members on join.                                              |
-| **[avherald](avherald/avherald.py)**                   | **Redis** - Get and post AVHearld data to Discord.                              |
-| **[botutils](botutils/botutils.py)**                   | Custom stateless bot utilities for Carl Bot but useful for anyone.              |
-| **[chatgraph](chatgraph/chatgraph.py)**                | **API** - Generage Pie Graph of Messages in Current Channel.                    |
-| **[colorme](colorme/colorme.py)**                      | Allow users to manage the color of their own name.                              |
-| **[dayinhistory](dayinhistory/dayinhistory.py)**       | **Redis** - Gets and Posts Today in History.                                    |
-| **[dictionary](dictionary/dictionary.py)**             | Dictionary and Urban Dictionary lookups.                                        |
-| **[flightaware](flightaware/flightaware.py)**          | **Redis** - FlightAware Flights, Operators, Registration.                       |
-| **[heartbeat](heartbeat/heartbeat.py)**                | Pings a Heartbeat service every X seconds.                                      |
-| **[liverole](liverole/liverole.py)**                   | Give a role to users when they go live in Discord.                              |
-| **[lmgtfy](lmgtfy/lmgtfy.py)**                         | LMGTFY chat replies.                                                            |
-| **[openai](openai/openai.py)**                         | **Redis** - OpenAI and ChatGPT Commands.                                        |
-| **[reactpost](reactpost/reactpost.py)**                | Set channels to auto add Emoji->Channels mappings to post to channel on react.  |
-| **[stickyroles](stickyroles/stickyroles.py)**          | Remembers users roles and adds them on rejoin.                                  |
-| **[userchannels](userchannels/userchannels.py)**       | Creates custom user rooms on the fly and cleans up when done.                   |
-| **[voicetext](voicetext/voicetext.py)**                | **WIP** - Creates Text Channels for Active Voice Channels and Cleans Up.        |
-| **[warcraftlogs](warcraftlogs/warcraftlogs.py)**       | **WIP** - Split Warcraft Logs into multiple channels with filters.              |
-| **[welcome](welcome/welcome.py)**                      | Welcomes new users to your servers on join.                                     |
+| Cog                                            | Description                                                                     |
+|------------------------------------------------|---------------------------------------------------------------------------------|
+| **[activerole](activerole/README.md)**         | **Redis** - Adds a role to active chatters.                                     |
+| **[asn](asn/README.md)**                       | **Redis** - Aviation Safety Network entries post to a channel or view manually. |
+| **[autochannels](autochannels/README.md)**     | Creates duplicate channels on the fly and cleans up when done.                  |
+| **[autodisconnect](autodisconnect/README.md)** | Automatically disconnects users from the AFK channel.                           |
+| **[autoroles](autoroles/README.md)**           | Adds roles to new members on join.                                              |
+| **[avherald](avherald/README.md)**             | **Redis** - Get and post Aviation Herald data to Discord.                       |
+| **[botutils](botutils/README.md)**             | Custom stateless bot utilities for Carl Bot but useful for anyone.              |
+| **[chatgraph](chatgraph/README.md)**           | **API** - Generage Pie Graph of Messages in Current Channel.                    |
+| **[colorme](colorme/README.md)**               | Allow users to manage the color of their own name.                              |
+| **[dayinhistory](dayinhistory/README.md)**     | **Redis** - Gets and Posts Today in History.                                    |
+| **[dictionary](dictionary/README.md)**         | Dictionary and Urban Dictionary lookups.                                        |
+| **[flightaware](flightaware/README.md)**       | **Redis** - FlightAware Flights, Operators, Registration.                       |
+| **[heartbeat](heartbeat/README.md)**           | Pings a Heartbeat service every X seconds.                                      |
+| **[liverole](liverole/README.md)**             | Give a role to users when they go live in Discord.                              |
+| **[lmgtfy](lmgtfy/README.md)**                 | LMGTFY chat replies.                                                            |
+| **[openai](openai/README.md)**                 | **Redis** - OpenAI and ChatGPT Commands.                                        |
+| **[reactpost](reactpost/README.md)**           | Set channels to auto add Emoji->Channels mappings to post to channel on react.  |
+| **[stickyroles](stickyroles/README.md)**       | Remembers users roles and adds them on rejoin.                                  |
+| **[userchannels](userchannels/README.md)**     | Creates custom user rooms on the fly and cleans up when done.                   |
+| **[voicetext](voicetext/README.md)**           | **WIP** - Creates Text Channels for Active Voice Channels and Cleans Up.        |
+| **[warcraftlogs](warcraftlogs/README.md)**     | **WIP** - Split Warcraft Logs into multiple channels with filters.              |
+| **[welcome](welcome/README.md)**               | Welcomes new users to your servers on join.                                     |
 
 ### Internal/Hidden Cogs
 
-| Cog                                              | Description                                                                |
-|--------------------------------------------------|----------------------------------------------------------------------------|
-| **[captcha](captcha/captcha.py)**                | **API** - Protect server with CAPTCHA.                                     |
-| **[carlcog](carlcog/carlcog.py)**                | Custom commands for Carl Bot that could end up in their own module.        |
-| **[createthings](createthings/createthings.py)** | **WIP** - Create pre-defined or user-defined role/emoji sets.              |
-| **[miscog](miscog/miscog.py)**                   | Miscellaneous commands for Carl Bot that could end up in their own module. |
-| **[pubsub](pubsub/pubsub.py)**                   | **API, Redis** - Custom Redis pubsub module for Red and Carl Bot.          |
-| **[youtube](youtube/youtube.py)**                | **WIP** - Auto post YouTube videos to specified channels.                  |
+| Cog                                        | Description                                                                |
+|--------------------------------------------|----------------------------------------------------------------------------|
+| **[captcha](captcha/README.md)**           | **API** - Protect server with CAPTCHA.                                     |
+| **[carlcog](carlcog/README.md)**           | Custom commands for Carl Bot that could end up in their own module.        |
+| **[createthings](createthings/README.md)** | **WIP** - Create pre-defined or user-defined role/emoji sets.              |
+| **[miscog](miscog/README.md)**             | Miscellaneous commands for Carl Bot that could end up in their own module. |
+| **[pubsub](pubsub/README.md)**             | **API, Redis** - Custom Redis pubsub module for Red and Carl Bot.          |
+| **[youtube](youtube/README.md)**           | **WIP** - Auto post YouTube videos to specified channels.                  |
 
 # Additional Setup Information
 

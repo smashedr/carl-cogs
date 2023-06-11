@@ -53,7 +53,7 @@ def gen_line(cog):
     pre = re.sub(', $', '', pre).strip()
     pre = pre + '** - ' if pre.strip('*') else ''
     name = cog['cog']
-    return f"| **[{name}]({name}/{name}.py)** | {pre}{cog['description']} |"
+    return f"| **[{name}]({name}/README.md)** | {pre}{cog['description']} |"
 
 
 data = get_data_from_path('C:\\Users\\Shane\\IdeaProjects\\carl-cogs')
