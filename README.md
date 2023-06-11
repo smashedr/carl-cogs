@@ -13,7 +13,7 @@ To add Carl Bot to your server visit: [https://carl.sapps.me/](https://carl.sapp
 
 If you run a bot compatible with Red Cogs:
 
-```
+```text
 [p]repo add carl-cogs https://github.com/smashedr/carl-cogs
 [p]cog list carl-cogs
 [p]cog install carl-cogs name
@@ -69,26 +69,28 @@ To configure specific Redis settings, use the `set api` command.
 
 ### Running Redis
 
-```agsl
+```text
 docker run --name redis -p 6379:6379 -d redis:alpine
 ```
 
 ### Configure Redis
 
-```agsl
+```text
 [p]set api
 ```
+
 Name: `redis`  
 Data:
-```agsl
+```text
 host    redis
 port    6379
 db      0
 pass    onlyifrequired
 ```
+
 Above information are the defaults. Password defaults to `None`.
 DO NOT enter a password in the config unless you require one.
 
 ## API
 
-**Coming Soon**. New API will be posted soon.
+**Coming Soon.** New API will be posted soon.

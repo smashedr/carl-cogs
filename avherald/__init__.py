@@ -1,6 +1,6 @@
-from .avherald import AVHerald
+from .avherald import Avherald
 
 
 async def setup(bot):
-    cog = AVHerald(bot)
+    cog = Avherald(bot)
     await bot.add_cog(cog)

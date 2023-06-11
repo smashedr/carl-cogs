@@ -1,8 +1,8 @@
 {
-  "name": "AVHearld",
+  "name": "Avherald",
   "author": ["Shane#0816"],
-  "short": "Carl's AVHearld Module.",
-  "description": "Get and post AVHearld data to Discord.",
+  "short": "Carl's Avherald Module.",
+  "description": "Get and post Aviation Herald data to Discord.",
   "install_msg": "Manage this command with `[p]avhearld`",
   "end_user_data_statement": "Caveat Emptor.",
   "tags": ["redis"],
