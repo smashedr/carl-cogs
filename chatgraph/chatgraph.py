@@ -89,7 +89,7 @@ class ChatGraph(commands.Cog):
         channel = channel or ctx.channel
 
         # Run Checks
-        if 100 > messages > 10000:
+        if 100 > messages > 50000:
             return await ctx.send('100 > messages > 10000')
         if channel.permissions_for(ctx.message.author).read_messages is False:
             return await ctx.send("You're not allowed to access that channel.")
@@ -124,8 +124,8 @@ class ChatGraph(commands.Cog):
             totals.append(total)
         pio.templates.default = 'plotly_dark'
         df = {'messages': totals, 'users': users}
-        title = f'{ctx.guild.name} - #{channel.name} last {data["messages"]} Messages'
-        msg = f'**{ctx.guild.name}** - {channel.mention} last **{data["messages"]}** Messages:'
+        title = f'{ctx.guild.name} #{channel.name} last {data["messages"]} Messages'
+        msg = f'**{ctx.guild.name}** {channel.mention} last **{data["messages"]}** Messages:'
         fig = px.pie(df, values='messages', names='users', title=title)
 
         # Create file object

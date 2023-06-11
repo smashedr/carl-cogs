@@ -1,10 +1,10 @@
 import asyncio
-
 import discord
 import logging
 from typing import Optional, Union, List, Dict
 
 from redbot.core import Config, checks, commands
+from redbot.core.utils import can_user_send_messages_in
 from redbot.core.utils import chat_formatting as cf
 
 log = logging.getLogger('red.reactpost')
@@ -65,15 +65,17 @@ class ReactPost(commands.Cog):
         maps: Dict[str, int] = await self.config.guild(guild).maps()
         if str(payload.emoji) not in maps:
             return
-        dest: discord.TextChannel = guild.get_channel(maps[str(payload.emoji)])
-        if not dest:
-            log.error('404 - Channel Not Found - Removing: %s', maps[str(payload.emoji)])
+        channel: discord.TextChannel = guild.get_channel(maps[str(payload.emoji)])
+        if not channel:
+            log.warning('404 - Channel Not Found - Removing: %s', maps[str(payload.emoji)])
             del maps[str(payload.emoji)]
-            await self.config.guild(guild).maps.set(maps)
-            return
+            return await self.config.guild(guild).maps.set(maps)
 
-        channel: discord.TextChannel = guild.get_channel(payload.channel_id)
-        message: discord.Message = await channel.fetch_message(payload.message_id)
+        source: discord.TextChannel = guild.get_channel(payload.channel_id)
+        message: discord.Message = await source.fetch_message(payload.message_id)
+        if not can_user_send_messages_in(payload.member, channel):
+            return await self.temporary_react(message, guild.me, '\U000026D4')
+
         for reaction in message.reactions:
             if isinstance(reaction.emoji, str):
                 emoji_string = reaction.emoji
@@ -81,21 +83,23 @@ class ReactPost(commands.Cog):
                 emoji_string = reaction.emoji.name
             if emoji_string == payload.emoji.name:
                 if reaction.count > 2:
-                    await message.add_reaction('\U000026D4')
-                    await asyncio.sleep(3.0)
-                    await message.remove_reaction('\U000026D4', guild.me)
-                    return
+                    return await self.temporary_react(message, guild.me, '\U000026D4')
 
         files = []
         for attachment in message.attachments:
             files.append(await attachment.to_file())
         embeds: List[discord.Embed] = [e for e in message.embeds if e.type == 'rich']
         content = f'**ReactPost** from {message.jump_url} by {payload.member.mention}\n{message.content}'
-        await dest.send(content, embeds=embeds, files=files, silent=True,
-                        allowed_mentions=discord.AllowedMentions.none())
-        await message.add_reaction('\U00002705')
-        await asyncio.sleep(3.0)
-        await message.remove_reaction('\U00002705', guild.me)
+        await channel.send(content, embeds=embeds, files=files, silent=True,
+                           allowed_mentions=discord.AllowedMentions.none())
+        await self.temporary_react(message, guild.me, '\U00002705')
+
+    @staticmethod
+    async def temporary_react(message: discord.Message, member: discord.Member,
+                              emoji: str, delay: float = 3.0) -> None:
+        await message.add_reaction(emoji)
+        await asyncio.sleep(delay)
+        await message.remove_reaction(emoji, member)
 
     @commands.group(name='reactpost', aliases=['react', 'rp'])
     @commands.guild_only()
