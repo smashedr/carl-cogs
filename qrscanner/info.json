@@ -2,7 +2,7 @@
   "name": "Autoarchive",
   "author": ["Shane#0816"],
   "short": "Carl's Autoarchive Module.",
-  "description": "Automatically archives selected channels and creates new ones before 10k.",
+  "description": "Scans messages for attachments to parse and post QR Data.",
   "install_msg": "Manage this command with `[p]autoarchive`",
   "end_user_data_statement": "Caveat Emptor.",
   "tags": ["wip"],

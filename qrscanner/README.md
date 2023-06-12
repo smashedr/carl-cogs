@@ -1,6 +1,6 @@
 # Autoarchive
 
-Automatically archives selected channels and creates new ones before 10k.
+Scans messages for attachments to parse and post QR Data.
 
 **WIP:** This is a Work in Progress and may not work as expected.
 
