@@ -16,7 +16,7 @@ log = logging.getLogger('red.tiorun')
 class Tiorun(commands.Cog):
     """Carl's Tiorun Cog"""
 
-    ocr_url = 'https://api.flowery.pw/v1/ocr'
+    tio_url = 'https://tio.run/cgi-bin/static/b666d85ff48692ae95f24a66f7612256-run/93d25ed21c8d2bb5917e6217ac439d61'
     http_options = {
         'follow_redirects': True,
         'timeout': 6,
@@ -48,7 +48,15 @@ class Tiorun(commands.Cog):
         languages = await self.get_languages()
         if not languages:
             return await ctx.send('The author of this cog is, to be nice, the king of retards!')
-        match, score = process.extractOne(language, languages.keys())
+        language = language.lower()
+        matches = {
+            'python': 'python3-cython',
+            'py': 'python3-cython',
+        }
+        if language in matches:
+            match = matches[language]
+        else:
+            match, score = process.extractOne(language, languages.keys())
         log.debug('match: %s', match)
         lang = languages[match]
         log.debug('lang: %s', lang)
@@ -135,27 +143,17 @@ class Tiorun(commands.Cog):
                     value = "\0".join(value).encode() + b"\0"
                 req += value
 
-        data = zlib.compress(req, 9)[2:-4]
-        url = 'https://tio.run/cgi-bin/static/b666d85ff48692ae95f24a66f7612256-run/93d25ed21c8d2bb5917e6217ac439d61'
+        content = zlib.compress(req, 9)[2:-4]
         async with httpx.AsyncClient(**self.http_options) as client:
-            r = await client.post(url=url, content=data)
-        log.debug('r.status_code: %s', r.status_code)
+            r = await client.post(url=self.tio_url, content=content)
         r.raise_for_status()
-        log.debug('r.content: %s', r.content)
         res = zlib.decompress(r.content, 31)
-        log.debug('res: %s', res)
         weird_thing = res[:16]
-        log.debug('weird_thing: %s', weird_thing)
         ret = res[16:].split(weird_thing)
-        log.debug('ret: %s', ret)
         count = len(ret) >> 1
         output, debug = ret[:count], ret[count:]
-        log.debug('output: %s', output)
-        log.debug('debug: %s', debug)
-        output = [r.decode("utf-8", "ignore") for r in output]
-        log.debug('output: %s', output)
-        debug = [e.decode("utf-8", "ignore") for e in debug]
-        log.debug('debug: %s', debug)
+        output = [x.decode("utf-8", "ignore") for x in output]
+        debug = [x.decode("utf-8", "ignore") for x in debug]
         return output, debug
 
     # @staticmethod

@@ -1,9 +1,9 @@
 {
-  "name": "Autoarchive",
+  "name": "Timer",
   "author": ["Shane#0816"],
-  "short": "Carl's Autoarchive Module.",
-  "description": "Automatically clones and archives channels before 10k.",
-  "install_msg": "Manage this command with `[p]autoarchive`",
+  "short": "Carl's Timer Module.",
+  "description": "Start and Stop Timers in Discord.",
+  "install_msg": "Start a Timer with `[p]timer start`",
   "end_user_data_statement": "Caveat Emptor.",
   "tags": ["wip"],
   "requirements": [],

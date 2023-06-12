@@ -1,6 +1,6 @@
 # ChatGraph
 
-Generage Pie Graph of Messages in Current Channel.
+Generate Pie Graph of Messages in Current or Specified Channel.
 
 **API Required:** This cog _might_ require the Web API...
 

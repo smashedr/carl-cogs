@@ -1,19 +1,16 @@
 import datetime
 import discord
 import logging
-from io import BytesIO
-from PIL import Image
-from pyzbar.pyzbar import Decoded, decode, ZBarSymbol
-from typing import Optional, Union, Tuple, Dict, List
+from typing import Optional, Union, Tuple, Dict, List, Any
 
 from redbot.core import app_commands, commands, Config
 from redbot.core.utils import chat_formatting as cf
 
-log = logging.getLogger('red.qrscanner')
+log = logging.getLogger('red.basecog')
 
 
-class Qrscanner(commands.Cog):
-    """Carl's Qrscanner Cog"""
+class Basecog(commands.Cog):
+    """Carl's Basecog Cog"""
 
     guild_default = {
         'enabled': False,
@@ -34,7 +31,7 @@ class Qrscanner(commands.Cog):
 
     @commands.Cog.listener(name='on_message_without_command')
     async def on_message_without_command(self, message: discord.Message):
-        """Find QR code in message attachments"""
+        """Listens for Messages"""
         guild: discord.Guild = message.guild
         if message.author.bot or not message.attachments or not guild:
             return
@@ -44,59 +41,31 @@ class Qrscanner(commands.Cog):
         channels: List[int] = await self.config.guild(guild).channels()
         if message.channel.id in channels:
             return
+        # run code here
 
-        attachment: discord.Attachment
-        for attachment in message.attachments:
-            content_type = attachment.content_type
-            if not content_type:
-                log.warning('Unknown Content Type')
-                continue
-            if 'image' not in content_type:
-                log.debug('Attachment Not Image')
-                continue
-
-            try:
-                fp: BytesIO = BytesIO(await attachment.read())
-                image: Image = Image.open(fp)
-                codes: List[Decoded] = decode(image, symbols=[ZBarSymbol.QRCODE])
-                log.debug('Found %s codes', len(codes))
-            except Exception as error:
-                log.error('Error: %s', error, exc_info=True)
-                return
-            if not codes:
-                log.debug('No QR Codes Found')
-                return
-
-            log.debug('codes: %s', len(codes))
-            for code in codes:
-                data: str = code.data.decode()
-                contents = 'QR Code Found:\n'
-                contents += f'{data[:800]}...' if len(data) > 800 else data
-                await message.reply(contents, allowed_mentions=discord.AllowedMentions.none())
-
-    @commands.group(name='qrscanner', aliases=['qrs', 'qrscan'])
+    @commands.group(name='basecog', aliases=['bscog'])
     @commands.guild_only()
     @commands.admin()
-    async def _qrs(self, ctx: commands.Context):
-        """Options for managing QR Scanner."""
+    async def _basecog(self, ctx: commands.Context):
+        """Options for managing Basecog."""
 
-    @_qrs.command(name='channel', aliases=['c', 'chan', 'chann', 'channels'])
+    @_basecog.command(name='channel', aliases=['c', 'chan', 'chann', 'channels'])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def _qrs_channel(self, ctx: commands.Context):
-        """Set Channels to limit QR Scanner too"""
+    async def _basecog_channel(self, ctx: commands.Context):
+        """Set Channels for Basecog"""
         view = ChannelView(self, ctx.author)
-        msg = 'Select channels enable **QR Scanner** on:'
+        msg = 'Select channels for **Basecog**:'
         await view.send_initial_message(ctx, msg, True)
 
-    @_qrs.command(name='toggle', aliases=['enable', 'disable', 'on', 'off'])
-    async def _qrs_enable(self, ctx: commands.Context):
-        """Enables QR Scanner"""
+    @_basecog.command(name='toggle', aliases=['enable', 'disable', 'on', 'off'])
+    async def _basecog_enable(self, ctx: commands.Context):
+        """Enable/Disable Basecog"""
         enabled = await self.config.guild(ctx.guild).enabled()
         if enabled:
             await self.config.guild(ctx.guild).enabled.set(False)
-            return await ctx.send(f'✅ {self.__cog_name__} Disabled.')
+            return await ctx.send(f'\U00002705  {self.__cog_name__} Disabled.')  # ✅
         await self.config.guild(ctx.guild).enabled.set(True)
-        await ctx.send(f'✅ {self.__cog_name__} Enabled.')
+        await ctx.send(f'\U00002705  {self.__cog_name__} Enabled.')  # ✅
 
 
 class ChannelView(discord.ui.View):
@@ -135,10 +104,10 @@ class ChannelView(discord.ui.View):
             channels.append(value)
         if not channels:
             await self.cog.config.guild(interaction.guild).channels.set([])
-            msg = f'\U00002705 No Channel Selected. Now QR Scanning All Channels'  # ✅
+            msg = f'\U00002705 No Channel Selected. All Channels Cleared.'  # ✅
             return await response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
         ids = [x.id for x in channels]
         await self.cog.config.guild(interaction.guild).channels.set(ids)
         names = [x.name for x in channels]
-        msg = f'\U00002705 QR Scanning now Limited to Channels: {cf.humanize_list(names)}'  # ✅
+        msg = f'\U00002705 Basecog Set to Channels: {cf.humanize_list(names)}'  # ✅
         return await response.send_message(msg, ephemeral=True, delete_after=self.delete_after)

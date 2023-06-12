@@ -1,6 +1,6 @@
 # Autoarchive
 
-Automatically clones and archives channels before 10k.
+Create QR Codes in Discord.
 
 **WIP:** This is a Work in Progress and may not work as expected.
 
@@ -8,6 +8,6 @@ Automatically clones and archives channels before 10k.
 
 ```
 [p]cog list carl-cogs
-[p]cog install carl-cogs autoarchive
-[p]load autoarchive
+[p]cog install carl-cogs qr
+[p]load qr
 ```

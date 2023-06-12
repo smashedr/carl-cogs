@@ -25,7 +25,7 @@ If you run a bot compatible with Red Cogs:
 | Cog | Description |
 | --- | --- |
 {% for cog, data in cog_data.items() %}
-{%- if not data['hidden'] %}| **[{{ cog }}]({{ cog }}/README.md)** | {% if 'deprecated' in data['tags'] %}**Deprecated** -
+{%- if not data['hidden'] %}| **[{{ cog }}]({{ cog }})** | {% if 'deprecated' in data['tags'] %}**Deprecated** -
 {%- elif 'wip' in data['tags'] -%}**WIP** -
 {%- else -%}
     {%- if 'api' in data['tags'] or 'redis' in data['tags'] -%}**{%- endif -%}
@@ -41,7 +41,7 @@ If you run a bot compatible with Red Cogs:
 | Cog | Description |
 | --- | --- |
 {% for cog, data in cog_data.items() %}
-{%- if data['hidden'] %}| **[{{ cog }}]({{ cog }}/README.md)** | {% if 'deprecated' in data['tags'] %}**Deprecated** -
+{%- if data['hidden'] %}| **[{{ cog }}]({{ cog }})** | {% if 'deprecated' in data['tags'] %}**Deprecated** -
 {%- elif 'wip' in data['tags'] -%}**WIP** -
 {%- else -%}
     {%- if 'api' in data['tags'] or 'redis' in data['tags'] -%}**{%- endif -%}

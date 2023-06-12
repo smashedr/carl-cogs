@@ -22,47 +22,49 @@ If you run a bot compatible with Red Cogs:
 
 ### Public Cogs
 
-| Cog                                            | Description                                                                         |
-|------------------------------------------------|-------------------------------------------------------------------------------------|
-| **[activerole](activerole/README.md)**         | **Redis** - Adds a role to active chatters.                                         |
-| **[asn](asn/README.md)**                       | **Redis** - Aviation Safety Network entries post to a channel or view manually.     |
-| **[autoarchive](autoarchive/README.md)**       | **WIP** - Automatically archives selected channels and creates new ones before 10k. |
-| **[autochannels](autochannels/README.md)**     | Creates duplicate channels on the fly and cleans up when done.                      |
-| **[autodisconnect](autodisconnect/README.md)** | Automatically disconnects users from the AFK channel.                               |
-| **[autoroles](autoroles/README.md)**           | Adds roles to new members on join.                                                  |
-| **[avherald](avherald/README.md)**             | **Redis** - Get and post Aviation Herald data to Discord.                           |
-| **[botutils](botutils/README.md)**             | Custom stateless bot utilities for Carl Bot but useful for anyone.                  |
-| **[chatgraph](chatgraph/README.md)**           | **API** - Generage Pie Graph of Messages in Current Channel.                        |
-| **[colorme](colorme/README.md)**               | Allow users to manage the color of their own name.                                  |
-| **[dayinhistory](dayinhistory/README.md)**     | **Redis** - Gets and Posts Today in History.                                        |
-| **[dictionary](dictionary/README.md)**         | Dictionary and Urban Dictionary lookups.                                            |
-| **[flightaware](flightaware/README.md)**       | **Redis** - FlightAware Flights, Operators, Registration.                           |
-| **[heartbeat](heartbeat/README.md)**           | Pings a Heartbeat service every X seconds.                                          |
-| **[imdbsearch](imdbsearch/README.md)**         | IMDB Search and lookups.                                                            |
-| **[liverole](liverole/README.md)**             | Give a role to users when they go live in Discord.                                  |
-| **[lmgtfy](lmgtfy/README.md)**                 | LMGTFY chat replies.                                                                |
-| **[ocrimage](ocrimage/README.md)**             | **WIP** - Converts images to text via Flowery OCR API.                              |
-| **[openai](openai/README.md)**                 | **Redis** - OpenAI and ChatGPT Commands.                                            |
-| **[qrscanner](qrscanner/README.md)**           | **WIP** - Scans messages for attachments to parse and post QR Data.                 |
-| **[reactpost](reactpost/README.md)**           | Set channels to auto add Emoji->Channels mappings to post to channel on react.      |
-| **[stickyroles](stickyroles/README.md)**       | Remembers users roles and adds them on rejoin.                                      |
-| **[tiorun](tiorun/README.md)**                 | **WIP** - Runs code on tio.run and returns the results.                             |
-| **[userchannels](userchannels/README.md)**     | Creates custom user rooms on the fly and cleans up when done.                       |
-| **[voicetext](voicetext/README.md)**           | **WIP** - Creates Text Channels for Active Voice Channels and Cleans Up.            |
-| **[warcraftlogs](warcraftlogs/README.md)**     | **WIP** - Split Warcraft Logs into multiple channels with filters.                  |
-| **[welcome](welcome/README.md)**               | Welcomes new users to your servers on join.                                         |
+| Cog                                  | Description                                                                    |
+|--------------------------------------|--------------------------------------------------------------------------------|
+| **[activerole](activerole)**         | **Redis** - Adds a role to active chatters.                                    |
+| **[asn](asn)**                       | **Redis** - Aviation Safety Network data in discord.                           |
+| **[autoarchive](autoarchive)**       | **WIP** - Automatically clones and archives channels before 10k.               |
+| **[autochannels](autochannels)**     | Creates duplicate channels on the fly and cleans up when done.                 |
+| **[autodisconnect](autodisconnect)** | Automatically disconnects users from the AFK channel.                          |
+| **[autoroles](autoroles)**           | Adds roles to new members on join.                                             |
+| **[avherald](avherald)**             | **Redis** - Get and post Aviation Herald data to Discord.                      |
+| **[botutils](botutils)**             | Custom stateless bot utilities for Carl Bot but useful for anyone.             |
+| **[chatgraph](chatgraph)**           | **API** - Generate Pie Graph of Messages in Current or Specified Channel.      |
+| **[colorme](colorme)**               | Allow users to manage the color of their own name.                             |
+| **[dayinhistory](dayinhistory)**     | **Redis** - Gets and Posts Today in History.                                   |
+| **[dictionary](dictionary)**         | Dictionary and Urban Dictionary lookups.                                       |
+| **[flightaware](flightaware)**       | **Redis** - FlightAware Flights, Operators, Registration.                      |
+| **[heartbeat](heartbeat)**           | Pings a Heartbeat service every X seconds.                                     |
+| **[imdbsearch](imdbsearch)**         | IMDB Search and lookups.                                                       |
+| **[liverole](liverole)**             | Give a role to users when they go live in Discord.                             |
+| **[lmgtfy](lmgtfy)**                 | LMGTFY chat replies.                                                           |
+| **[ocrimage](ocrimage)**             | **WIP** - Converts images to text via Flowery OCR API.                         |
+| **[openai](openai)**                 | **Redis** - OpenAI and ChatGPT Commands.                                       |
+| **[qr](qr)**                         | **WIP** - Create QR Codes in Discord.                                          |
+| **[qrscanner](qrscanner)**           | **WIP** - Scans messages for attachments to parse and post QR Data.            |
+| **[reactpost](reactpost)**           | Set channels to auto add Emoji->Channels mappings to post to channel on react. |
+| **[stickyroles](stickyroles)**       | Remembers users roles and adds them on rejoin.                                 |
+| **[timer](timer)**                   | **WIP** - Start and Stop Timers in Discord.                                    |
+| **[tiorun](tiorun)**                 | **WIP** - Runs code on tio.run and returns the results.                        |
+| **[userchannels](userchannels)**     | Creates custom user rooms on the fly and cleans up when done.                  |
+| **[voicetext](voicetext)**           | **WIP** - Creates Text Channels for Active Voice Channels and Cleans Up.       |
+| **[warcraftlogs](warcraftlogs)**     | **WIP** - Split Warcraft Logs into multiple channels with filters.             |
+| **[welcome](welcome)**               | Welcomes new users to your servers on join.                                    |
 
 ### Internal/Hidden Cogs
 
-| Cog                                        | Description                                                                       |
-|--------------------------------------------|-----------------------------------------------------------------------------------|
-| **[captcha](captcha/README.md)**           | **API** - Protect server with CAPTCHA.                                            |
-| **[carlcog](carlcog/README.md)**           | Custom commands for Carl Bot that could end up in their own module.               |
-| **[createthings](createthings/README.md)** | **WIP** - Create pre-defined or user-defined role/emoji sets.                     |
-| **[miscog](miscog/README.md)**             | Miscellaneous commands for Carl Bot that could end up in their own module.        |
-| **[pubsub](pubsub/README.md)**             | **Redis, API** - Custom Redis pubsub module for Red and Carl Bot.                 |
-| **[reactroles](reactroles/README.md)**     | **Deprecated** - Create Reaction Role sets to let users get roles from reactions. |
-| **[youtube](youtube/README.md)**           | **WIP** - Auto post YouTube videos to specified channels.                         |
+| Cog                              | Description                                                                       |
+|----------------------------------|-----------------------------------------------------------------------------------|
+| **[captcha](captcha)**           | **API** - Protect server with CAPTCHA.                                            |
+| **[carlcog](carlcog)**           | Custom commands for Carl Bot that could end up in their own module.               |
+| **[createthings](createthings)** | **WIP** - Create pre-defined or user-defined role/emoji sets.                     |
+| **[miscog](miscog)**             | Miscellaneous commands for Carl Bot that could end up in their own module.        |
+| **[pubsub](pubsub)**             | **Redis, API** - Custom Redis pubsub module for Red and Carl Bot.                 |
+| **[reactroles](reactroles)**     | **Deprecated** - Create Reaction Role sets to let users get roles from reactions. |
+| **[youtube](youtube)**           | **WIP** - Auto post YouTube videos to specified channels.                         |
 
 # Additional Setup Information
 
@@ -86,7 +88,6 @@ docker run --name redis -p 6379:6379 -d redis:alpine
 ```
 
 Name `redis` with data:
-
 ```text
 host    redis
 port    6379

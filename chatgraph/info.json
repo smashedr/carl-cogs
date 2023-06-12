@@ -2,7 +2,7 @@
     "name": "ChatGraph",
     "author": ["Shane#0816"],
     "short": "Carl's ChatGraph Module.",
-    "description": "Generage Pie Graph of Messages in Current Channel.",
+    "description": "Generate Pie Graph of Messages in Current or Specified Channel.",
     "install_msg": "Get started with `[p]chatgraph`",
     "end_user_data_statement": "Caveat Emptor.",
     "tags": ["api"],

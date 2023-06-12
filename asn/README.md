@@ -1,6 +1,6 @@
 # AviationSafetyNetwork
 
-Aviation Safety Network entries post to a channel or view manually.
+Aviation Safety Network data in discord.
 
 **Requires Redis:** See Below for More Details...
 

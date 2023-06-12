@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import discord
 import logging
@@ -17,6 +18,8 @@ class Autoarchive(commands.Cog):
     # TODO: Make these config options
     archive_category = 'Auto-Archive'
     move_messages = 50
+    activity_seconds = 60*15
+    sleep_for_activity = 60*5
 
     guild_default = {
         'channels': [],
@@ -56,11 +59,23 @@ class Autoarchive(commands.Cog):
                     count += 1
                 if count > 9000:
                     log.info('Archiving Channel: %s: %s', channel.id, channel.name)
+                    # TODO: Make This a TASK
                     await self.archive_channel(channel)
 
     async def archive_channel(self, channel: discord.TextChannel) -> None:
         guild = channel.guild
         archive: discord.CategoryChannel = discord.utils.get(guild.channels, name=self.archive_category)
+        message: Optional[discord.Message] = None
+        async for message in channel.history(limit=1):
+            pass
+        if not message:
+            return log.warning('No Messages in Channel: %s', channel.name)
+        seconds = (datetime.datetime.now(tz=datetime.timezone.utc) - message.created_at).seconds
+        log.debug('seconds: %s', seconds)
+        while seconds < self.activity_seconds:
+            log.debug('Waiting for Chat Activity to Stop in: %s', channel.name)
+            await asyncio.sleep(self.sleep_for_activity)
+            seconds = (datetime.datetime.now(tz=datetime.timezone.utc) - message.created_at).seconds
         if not archive:
             await guild.create_category_channel(name=self.archive_category, reason='Auto Archive Category')
         if not archive.type == 'category':
@@ -107,7 +122,8 @@ class Autoarchive(commands.Cog):
             f'**[Go To New Channel...]({clone.jump_url})**'
         )
         embed.set_thumbnail(url='https://img.cssnr.com/p/20230611-182505549.png')
-        await channel.send(embed=embed, silent=True)
+        message = await channel.send(embed=embed, silent=True)
+        await message.pin(reason='Auto Archive Embed')
 
         # send embed to new channel
         embed = discord.Embed(
@@ -130,9 +146,10 @@ class Autoarchive(commands.Cog):
             f'**[Go To Original Channel...]({channel.jump_url})**'
         )
         embed.set_thumbnail(url='https://img.cssnr.com/p/20230611-182505549.png')
-        await channel.send(embed=embed, silent=True)
+        message = await channel.send(embed=embed, silent=True)
+        await message.pin(reason='Auto Archive Embed')
 
-        # move last X messages via webhook
+        # move last {move_messages} messages via webhook
         messages: List[discord.Message] = []
         async for message in channel.history(limit=self.move_messages):
             log.info('message: %s', message.content)

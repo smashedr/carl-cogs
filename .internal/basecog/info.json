@@ -1,9 +1,9 @@
 {
-  "name": "Autoarchive",
+  "name": "Basecog",
   "author": ["Shane#0816"],
-  "short": "Carl's Autoarchive Module.",
-  "description": "Automatically clones and archives channels before 10k.",
-  "install_msg": "Manage this command with `[p]autoarchive`",
+  "short": "Carl's Basecog Module.",
+  "description": "Copy this Basecog to make a new cog.",
+  "install_msg": "Manage this command with `[p]basecog`",
   "end_user_data_statement": "Caveat Emptor.",
   "tags": ["wip"],
   "requirements": [],
@@ -11,7 +11,7 @@
   "required_cogs": {},
   "min_bot_version": "3.4.0",
   "min_python_version" : [3,8,0],
-  "disabled": false,
-  "hidden": false,
+  "disabled": true,
+  "hidden": true,
   "type": "COG"
 }

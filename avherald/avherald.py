@@ -65,29 +65,23 @@ class Avherald(commands.Cog):
         try:
             await self.gen_wiki_data()
         except Exception as error:
-            log.error('Error Generating Wiki Data: %s', error)
-            return
+            return log.error('Error Generating Wiki Data: %s', error)
         data: List[dict] = json.loads(await self.redis.get('avherald:latest') or '[]')
         if not data:
-            log.error('No AVHerald Data.')
-            return
-
-        last: list = await self.config.last()
+            return log.error('No AVHerald Data.')
+        last: List[str] = await self.config.last()
         if not last:
-            log.info('First Run Detected! No last found, setting now.')
+            log.warning('First Run Detected! No last found, setting now.')
             newlast = [x['id'] for x in data]
+            log.debug('newlast: %s', newlast)
             await self.config.last.set(newlast)
             return
-
-        log.debug('last: %s', last)
-        last: list = await self.config.last()
-        for d in data:
-            # log.debug('id: %s', d['id'])
+        for d in reversed(data):
             if d['id'] not in last:
-                log.info('%s not in last, sending notification now.', d['id'])
-                last.insert(0, d['id'])
-                await self.config.last.set(last[:200])
+                log.info('%s not in last, sending notification.', d['id'])
                 await self.process_post_entry(d)
+                last.insert(0, d['id'])
+        await self.config.last.set(last[:200])
         log.info('%s: Finish Loop: main_loop', self.__cog_name__)
 
     async def process_post_entry(self, entry: Dict[str, Any]):
