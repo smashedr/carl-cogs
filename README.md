@@ -42,6 +42,7 @@ If you run a bot compatible with Red Cogs:
 | **[liverole](liverole/README.md)** |  Give a role to users when they go live in Discord. |
 | **[lmgtfy](lmgtfy/README.md)** |  LMGTFY chat replies. |
 | **[openai](openai/README.md)** | **Redis** - OpenAI and ChatGPT Commands. |
+| **[qrscanner](qrscanner/README.md)** | **WIP** - Automatically archives selected channels and creates new ones before 10k. |
 | **[reactpost](reactpost/README.md)** |  Set channels to auto add Emoji->Channels mappings to post to channel on react. |
 | **[stickyroles](stickyroles/README.md)** |  Remembers users roles and adds them on rejoin. |
 | **[userchannels](userchannels/README.md)** |  Creates custom user rooms on the fly and cleans up when done. |

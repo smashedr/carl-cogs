@@ -113,7 +113,7 @@ class Autoarchive(commands.Cog):
         embed = discord.Embed(
             title=f'Original Channel History #{channel.name}',
             url=channel.jump_url,
-            color=discord.Color.red(),
+            color=discord.Color.green(),
             timestamp=datetime.datetime.now(),
         )
         embed.set_author(
