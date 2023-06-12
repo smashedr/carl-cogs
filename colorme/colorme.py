@@ -281,25 +281,25 @@ class ColorMe(commands.Cog):
     async def colorme(self, ctx):
         """Manage the Color Command Options"""
 
-    @colorme.command(name='enable', aliases=['e', 'on'])
-    async def _colorme_enable(self, ctx: commands.Context):
-        """Enables Color"""
+    @colorme.command(name='toggle', aliases=['enable', 'disable', 'on', 'off'])
+    async def _basecog_toggle(self, ctx: commands.Context):
+        """Enable/Disable Color Command"""
         enabled = await self.config.guild(ctx.guild).enabled()
         if enabled:
-            await ctx.send(f'⛔ {self.__cog_name__} is already Enabled.')
-        else:
-            await self.config.guild(ctx.guild).enabled.set(True)
-            await ctx.send(f'✅ {self.__cog_name__} Enabled.')
-
-    @colorme.command(name='disable', aliases=['d', 'off'])
-    async def _colorme_disable(self, ctx: commands.Context):
-        """Disable Color"""
-        enabled = await self.config.guild(ctx.guild).enabled()
-        if not enabled:
-            await ctx.send(f'⛔ {self.__cog_name__} is already Disabled.')
-        else:
             await self.config.guild(ctx.guild).enabled.set(False)
-            await ctx.send(f'✅ {self.__cog_name__} Disabled.')
+            return await ctx.send(f'\U00002705  {self.__cog_name__} Disabled.')  # ✅
+        await self.config.guild(ctx.guild).enabled.set(True)
+        await ctx.send(f'\U00002705  {self.__cog_name__} Enabled.')  # ✅
+
+    # @colorme.command(name='colorall', aliases=['all'])
+    # async def _basecog_colorall(self, ctx: commands.Context):
+    #     """Color All Users with a Random Color"""
+    #     enabled = await self.config.guild(ctx.guild).enabled()
+    #     if enabled:
+    #         await self.config.guild(ctx.guild).enabled.set(False)
+    #         return await ctx.send(f'\U00002705  {self.__cog_name__} Disabled.')  # ✅
+    #     await self.config.guild(ctx.guild).enabled.set(True)
+    #     await ctx.send(f'\U00002705  {self.__cog_name__} Enabled.')  # ✅
 
     # @colorme.command(name='set', aliases=['s'])
     # async def _colorme_set(self, ctx: commands.Context, user: discord.Member, color: Optional[str]):

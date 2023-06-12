@@ -58,7 +58,7 @@ class Basecog(commands.Cog):
         await view.send_initial_message(ctx, msg, True)
 
     @_basecog.command(name='toggle', aliases=['enable', 'disable', 'on', 'off'])
-    async def _basecog_enable(self, ctx: commands.Context):
+    async def _basecog_toggle(self, ctx: commands.Context):
         """Enable/Disable Basecog"""
         enabled = await self.config.guild(ctx.guild).enabled()
         if enabled:
