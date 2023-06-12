@@ -349,7 +349,7 @@ class YouTube(commands.Cog):
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.post(url, data=data)
             r.raise_for_status()
-        log.debug('r.status_code: %s', r.status_code)
+        # log.debug('r.status_code: %s', r.status_code)
         return r
 
     async def get_feed_videos(self, channel_id, as_dict=False) -> Union[list, dict]:
@@ -357,7 +357,7 @@ class YouTube(commands.Cog):
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.get(topic_url)
             r.raise_for_status()
-        log.debug('r.status_code: %s', r.status_code)
+        # log.debug('r.status_code: %s', r.status_code)
         feed = xmltodict.parse(r.text)
         if as_dict:
             video_data = {}
