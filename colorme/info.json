@@ -6,7 +6,7 @@
     "install_msg" : "Set your color with: `/color hex_code`",
     "end_user_data_statement": "Caveat Emptor.",
     "tags": [],
-    "requirements": ["webcolors"],
+    "requirements": ["webcolors", "distinctipy[all]"],
     "permissions" : ["manage_roles"],
     "required_cogs": {},
     "min_bot_version": "3.5.0",
