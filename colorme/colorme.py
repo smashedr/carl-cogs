@@ -7,7 +7,7 @@ import webcolors
 from typing import Optional, Union, Tuple, Dict, List
 
 from discord.ext import tasks
-from redbot.core import Config, app_commands, checks, commands
+from redbot.core import Config, app_commands, commands
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
@@ -279,11 +279,14 @@ class ColorMe(commands.Cog):
 
     @commands.group(name='colorme', aliases=['col'])
     @commands.guild_only()
-    @checks.admin_or_permissions(manage_guild=True)
+    @commands.admin_or_permissions(manage_guild=True)
     async def colorme(self, ctx):
         """Manage the Color Command Options"""
 
     @colorme.command(name='toggle', aliases=['enable', 'disable', 'on', 'off'])
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     async def _basecog_toggle(self, ctx: commands.Context):
         """Enable/Disable Color Command"""
         enabled = await self.config.guild(ctx.guild).enabled()
@@ -294,6 +297,9 @@ class ColorMe(commands.Cog):
         await ctx.send(f'\U00002705  {self.__cog_name__} Enabled.', delete_after=120)  # ✅
 
     @colorme.command(name='colorall', aliases=['all'])
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     async def _basecog_colorall(self, ctx: commands.Context):
         """Color All Users with a Random Color"""
         enabled: bool = await self.config.guild(ctx.guild).enabled()
@@ -302,75 +308,70 @@ class ColorMe(commands.Cog):
             return await ctx.send(f'\U000026D4  {self.__cog_name__} Disabled.', delete_after=120)  # ⛔
         await ctx.typing()
         blocked_roles: List[int] = await self.config.guild(ctx.guild).blocked_roles()
-        current_hexes: List[str] = []
         needs_color: List[discord.Member] = []
         for member in ctx.guild.members:
             log.debug('%s - %s', member.id, member.name)
             if member.bot:
                 log.debug('User %s is a bot', member.name)
-                if member.color:
-                    log.debug('Bot %s has color %s', member.name, member.color)
-                    current_hexes.append(str(member.color).lstrip('#'))
-                continue  # TODO: UNCOMMENT THIS SHIT
+                continue
+            if member.color != discord.Color.default():
+                log.debug('User %s has color %s', member.name, member.color)
+                continue
             for role in member.roles:
                 if role.id in blocked_roles:
                     log.debug('User %s has blocked role %s', member.name, role.name)
                     break
                 if role.name.startswith(self.prefix):
                     log.debug('User %s has color role %s', member.name, role.name)
-                    current_hexes.append(role.name.lstrip(self.prefix))
                     break
             else:
                 needs_color.append(member)
                 continue
             continue
-        log.debug('current_hexes: %s', current_hexes)
         log.debug('needs_color: %s', [x.name for x in needs_color])
         if not needs_color:
-            return await ctx.send('⛔ No members found that need color roles.', delete_after=120)
-        current_rgbs = [(1.0, 1.0, 1.0), (0.0, 0.0, 0.0)]
-        log.debug('-'*40)
-        for hex_code in current_hexes:
-            code = hex_code.lstrip('#').lower()
-            rgb = tuple(int(code[i:i+2], 16) for i in (0, 2, 4))
-            if rgb not in current_rgbs:
-                current_rgbs.append(rgb)
-        log.debug('current_rgbs: %s', current_rgbs)
-        colors = distinctipy.get_colors(len(needs_color), exclude_colors=current_rgbs)
+            return await ctx.send('⛔ No members found that need color roles...', delete_after=120)
+        # current_hexes: List[str] = []
+        # log.debug('current_hexes: %s', current_hexes)
+        # current_rgbs = [(1.0, 1.0, 1.0), (0.0, 0.0, 0.0)]
+        # for hex_code in current_hexes:
+        #     code = hex_code.lstrip('#').lower()
+        #     rgb = tuple(int(code[i:i+2], 16) for i in (0, 2, 4))
+        #     if rgb not in current_rgbs:
+        #         current_rgbs.append(rgb)
+        # log.debug('current_rgbs: %s', current_rgbs)
+        # colors = distinctipy.get_colors(len(needs_color), exclude_colors=current_rgbs)
+        colors = distinctipy.get_colors(len(needs_color))
         log.debug('colors: %s', colors)
         lines = [f'❔ Will apply the following {len(needs_color)} colors:\n```ini']
         member: discord.Member
         colors: Tuple[float, float, float]
         for member, color in zip(needs_color, colors):
-            log.debug('member: %s - %s', member.id, member.name)
-            log.debug('color: %s', color)
+            log.debug('%s - %s - %s', member.id, member.name, color)
             r, g, b = color
             colorhex = '%02x%02x%02x' % (int(r*255), int(g*255), int(b*255))
             line = f'[#{colorhex}]: @{member.name}'
             lines.append(line)
         lines.append('```')
-        msg = await ctx.send('\n'.join(lines), delete_after=120)
-        start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-        pred = ReactionPredicate.yes_or_no(msg, ctx.author)
+        question = await ctx.send('\n'.join(lines), delete_after=120)
+        start_adding_reactions(question, ReactionPredicate.YES_OR_NO_EMOJIS)
+        pred = ReactionPredicate.yes_or_no(question, ctx.author)
         try:
             await self.bot.wait_for('reaction_add', check=pred, timeout=90)
         except asyncio.TimeoutError:
-            return await ctx.send('⛔ Request has Timed Out.')
+            return await ctx.send('⛔ Request has Timed Out...', delete_after=120)
         log.debug('pred.result: %s', pred.result)
         if pred.result is not True:
-            return await ctx.send('⛔ Cancelled.')
-        await ctx.send(f'⌛ Will process {len(needs_color)} members with {len(colors)} colors.',
-                       delete_after=120)
+            return await ctx.send('⛔ Cancelled...', delete_after=120)
+        process = await ctx.send(f'⌛ Processing {len(needs_color)} members with {len(colors)} colors.',
+                                 delete_after=120)
         async with ctx.typing():
-            async for member, color in AsyncIter(zip(needs_color, colors), delay=5, steps=25):
+            async for member, color in AsyncIter(zip(needs_color, colors), delay=2, steps=10):
                 guild: discord.Guild = member.guild
                 r, g, b = color
                 colorhex = '%02x%02x%02x' % (int(r*255), int(g*255), int(b*255))
                 newcolor = f'0x{colorhex}'
                 role_name = f'{self.prefix}{colorhex}'
-                log.debug('role_name: %s', role_name)
-
-                # Get or create new color role
                 log.debug('role_name: %s', role_name)
                 role: discord.Role = discord.utils.get(guild.roles, name=role_name)
                 if not role:
@@ -381,15 +382,45 @@ class ColorMe(commands.Cog):
                         permissions=discord.Permissions.none(),
                     )
                     log.debug('Created new role: %s - %s', role.id, role.name)
-
-                # Add color role to user
                 await member.add_roles(role, reason='Add Color Role')
                 log.debug('Added Role %s to User %s', role.name, member.name)
-                msg = f'✅ Color Updated: **{newcolor}**\n{self.color_info_url}{colorhex}'
-                await ctx.send(msg, ephemeral=True, delete_after=60)
 
+        await question.delete()
+        await process.delete()
         await ctx.send(f'✅ Done processing {len(needs_color)} members with {len(colors)} colors.',
                        delete_after=120)
+
+    @colorme.command(name='uncolorall', aliases=['uncolor', 'removeall', 'deleteall'])
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def _colorme_uncolorall(self, ctx: commands.Context):
+        await ctx.typing()
+        color_roles: List[discord.Role] = []
+        role: discord.Role
+        for role in ctx.guild.roles:
+            if role.name.startswith(self.prefix):
+                color_roles.append(role)
+        if not color_roles:
+            return await ctx.send('⛔ No Color Roles Found...', delete_after=120)
+        lines = [x.mention for x in color_roles]
+        content = '❔ Will **delete** the following roles; Proceed? ' + ' '.join(lines)
+        question = await ctx.send(content, delete_after=120, allowed_mentions=discord.AllowedMentions.none())
+        start_adding_reactions(question, ReactionPredicate.YES_OR_NO_EMOJIS)
+        pred = ReactionPredicate.yes_or_no(question, ctx.author)
+        try:
+            await self.bot.wait_for('reaction_add', check=pred, timeout=90)
+        except asyncio.TimeoutError:
+            return await ctx.send('⛔ Request has Timed Out...', delete_after=120)
+        log.debug('pred.result: %s', pred.result)
+        if pred.result is not True:
+            return await ctx.send('⛔ Cancelled...', delete_after=120)
+        process = await ctx.send(f'⌛ Deleting {len(color_roles)} roles...', delete_after=120)
+        async with ctx.typing():
+            async for role in AsyncIter(color_roles, delay=3, steps=20):
+                await role.delete()
+        await process.delete()
+        await ctx.send(f'✅ Done deleting {len(color_roles)} roles.', delete_after=120)
 
     # @colorme.command(name='set', aliases=['s'])
     # async def _colorme_set(self, ctx: commands.Context, user: discord.Member, color: Optional[str]):
