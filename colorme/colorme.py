@@ -280,14 +280,14 @@ class ColorMe(commands.Cog):
     @commands.group(name='colorme', aliases=['col'])
     @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
-    async def colorme(self, ctx):
+    async def _colorme(self, ctx):
         """Manage the Color Command Options"""
 
-    @colorme.command(name='toggle', aliases=['enable', 'disable', 'on', 'off'])
+    @_colorme.command(name='toggle', aliases=['enable', 'disable', 'on', 'off'])
     @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def _basecog_toggle(self, ctx: commands.Context):
+    async def _colorme_toggle(self, ctx: commands.Context):
         """Enable/Disable Color Command"""
         enabled = await self.config.guild(ctx.guild).enabled()
         if enabled:
@@ -296,11 +296,11 @@ class ColorMe(commands.Cog):
         await self.config.guild(ctx.guild).enabled.set(True)
         await ctx.send(f'\U00002705  {self.__cog_name__} Enabled.', delete_after=120)  # ✅
 
-    @colorme.command(name='colorall', aliases=['all'])
+    @_colorme.command(name='colorall', aliases=['all'])
     @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def _basecog_colorall(self, ctx: commands.Context):
+    async def _colorme_colorall(self, ctx: commands.Context):
         """Color All Users with a Random Color"""
         enabled: bool = await self.config.guild(ctx.guild).enabled()
         if not enabled:
@@ -390,7 +390,7 @@ class ColorMe(commands.Cog):
         await ctx.send(f'✅ Done processing {len(needs_color)} members with {len(colors)} colors.',
                        delete_after=120)
 
-    @colorme.command(name='uncolorall', aliases=['uncolor', 'removeall', 'deleteall'])
+    @_colorme.command(name='uncolorall', aliases=['uncolor', 'removeall', 'deleteall'])
     @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
     @commands.max_concurrency(1, commands.BucketType.guild)

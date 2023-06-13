@@ -3,6 +3,7 @@ import discord
 import httpx
 import io
 import logging
+import re
 from typing import Optional, Union, Tuple, Dict, List, Any
 
 from redbot.core import app_commands, commands, Config
@@ -33,35 +34,48 @@ class Grafana(commands.Cog):
 
     @commands.hybrid_command(name='grafana', aliases=['graphana', 'graph'])
     @commands.guild_only()
-    async def _grafana(self, ctx: commands.Context, dashboard: str, panel: int,
-                       date: Optional[commands.TimedeltaConverter] = datetime.timedelta(days=1)):
-        """Options for managing Grafana."""
+    async def _grafana(self, ctx: commands.Context, dashboard: Optional[str] = None,
+                       panel: Optional[int] = None, from_time: Optional[str] = '1d'):
+        """
+        dashboard: The Dashboard `id/name` from the URL just after `/d/`
+        panel: The Panel ID from the `viewPanel=` URL param when viewing the graph
+        from_time: How far back show. Examples: `3d`, `1w` Default: `1d`
+        """
+        # date: Optional[commands.TimedeltaConverter] = datetime.timedelta(days=1))
         user_conf: Dict[str, str] = await self.config.user(ctx.author).all()
+        log.debug('user_conf: %s', user_conf)
         if not user_conf['base_url'] or not user_conf['org_id']:
             view = ModalView(self)
-            msg = (f'{ctx.author.mention} you are missing some Grafana data. '
+            msg = (f'{ctx.author.mention} you are missing some Grafana details. '
                    f'Click the button to set Grafana URL and OrgID.')
-            return await ctx.send(msg, view=view,
-                                  allowed_mentions=discord.AllowedMentions.none())
-
-        log.debug('user_conf: %s', user_conf)
-        url = f"{user_conf['base_url']}/render/d-solo/{dashboard}"
-        log.debug('url: %s', url)
-        view_url = f"{user_conf['base_url']}/d/{dashboard}?viewPanel={panel}"
-        params = {
-            'orgId': user_conf['org_id'],
-            'from': int((datetime.datetime.now() - date).timestamp()) * 1000,
-            'to': int(datetime.datetime.now().timestamp()) * 1000,
-            'panelId': panel,
-            'render': '1',
-        }
-        log.debug('url: %s', params)
-        async with httpx.AsyncClient() as client:
-            r = await client.get(url, params=params)
-            r.raise_for_status()
-        file = discord.File(io.BytesIO(r.content), filename=f'{dashboard}-{panel}.png')
-        content = f'Graph: <{view_url}>'
-        await ctx.send(content, file=file)
+            return await ctx.send(msg, view=view, allowed_mentions=discord.AllowedMentions.none())
+        if not dashboard or not panel:
+            return await ctx.send_help()
+        match = re.search('([0-9]+)([mhdwMY])', from_time)
+        if not match:
+            msg = f'⛔ Invalid format for **from_time**. Examples: `12h`, `2d`, `1w`'
+            return await ctx.send(msg, delete_after=120)
+        # from_time = int((datetime.datetime.now() - date).timestamp()) * 1000
+        # to_time = int(datetime.datetime.now().timestamp()) * 1000
+        async with ctx.typing():
+            from_time = 'now-' + str(int(match.group(1))) + str(match.group(2))
+            log.debug('from_time: %s', from_time)
+            url = f"{user_conf['base_url']}/render/d-solo/{dashboard}"
+            log.debug('url: %s', url)
+            params = {
+                'orgId': user_conf['org_id'],
+                'from': from_time,
+                'to': 'now',
+                'panelId': panel,
+                'render': '1',
+            }
+            log.debug('params: %s', params)
+            async with httpx.AsyncClient() as client:
+                r = await client.get(url, params=params)
+                r.raise_for_status()
+            file = discord.File(io.BytesIO(r.content), filename=f'{dashboard}-{panel}-{from_time}.png')
+            view_url = f"{user_conf['base_url']}/d/{dashboard}?viewPanel={panel}&from={from_time}&to=now"
+            await ctx.send(f'Graph: <{view_url}>', file=file)
 
 
 class ModalView(discord.ui.View):

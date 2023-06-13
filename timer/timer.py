@@ -39,19 +39,19 @@ class Timer(commands.Cog):
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
 
-    @commands.Cog.listener(name='on_message_without_command')
-    async def on_message_without_command(self, message: discord.Message):
-        """Listens for Messages"""
-        guild: discord.Guild = message.guild
-        if message.author.bot or not message.attachments or not guild:
-            return
-        enabled: bool = await self.config.guild(guild).enabled()
-        if not enabled:
-            return
-        channels: List[int] = await self.config.guild(guild).channels()
-        if message.channel.id in channels:
-            return
-        # run code here
+    # @commands.Cog.listener(name='on_message_without_command')
+    # async def on_message_without_command(self, message: discord.Message):
+    #     """Listens for Messages"""
+    #     guild: discord.Guild = message.guild
+    #     if message.author.bot or not message.attachments or not guild:
+    #         return
+    #     enabled: bool = await self.config.guild(guild).enabled()
+    #     if not enabled:
+    #         return
+    #     channels: List[int] = await self.config.guild(guild).channels()
+    #     if message.channel.id in channels:
+    #         return
+    #     # run code here
 
     @staticmethod
     async def send_embed(ctx: Optional[commands.Context] = None,
@@ -66,7 +66,7 @@ class Timer(commands.Cog):
             color=color,
             description=f'⌛ {human}'
         )
-        embed.set_author(name=f"@{ctx.author.name}")
+        embed.set_author(name=f'@{ctx.author.name}')
         return await ctx.send(embed=embed)
 
     @commands.group(name='timer', aliases=['time'])
@@ -77,7 +77,7 @@ class Timer(commands.Cog):
 
     @_timer.command(name='start', aliases=['s', 'new', 'run', 'create'])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def _basecog_start(self, ctx: commands.Context):
+    async def _timer_start(self, ctx: commands.Context):
         """Start a Timer"""
         user_conf = await self.config.user(ctx.author).all()
         if user_conf['timer']:
@@ -94,8 +94,8 @@ class Timer(commands.Cog):
 
     @_timer.command(name='update', aliases=['show', 'view', 'status', 'display'])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def _basecog_update(self, ctx: commands.Context):
-        """Stop a Timer"""
+    async def _timer_update(self, ctx: commands.Context):
+        """Show a Timer"""
         user_conf = await self.config.user(ctx.author).all()
         if not user_conf['timer']:
             return await ctx.send("\U000026D4 No Timer's Found.")  # ⛔
@@ -104,7 +104,7 @@ class Timer(commands.Cog):
 
     @_timer.command(name='stop', aliases=['end', 'done', 'finish'])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def _basecog_stop(self, ctx: commands.Context):
+    async def _timer_stop(self, ctx: commands.Context):
         """Stop a Timer"""
         user_conf = await self.config.user(ctx.author).all()
         if not user_conf['timer']:
@@ -120,14 +120,14 @@ class Timer(commands.Cog):
 
 #     @_timer.command(name='channel', aliases=['c', 'chan', 'chann', 'channels'])
 #     @commands.max_concurrency(1, commands.BucketType.guild)
-#     async def _basecog_channel(self, ctx: commands.Context):
+#     async def _timer_channel(self, ctx: commands.Context):
 #         """Restrict Channels for Timer Usage"""
 #         view = ChannelView(self, ctx.author)
-#         msg = 'Select channels for **Basecog**:'
+#         msg = 'Select channels for **Timer**:'
 #         await view.send_initial_message(ctx, msg, True)
 #
 #     @_timer.command(name='toggle', aliases=['enable', 'disable', 'on', 'off'])
-#     async def _basecog_enable(self, ctx: commands.Context):
+#     async def _timer_enable(self, ctx: commands.Context):
 #         """Enable/Disable Timer"""
 #         enabled = await self.config.guild(ctx.guild).enabled()
 #         if enabled:
@@ -178,5 +178,5 @@ class Timer(commands.Cog):
 #         ids = [x.id for x in channels]
 #         await self.cog.config.guild(interaction.guild).channels.set(ids)
 #         names = [x.name for x in channels]
-#         msg = f'\U00002705 Basecog Set to Channels: {cf.humanize_list(names)}'  # ✅
+#         msg = f'\U00002705 TImer Set to Channels: {cf.humanize_list(names)}'  # ✅
 #         return await response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
