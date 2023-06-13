@@ -191,7 +191,7 @@ class ColorMe(commands.Cog):
 
     @commands.hybrid_command(name='color')
     @commands.guild_only()
-    @commands.cooldown(3, 20, commands.BucketType.user)
+    @commands.cooldown(5, 10, commands.BucketType.user)
     @commands.max_concurrency(1, commands.BucketType.user)
     @app_commands.describe(color='Optional: Hex Value, CSS Name, or Discord Color Name')
     async def color_command(self, ctx: commands.Context, *, color: str):

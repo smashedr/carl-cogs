@@ -61,6 +61,7 @@ If you run a bot compatible with Red Cogs:
 | **[captcha](captcha)**           | **API** - Protect server with CAPTCHA.                                            |
 | **[carlcog](carlcog)**           | Custom commands for Carl Bot that could end up in their own module.               |
 | **[createthings](createthings)** | **WIP** - Create pre-defined or user-defined role/emoji sets.                     |
+| **[grafana](grafana)**           | **WIP** - Grafana Graphs in Discord.                                              |
 | **[miscog](miscog)**             | Miscellaneous commands for Carl Bot that could end up in their own module.        |
 | **[pubsub](pubsub)**             | **Redis, API** - Custom Redis pubsub module for Red and Carl Bot.                 |
 | **[reactroles](reactroles)**     | **Deprecated** - Create Reaction Role sets to let users get roles from reactions. |
