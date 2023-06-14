@@ -54,7 +54,7 @@ class Timer(commands.Cog):
     #     # run code here
 
     @staticmethod
-    async def send_embed(ctx: Optional[commands.Context] = None,
+    async def send_embed(ctx: Optional[commands.Context],
                          title: str = 'Start',
                          date: Optional[datetime.datetime] = None,
                          color: Optional[discord.Color] = discord.Color.red()

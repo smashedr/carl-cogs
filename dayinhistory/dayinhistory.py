@@ -32,6 +32,7 @@ class DayInHistory(commands.Cog):
     }
     guild_default = {
         'channel': 0,
+        'silent': False,
     }
 
     def __init__(self, bot):
@@ -83,7 +84,7 @@ class DayInHistory(commands.Cog):
             channel: discord.TextChannel = guild.get_channel(data['channel'])
             data: Dict[str, Any] = await self.get_history(now)
             em = discord.Embed.from_dict(data)
-            await channel.send(embed=em)
+            await channel.send(embed=em, silent=data['silent'], allowed_mentions=discord.AllowedMentions.none())
         log.debug('loop: DONE')
 
     @commands.hybrid_group(name='history', aliases=['dayinhistory', 'thisdayinhistory'],
@@ -140,30 +141,34 @@ class DayInHistory(commands.Cog):
 
     @history.command(name='channel', aliases=['c'],
                      description='Admin Only: Set Channel for Auto Posting History Daily')
-    @app_commands.describe(channel='Channel to Post History Too')
+    @app_commands.describe(channel='Channel to Post History Too', post_silent='Send Posts Silent')
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
     @commands.admin()
-    async def history_channel(self, ctx: commands.Context, channel: Optional[CarlChannelConverter] = None):
+    async def history_channel(self, ctx: commands.Context, channel: Optional[discord.TextChannel],
+                              post_silent: Optional[bool] = False):
         """Admin Only: Set Channel for Auto Posting History Daily"""
         channel: discord.TextChannel
         log.debug('vt_channel')
         if not channel:
             await self.config.guild(ctx.guild).channel.set(0)
-            await ctx.send(f'\U00002705 Disabled. Specify a channel to Enable.', ephemeral=True)  # ✅
-            return
+            return await ctx.send(f'\U00002705 Disabled. Specify a channel to Enable.',
+                                  ephemeral=True)  # ✅
 
         log.debug('channel: %s', channel)
         log.debug('channel.type: %s', channel.type)
         if not str(channel.type) == 'text':
-            await ctx.send('\U000026D4 Channel must be a Text Channel.', ephemeral=True)  # ⛔
-            return
+            return await ctx.send('\U000026D4 Channel must be a Text Channel.',
+                                  ephemeral=True)  # ⛔
 
-        await self.config.guild(ctx.guild).channel.set(channel.id)
+        guild_data = {'channel': channel.id, 'silent': post_silent}
+        await self.config.guild(ctx.guild).set(guild_data)
         msg = f'\U00002705 Will post daily history in channel: {channel.name}'  # ✅
+        if post_silent:
+            msg += '\nMessages will post Silently as to not send notifications.'
         await ctx.send(msg, ephemeral=True)
 
-    async def get_history(self, date: Optional[datetime] = None) -> Dict[str, Any]:
+    async def get_history(self, date: Optional[datetime]) -> Dict[str, Any]:
         log.info('get_history')
         now = datetime.now()
         if not date:

@@ -33,7 +33,7 @@ class Miscog(commands.Cog):
     @commands.command(name='checksite', aliases=['cs', 'check'])
     @commands.cooldown(3, 15, commands.BucketType.user)
     async def check_site(self, ctx: commands.Context, url: str,
-                         auth: Optional[str] = None):
+                         auth: Optional[str]):
         """
         Check the status of a site at the given <url> with optional <auth>.
         Example:

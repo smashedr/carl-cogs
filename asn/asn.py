@@ -40,6 +40,7 @@ class AviationSafetyNetwork(commands.Cog):
     }
     guild_default = {
         'channel': 0,
+        'silent': False,
     }
 
     def __init__(self, bot):
@@ -133,65 +134,68 @@ class AviationSafetyNetwork(commands.Cog):
         await view.send_initial_message(ctx, 0)
 
     @_asn.command(name='show', aliases=['s'],
-                  description="Show the latest entry from Aviation Safety Network to You Only")
+                  description='Show the latest entry from Aviation Safety Network to You Only')
     @commands.cooldown(rate=1, per=15, type=commands.BucketType.channel)
     async def _asn_last(self, ctx: commands.Context):
         """Show the latest entry from Aviation Safety Network to You Only"""
         await ctx.defer(ephemeral=True)
         data = json.loads(await self.redis.get('asn:latest') or '{}')
         if not data:
-            await ctx.send('Uhh... No ASN data. Something is wrong...')
-            return
+            return await ctx.send('Uhh... No ASN data. Something is wrong...')
 
         view = ListView(self, ctx.author, data)
         await view.send_initial_message(ctx, 0, True)
 
     @_asn.command(name='post', aliases=['p'],
-                  description="Post a specific incident to the current channel")
+                  description='Post a specific incident to the current channel')
     @app_commands.describe(entry='Wikibase URL or ID Number')
     @commands.cooldown(rate=1, per=15, type=commands.BucketType.channel)
     async def _asn_post(self, ctx: commands.Context, entry: str):
         """Post a specific incident to the current channel"""
         m = re.search('[0-9-]{4,10}', entry)
         if not m or not m.group(0):
-            await ctx.send(f'\U0001F534 Unable to parse ID from entry: {entry}', ephemeral=True, delete_after=10)  # 🔴
-            return
+            return await ctx.send(f'\U0001F534 Unable to parse ID from entry: {entry}',
+                                  ephemeral=True, delete_after=10)  # 🔴
 
         if '-' in m.group(0):
-            await ctx.send(f'\U0001F534 Database Entry Records are not currently supported: {entry}', ephemeral=True, delete_after=10)  # 🔴
-            return
+            return await ctx.send(f'\U0001F534 Database Entry Records are not currently supported: {entry}',
+                                  ephemeral=True, delete_after=10)  # 🔴
 
         await ctx.defer()
         href = f'/wikibase/{m.group(0)}'
         entry = await self.get_wiki_entry(href)
         if not entry:
-            await ctx.send(f'\U0001F534 No data for entry: {entry}', ephemeral=True, delete_after=10)  # 🔴
-            return
+            return await ctx.send(f'\U0001F534 No data for entry: {entry}',
+                                  ephemeral=True, delete_after=10)  # 🔴
         embed = await self.gen_embed(entry)
         await ctx.send(embed=embed)
 
     @_asn.command(name='channel', aliases=['c'],
-                     description='Admin Only: Set Channel for Auto Posting ASN Entries')
-    @app_commands.describe(channel='Channel to Post ASN Entries Too')
+                  description='Admin Only: Set Channel for Auto Posting ASN Entries')
+    @app_commands.describe(channel='Channel to Post ASN Entries Too', post_silent='Send Posts Silent')
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
     @commands.admin()
-    async def _asn_channel(self, ctx: commands.Context, channel: Optional[CarlChannelConverter] = None):
+    async def _asn_channel(self, ctx: commands.Context, channel: Optional[discord.TextChannel],
+                           post_silent: Optional[bool] = False):
         """Admin Only: Set Channel for Auto Posting ASN Entries"""
         channel: discord.TextChannel
         if not channel:
             await self.config.guild(ctx.guild).channel.set(0)
-            await ctx.send(f'\U0001F7E2 Disabled. Specify a channel to Enable.', ephemeral=True)  # :green_circle:
-            return
+            return await ctx.send(f'\U0001F7E2 Disabled. Specify a channel to Enable.',
+                                  ephemeral=True)  # :green_circle:
 
         log.debug('channel: %s', channel)
         log.debug('channel.type: %s', channel.type)
         if not str(channel.type) == 'text':
-            await ctx.send('\U0001F534 Channel must be a Text Channel.', ephemeral=True)  # 🔴
-            return
+            return await ctx.send('\U0001F534 Channel must be a Text Channel.',
+                                  ephemeral=True)  # 🔴
 
-        await self.config.guild(ctx.guild).channel.set(channel.id)
+        guild_data = {'channel': channel.id, 'silent': post_silent}
+        await self.config.guild(ctx.guild).set(guild_data)
         msg = f'\U0001F7E2 Will post ASN updates to channel: {channel.name}'  # :green_circle:
+        if post_silent:
+            msg += '\nMessages will post Silently as to not send notifications.'
         await ctx.send(msg, ephemeral=True)
 
     async def gen_embed(self, data):

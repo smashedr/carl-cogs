@@ -70,7 +70,7 @@ class Welcome(commands.Cog):
 
     @welcome.command(name='deleteafter', aliases=['da', 'delete'])
     async def welcome_deleteafter(self, ctx: commands.Context,
-                                  delete_after: Optional[int] = None):
+                                  delete_after: Optional[int]):
         """
         Set the time after which a welcome message is deleted in seconds.
         Leave empty or enter 0 to disable.

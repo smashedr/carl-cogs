@@ -32,29 +32,37 @@ class Grafana(commands.Cog):
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
 
-    @commands.hybrid_command(name='grafana', aliases=['graphana', 'graph'])
+    @commands.hybrid_command(name='graph', aliases=['grafana'])
     @commands.guild_only()
-    async def _grafana(self, ctx: commands.Context, dashboard: Optional[str] = None,
-                       panel: Optional[int] = None, from_time: Optional[str] = '1d'):
+    @app_commands.describe(dashboard='Dashboard id/name from URL after /d/',
+                           panel='Panel ID from the viewPanel= param in URL',
+                           from_time='Time to Show, Examples: 12h, 3d, 1w',
+                           user='User to get get Graphs for.')
+    async def _grafana(self, ctx: commands.Context, dashboard: Optional[str],
+                       panel: Optional[int], from_time: Optional[str] = '1d',
+                       user: Optional[discord.Member] = None):
         """
         dashboard: The Dashboard `id/name` from the URL just after `/d/`
         panel: The Panel ID from the `viewPanel=` URL param when viewing the graph
         from_time: How far back show. Examples: `3d`, `1w` Default: `1d`
         """
         # date: Optional[commands.TimedeltaConverter] = datetime.timedelta(days=1))
-        user_conf: Dict[str, str] = await self.config.user(ctx.author).all()
+        user = user or ctx.author
+        user_conf: Dict[str, str] = await self.config.user(user).all()
         log.debug('user_conf: %s', user_conf)
         if not user_conf['base_url'] or not user_conf['org_id']:
             view = ModalView(self)
-            msg = (f'{ctx.author.mention} you are missing some Grafana details. '
+            msg = (f'{user.mention} is missing Grafana details. '
                    f'Click the button to set Grafana URL and OrgID.')
-            return await ctx.send(msg, view=view, allowed_mentions=discord.AllowedMentions.none())
+            return await ctx.send(msg, view=view, ephemeral=True,
+                                  allowed_mentions=discord.AllowedMentions.none())
         if not dashboard or not panel:
             return await ctx.send_help()
+            # return await ctx.send(self.format_help_for_context(ctx), ephemeral=True)
         match = re.search('([0-9]+)([mhdwMY])', from_time)
         if not match:
             msg = f'⛔ Invalid format for **from_time**. Examples: `12h`, `2d`, `1w`'
-            return await ctx.send(msg, delete_after=120)
+            return await ctx.send(msg, delete_after=120, ephemeral=True)
         # from_time = int((datetime.datetime.now() - date).timestamp()) * 1000
         # to_time = int(datetime.datetime.now().timestamp()) * 1000
         async with ctx.typing():
@@ -75,7 +83,7 @@ class Grafana(commands.Cog):
                 r.raise_for_status()
             file = discord.File(io.BytesIO(r.content), filename=f'{dashboard}-{panel}-{from_time}.png')
             view_url = f"{user_conf['base_url']}/d/{dashboard}?viewPanel={panel}&from={from_time}&to=now"
-            await ctx.send(f'Graph: <{view_url}>', file=file)
+            await ctx.send(f'Graph: <{view_url}>', file=file, silent=True)
 
 
 class ModalView(discord.ui.View):
