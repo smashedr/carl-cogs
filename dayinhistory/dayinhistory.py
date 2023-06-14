@@ -13,8 +13,6 @@ from redbot.core import commands, app_commands, Config
 from redbot.core.bot import Red
 from redbot.core.utils import AsyncIter
 
-from .converters import CarlChannelConverter
-
 log = logging.getLogger('red.dayinhistory')
 
 

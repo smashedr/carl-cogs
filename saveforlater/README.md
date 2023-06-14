@@ -1,6 +1,6 @@
 # Saveforlater
 
-Save any message to later by having the bot send the message to you.
+Save any message to later by having the bot send it to you.
 
 **WIP:** This is a Work in Progress and may not work as expected.
 

@@ -29,17 +29,29 @@ class FlightAware(object):
             'Accept': 'application/json; charset=UTF-8',
             'x-apikey': self.api_key,
         }
-        # self.client = httpx.AsyncClient(**self.http_options)
-        # self.client.headers.update(self.headers)
-        # self.fa_flight_id: Optional[str] = None
 
     def __repr__(self):
         return f'FlightAware(api_key=<{self.api_key[:6]}...>)'
 
-    def get_client(self) -> httpx.AsyncClient:
-        client = httpx.AsyncClient(**self.http_options)
-        client.headers.update(self.headers)
-        return client
+    async def _get_request(self, url, **kwargs) -> Dict[str, Any]:
+        async with httpx.AsyncClient(**self.http_options) as client:
+            r = await client.get(url, headers=self.headers, **kwargs)
+            r.raise_for_status()
+            return r.json()
+
+    async def flights_ident(self, ident: str,
+                            params: Optional[Dict[str, Any]] = None
+                            ) -> Dict[str, Any]:
+        """
+        :param ident: Registration, Flight Number, FA ID
+        :param params: Optional: Additional query parameters
+        :return: Dictionary from JSON response
+        """
+        start = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d')
+        data = {'start': start}
+        url = f'{self.url}/flights/{ident.upper()}'
+        params = params.update(data) if params else data
+        return await self._get_request(url, params=params)
 
     async def flights_search(self, query: str) -> Dict[str, Any]:
         """
@@ -47,60 +59,24 @@ class FlightAware(object):
         :return: Dictionary from JSON response
         """
         url = f'{self.url}/flights/search'
-        p = {'query': query}
-        async with self.get_client() as client:
-            r = await client.get(url, params=p)
-            r.raise_for_status()
-        return r.json()
+        params = {'query': query}
+        return await self._get_request(url, params=params)
 
-    # async def flights_search_ident(self, ident: str):
-    #     data = await self.flights_search(f'-idents "{ident}"')
-    #     if data['flights']:
-    #         self.fa_flight_id = data[0]['fa_flight_id']
-    #     return data
-
-    async def flights_ident(
-            self, ident: str,
-            params: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """
-        :param ident: Registration, Flight Number, FA ID
-        :param params: Additional query parameters
-        :return: Dictionary from JSON response
-        """
-        url = f'{self.url}/flights/{ident.upper()}'
-        now = datetime.now()
-        p = {
-            'start': (now - timedelta(days=3)).strftime('%Y-%m-%d'),
-        }
-        p.update(params or {})
-        async with self.get_client() as client:
-            r = await client.get(url, params=p)
-            r.raise_for_status()
-        return r.json()
-
-    async def flights_map(self, fa_id: str) -> Optional[Dict[str, Any]]:
+    async def flights_map(self, fa_id: str) -> Dict[str, Any]:
         """
         :param fa_id: FlightAware Flight ID
         :return: Dictionary from JSON response
         """
         url = f'{self.url}/flights/{fa_id}/map'
-        async with self.get_client() as client:
-            r = await client.get(url)
-            r.raise_for_status()
-        return r.json()
+        return await self._get_request(url)
 
-    async def operators_id(self, operator_id: str) -> Optional[Dict[str, Any]]:
+    async def operators_id(self, operator_id: str) -> Dict[str, Any]:
         """
         :param operator_id: Operator ICAO or IATA ID
         :return: Dictionary from JSON response
         """
         url = f'{self.url}/operators/{operator_id}'
-        print(url)
-        async with self.get_client() as client:
-            r = await client.get(url)
-            r.raise_for_status()
-        return r.json()
+        return await self._get_request(url)
 
     async def owner_ident(self, ident: str) -> Dict[str, Any]:
         """
@@ -108,21 +84,4 @@ class FlightAware(object):
         :return: Dictionary from JSON response
         """
         url = f'{self.url}/aircraft/{ident.upper()}/owner'
-        async with self.get_client() as client:
-            r = await client.get(url)
-            r.raise_for_status()
-        return r.json()
-
-
-async def main():
-    fa = FlightAware('NKvlLrgaLaXDf4bVLW4ex9OwCf782Aoa')
-    # j = await fa.flights_ident('SKW132C')
-    # j = await fa.owner_ident('N954AK')
-    j = await fa.flights_map('AAL710-1684692012-airline-2240p')
-    pprint(j)
-
-
-if __name__ == '__main__':
-    import asyncio
-    from pprint import pprint
-    asyncio.run(main())
+        return await self._get_request(url)

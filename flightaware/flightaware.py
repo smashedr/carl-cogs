@@ -1,10 +1,8 @@
-import base64
 import discord
 import httpx
 import json
 import logging
 import re
-import io
 
 import redis.asyncio as redis
 from bs4 import BeautifulSoup
@@ -27,20 +25,20 @@ class Flightaware(commands.Cog):
     def __init__(self, bot):
         self.bot: Red = bot
         self.api_key: Optional[str] = None
-        self.client: Optional[redis.Redis] = None
+        self.redis: Optional[redis.Redis] = None
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
         data = await self.bot.get_shared_api_tokens('flightaware')
         self.api_key = data['api_key']
-        data = await self.bot.get_shared_api_tokens('redis')
-        self.client = redis.Redis(
+        data: dict = await self.bot.get_shared_api_tokens('redis')
+        self.redis = redis.Redis(
             host=data['host'] if 'host' in data else 'redis',
             port=int(data['port']) if 'port' in data else 6379,
             db=int(data['db']) if 'db' in data else 0,
             password=data['pass'] if 'pass' in data else None,
         )
-        await self.client.ping()
+        await self.redis.ping()
         await self.gen_wiki_type_data()
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
@@ -55,7 +53,7 @@ class Flightaware(commands.Cog):
             return
         if not (3 <= len(message.content) <= 7):
             return
-        split = message.content.split()
+        split: list = message.content.split()
         if len(split) > 1:
             return
         m = re.search('[a-zA-Z0-9]{2,3}[0-9]{1,4}', split[0].upper())
@@ -125,15 +123,15 @@ class Flightaware(commands.Cog):
         if not ident:
             if silent:
                 return
-            await ctx.send(F'Unable to validate `ident`: **{ident_str}**', ephemeral=True, delete_after=10)
-            return
+            return await ctx.send(F'Unable to validate `ident`: **{ident_str}**',
+                                  ephemeral=True, delete_after=10)
         fa = FlightAware(self.api_key)
-        fdata = json.loads(await self.client.get(f'fa:{ident}') or '{}')
+        fdata: dict = json.loads(await self.redis.get(f'fa:{ident}') or '{}')
         if not fdata:
             log.info('--- API CALL ---')
             fdata = await fa.flights_ident(ident)
             log.debug(fdata)
-            await self.client.setex(
+            await self.redis.setex(
                 f'fa:{ident}',
                 timedelta(minutes=5),
                 json.dumps(fdata or {}),
@@ -142,8 +140,7 @@ class Flightaware(commands.Cog):
             if silent:
                 return
             msg = f'No flights found for ident: **{ident}**\n'
-            await ctx.send(msg, ephemeral=True, delete_after=10)
-            return
+            return await ctx.send(msg, ephemeral=True, delete_after=10)
 
         # total = len(fdata['flights'])
         # log.debug('total: %s', total)
@@ -258,21 +255,21 @@ class Flightaware(commands.Cog):
         operator_id = self.validate_ident(code)
         log.debug('operator_id: %s', operator_id)
         if not operator_id:
-            await ctx.send(F'Unable to validate `id`: **{code}**', ephemeral=True, delete_after=10)
-            return
+            return await ctx.send(F'Unable to validate `id`: **{code}**',
+                                  ephemeral=True, delete_after=10)
 
         fa = FlightAware(self.api_key)
-        fdata = json.loads(await self.client.get(f'fa:{operator_id}') or '{}')
+        fdata = json.loads(await self.redis.get(f'fa:{operator_id}') or '{}')
         log.debug(fdata)
         if not fdata:
             log.info('--- API CALL ---')
             fdata = await fa.operators_id(operator_id)
             log.debug(fdata)
         if not fdata:
-            await ctx.send(f'No results for operator id: `{operator_id}`', ephemeral=True, delete_after=10)
-            return
+            return await ctx.send(f'No results for operator id: `{operator_id}`',
+                                  ephemeral=True, delete_after=10)
 
-        await self.client.setex(f'fa:{operator_id}', timedelta(days=30), json.dumps(fdata))
+        await self.redis.setex(f'fa:{operator_id}', timedelta(days=30), json.dumps(fdata))
         d = fdata
         msgs = [(
             f"Operator: **{d['name']}** "
@@ -302,21 +299,21 @@ class Flightaware(commands.Cog):
         identifier = self.validate_ident(ident)
         log.debug('identifier: %s', identifier)
         if not identifier:
-            await ctx.send(F'Unable to validate `id`: **{ident}**', ephemeral=True, delete_after=10)
-            return
+            return await ctx.send(F'Unable to validate `id`: **{ident}**',
+                                  ephemeral=True, delete_after=10)
 
         fa = FlightAware(self.api_key)
-        fdata = json.loads(await self.client.get(f'fa:{identifier}') or '{}')
+        fdata = json.loads(await self.redis.get(f'fa:{identifier}') or '{}')
         log.debug(fdata)
         if not fdata:
             log.info('--- API CALL ---')
             fdata = await fa.owner_ident(identifier)
             log.debug(fdata)
         if not fdata:
-            await ctx.send(f'No results for ident: `{identifier}`', ephemeral=True, delete_after=10)
-            return
+            return await ctx.send(f'No results for ident: `{identifier}`',
+                                  ephemeral=True, delete_after=10)
 
-        await self.client.setex(f'fa:{identifier}', timedelta(days=30), json.dumps(fdata))
+        await self.redis.setex(f'fa:{identifier}', timedelta(days=30), json.dumps(fdata))
         d = fdata['owner']
         msg = (
             f"Registration: **{identifier}** "
@@ -340,7 +337,7 @@ class Flightaware(commands.Cog):
         icao_type = icao_type.upper()
         base_url = f'https://en.wikipedia.org'
         try:
-            aircraft_data = json.loads(await self.client.get('fa:wiki_aircraft_type') or '{}')
+            aircraft_data: dict = json.loads(await self.redis.get('fa:wiki_aircraft_type') or '{}')
             if not aircraft_data:
                 aircraft_data = await self.gen_wiki_type_data()
             if aircraft_data:
@@ -373,7 +370,7 @@ class Flightaware(commands.Cog):
             aircraft_data[icao_type] = model_href
         # log.debug('-'*20)
         # log.debug(aircraft_data)
-        await self.client.setex(
+        await self.redis.setex(
             'fa:wiki_aircraft_type',
             timedelta(days=7),
             json.dumps(aircraft_data),
@@ -468,8 +465,7 @@ class EmbedsView(discord.ui.View):
     async def prev_button(self, interaction, button):
         # await self.disable_enable_buttons(interaction)
         if self.index < 1:
-            await interaction.response.edit_message()
-            return
+            return await interaction.response.edit_message()
         self.index = self.index - 1
         await interaction.response.edit_message(embed=self.embeds[self.index])
 
@@ -477,8 +473,7 @@ class EmbedsView(discord.ui.View):
     async def next_button(self, interaction, button):
         # await self.disable_enable_buttons(interaction)
         if not self.index < len(self.embeds) - 1:
-            await interaction.response.edit_message()
-            return
+            return await interaction.response.edit_message()
         self.index = self.index + 1
         await interaction.response.edit_message(embed=self.embeds[self.index])
 
@@ -487,8 +482,7 @@ class EmbedsView(discord.ui.View):
         if not interaction.user.id == self.user_id:
             msg = ("\U000026D4 Looks like you didn't create this response.\n"
                    f"You can create your own response with the `/history` command.")  # ⛔
-            await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
-            return
+            return await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
         await interaction.message.delete()
         await interaction.response.send_message('\U00002705 Your wish is my command!',
                                                 ephemeral=True, delete_after=10)  # ✅

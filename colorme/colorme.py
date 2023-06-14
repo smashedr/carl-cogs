@@ -45,7 +45,7 @@ class ColorMe(commands.Cog):
     async def cleanup_roles(self):
         log.info('%s: Cleanup Roles Task Run', self.__cog_name__)
         all_guilds: Dict[int, dict] = await self.config.all_guilds()
-        async for guild_id, data in AsyncIter(all_guilds.items(), delay=2, steps=10):
+        async for guild_id, data in AsyncIter(all_guilds.items(), delay=2, steps=20):
             if not data['enabled']:
                 continue
             guild: discord.Guild = self.bot.get_guild(int(guild_id))

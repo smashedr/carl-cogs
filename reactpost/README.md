@@ -1,6 +1,6 @@
 # ReactPost
 
-Set channels to auto add Emoji->Channels mappings to post to channel on react.
+Set channels to add Emoji->Channel mappings to post to channel.
 
 ## Install
 
