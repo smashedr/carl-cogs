@@ -65,6 +65,7 @@ If you run a bot compatible with Red Cogs:
 | **[miscog](miscog)**             | Miscellaneous commands for Carl Bot that could end up in their own module.        |
 | **[pubsub](pubsub)**             | **Redis, API** - Custom Redis pubsub module for Red and Carl Bot.                 |
 | **[reactroles](reactroles)**     | **Deprecated** - Create Reaction Role sets to let users get roles from reactions. |
+| **[saveforlater](saveforlater)** | **WIP** - Save any message to later by having the bot send the message to you.    |
 | **[youtube](youtube)**           | **WIP** - Auto post YouTube videos to specified channels.                         |
 
 # Additional Setup Information
