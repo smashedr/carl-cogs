@@ -134,7 +134,7 @@ class AviationSafetyNetwork(commands.Cog):
     @_asn.command(name='show', aliases=['s'],
                   description='Show the latest entry from Aviation Safety Network to You Only')
     @commands.cooldown(rate=1, per=15, type=commands.BucketType.channel)
-    async def _asn_last(self, ctx: commands.Context):
+    async def _asn_show(self, ctx: commands.Context):
         """Show the latest entry from Aviation Safety Network to You Only"""
         await ctx.defer(ephemeral=True)
         data = json.loads(await self.redis.get('asn:latest') or '{}')

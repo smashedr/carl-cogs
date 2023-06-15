@@ -1,7 +1,6 @@
 import discord
 import datetime
 import httpx
-import json
 import logging
 import re
 from bs4 import BeautifulSoup
@@ -17,15 +16,6 @@ log = logging.getLogger('red.planedb')
 
 class Planedb(commands.Cog):
     """Carl's Planedb Cog"""
-
-    http_options = {
-        'follow_redirects': True,
-        'timeout': 30,
-    }
-    chrome_agent = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-                    'AppleWebKit/537.36 (KHTML, like Gecko) '
-                    'Chrome/113.0.0.0 Safari/537.36')
-    headers = {'user-agent': chrome_agent}
 
     global_default = {
         'planes': [],
@@ -63,6 +53,7 @@ class Planedb(commands.Cog):
     @commands.guild_only()
     async def _planedb_search(self, ctx: commands.Context, *, name: str):
         """Search Plane by Name"""
+        await ctx.typing()
         name = name.lower().strip()
         log.debug('name: %s', name)
         planes: List[Dict[str, str]] = await self.config.planes()
@@ -74,6 +65,9 @@ class Planedb(commands.Cog):
         if not results:
             return await ctx.send(f"⛔  No Planes found for: {name}",
                                   ephemeral=True, delete_after=60)
+        if len(results) > 1:
+            results = [(name, score) for name, score in results if score > 60]
+
         if len(results) == 1:
             result = results[0][0]
             log.debug('result: %s', result)
@@ -87,25 +81,18 @@ class Planedb(commands.Cog):
         if not plane:
             return await ctx.send(f"⛔  BUG: Plane Matched but Not Found: {name}",
                                   ephemeral=True, delete_after=60)
-        content = (
-            f"✅  Plane Found: {plane['name']} - "
-            f"{plane['registration']} - "
-            f"{plane['icao_hex']}"
-        )
-        plane_photo = await self.get_jet_photo(plane['registration'])
-        if plane_photo:
-            content += f'\n{plane_photo}'
-        await ctx.send(content, ephemeral=True)
+        embed = await self.gen_embed(plane)
+        await ctx.send(embed=embed, ephemeral=True)
 
     @_planedb.command(name='add', aliases=['a', 'new'],
                       description='Add a Plane to Plane DB')
     @app_commands.describe(registration='Aircraft Registration Number',
-                           icao_hex='24-bit ICAO Hex for ADS-B',
                            name='Name of the Resource')
     @commands.guild_only()
-    async def _planedb_add(self, ctx: commands.Context, registration: str, icao_hex: str, *, name: str):
+    async def _planedb_add(self, ctx: commands.Context, registration: str, *, name: str):
         """Add a Plane to Plane DB"""
         # https://www.avionictools.com/icao.php
+        await ctx.typing()
         name = name.lower().strip()
         log.debug('name: %s', name)
         planes: List[Dict[str, str]] = await self.config.planes()
@@ -120,12 +107,12 @@ class Planedb(commands.Cog):
                                   ephemeral=True, delete_after=60)
         registration = m.group(0)
         log.debug('registration: %s', registration)
-
-        m = re.search('^[a-fA-F0-9]{6}$', icao_hex.lower())
-        if not m or not m.group(0):
-            return await ctx.send(f'⛔  Unable to validate registration: {registration}',
-                                  ephemeral=True, delete_after=60)
-        icao_hex = m.group(0)
+        # m = re.search('^[a-fA-F0-9]{6}$', icao_hex.lower())
+        # if not m or not m.group(0):
+        #     return await ctx.send(f'⛔  Unable to validate registration: {registration}',
+        #                           ephemeral=True, delete_after=60)
+        # icao_hex = m.group(0)
+        icao_hex = await self._get_icao_hex(registration)
         log.debug('icao_hex: %s', icao_hex)
         plane = {
             'name': name,
@@ -135,8 +122,41 @@ class Planedb(commands.Cog):
         log.debug('plane: %s', plane)
         planes.append(plane)
         await self.config.planes.set(planes)
-        await ctx.send(f"✅  Plane Added: {plane['name']} - {plane['registration']}",
-                       ephemeral=True)
+        content = (f"✅  Plane Added: {plane['name']} - "
+                   f"{plane['registration']} - "
+                   f"{plane['icao_hex']}")
+        await ctx.send(content, ephemeral=True)
+
+    async def gen_embed(self, plane: Dict[str, str]) -> discord.Embed:
+        urls = {
+            'ADS-B Exchange': 'https://globe.adsbexchange.com/?icao={icao_hex}',
+            'Flight Aware': 'https://flightaware.com/resources/registration/{registration}',
+            'FlightRadar24': 'https://www.flightradar24.com/data/aircraft/{registration}',
+            'Air Fleets': 'https://www.airfleets.net/recherche/?key={registration}',
+            'Jet Photos': 'https://www.jetphotos.com/photo/keyword/{registration}',
+            'Plane Spotters': 'https://www.planespotters.net/search?q={registration}',
+        }
+        embed = discord.Embed(title=plane['registration'])
+        if plane['icao_hex']:
+            embed.url = urls['ADS-B Exchange'].format(**plane)
+        if plane['registration'].startswith('N'):
+            author_url = (f"https://registry.faa.gov/AircraftInquiry/Search/"
+                          f"NNumberResult?nNumberTxt={plane['registration']}")
+            embed.set_author(name=plane['name'].title(), url=author_url)
+        else:
+            embed.set_author(name=plane['name'].title())
+        plane_photo = await self.get_jet_photo(plane['registration'])
+        if plane_photo:
+            embed.set_image(url=plane_photo)
+        description = '**Links**\n'
+        lines = []
+        for name, url in urls.items():
+            if name == 'ADS-B Exchange' and not plane['icao_hex']:
+                continue
+            lines.append(f'[{name}]({url.format(**plane)})')
+        description += ' | '.join(lines)
+        embed.description = description
+        return embed
 
     async def get_jet_photo(self, registration: str) -> Optional[str]:
         base_url = 'https://www.jetphotos.com'
@@ -164,10 +184,10 @@ class Planedb(commands.Cog):
                              headers: Optional[dict] = None,
                              http_options: Optional[dict] = None,
                              **kwargs) -> str:
-        data: str = await self.redis.get(url)
-        if data:
+        cache: str = await self.redis.get(f'pdb:{url}')
+        if cache:
             log.debug('--- CACHE CALL ---')
-            return data
+            return cache
         log.debug('--- remote call ---')
         http_options = {
                            'follow_redirects': True,
@@ -183,5 +203,42 @@ class Planedb(commands.Cog):
             r = await client.get(url, headers=headers, **kwargs)
             r.raise_for_status()
         log.debug('--- cache set ---')
-        await self.redis.setex(url, datetime.timedelta(minutes=minutes), r.text)
+        await self.redis.setex(
+            f'pdb:{url}', datetime.timedelta(minutes=minutes), r.text)
         return r.text
+
+    async def _get_icao_hex(self, registration: str) -> Optional[str]:
+        cache: str = await self.redis.get(f'pdb:{registration}')
+        if cache:
+            return cache
+        registration = registration.replace('-', '').upper()
+        if registration.startswith('N'):
+            reg_type = '0'
+        elif registration.startswith('C'):
+            reg_type = '1'
+        else:
+            return None
+        url = 'https://www.avionictools.com/icao.php'
+        data = {
+            'type':	reg_type,
+            'data':	registration,
+            'strap': '0',
+        }
+        async with httpx.AsyncClient() as client:
+            r = await client.post(url, data=data)
+            r.raise_for_status()
+        soup = BeautifulSoup(r.text, 'html.parser')
+        td_elements = soup.find_all('td')
+        for td in td_elements:
+            if 'Hex:' in td.text:
+                hex_value = td.contents[2]
+                break
+        else:
+            return None
+        hex_value = hex_value.split()[1].lower()
+        await self.redis.setex(
+            f'pdb:{registration}',
+            datetime.timedelta(minutes=60*24*7),
+            hex_value,
+        )
+        return hex_value
