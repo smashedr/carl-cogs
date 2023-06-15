@@ -3,7 +3,7 @@ import discord
 import httpx
 import logging
 from bs4 import BeautifulSoup
-from essential_generators import DocumentGenerator
+from faker import Faker
 from typing import Optional, Union, Dict, List, Any, Tuple
 
 from redbot.core import commands
@@ -19,7 +19,7 @@ class Coolbirbs(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.gen = DocumentGenerator()
+        self.fake = Faker()
 
     async def cog_load(self):
         log.info('%s: Cog Load', self.__cog_name__)
@@ -36,14 +36,11 @@ class Coolbirbs(commands.Cog):
         username: str = ctx.author.display_name or ctx.author.name
         number, name = await self.get_birb()
         static_url = f'{self.static_url}/birds/{number}.png'
-        sentence = self.gen.sentence()
-        if not sentence.endswith('.'):
-            sentence += '...'
         embed = discord.Embed(
             title=name,
             url=f'{self.base_url}/bird/{number}',
             timestamp=datetime.datetime.now(),
-            description=sentence,
+            description=self.fake.text(),
         )
         embed.set_author(name=self.base_url.split('/')[2], url=self.base_url)
         embed.set_image(url=static_url)
