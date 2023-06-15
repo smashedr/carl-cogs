@@ -3,7 +3,8 @@ import discord
 import httpx
 import logging
 from bs4 import BeautifulSoup
-from typing import Optional, Union, Tuple, Dict, List, Any
+from essential_generators import DocumentGenerator
+from typing import Optional, Union, Dict, List, Any, Tuple
 
 from redbot.core import commands
 
@@ -18,6 +19,7 @@ class Coolbirbs(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.gen = DocumentGenerator()
 
     async def cog_load(self):
         log.info('%s: Cog Load', self.__cog_name__)
@@ -25,20 +27,27 @@ class Coolbirbs(commands.Cog):
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
 
-    @commands.hybrid_command(name='coolbirbs', aliases=['coolbirb', 'birb'],
+    @commands.hybrid_command(name='coolbirbs',
+                             aliases=['coolbirb', 'birb', 'birbs'],
                              description='Get a Random Cool Birb')
     async def coolbirbs_command(self, ctx: commands.Context):
         """Get a Random Cool Birb"""
+        await ctx.typing()
         username: str = ctx.author.display_name or ctx.author.name
         number, name = await self.get_birb()
         static_url = f'{self.static_url}/birds/{number}.png'
+        sentence = self.gen.sentence()
+        if not sentence.endswith('.'):
+            sentence += '...'
         embed = discord.Embed(
             title=name,
             url=f'{self.base_url}/bird/{number}',
             timestamp=datetime.datetime.now(),
+            description=sentence,
         )
+        embed.set_author(name=self.base_url.split('/')[2], url=self.base_url)
         embed.set_image(url=static_url)
-        embed.set_footer(text=f'By {username}')
+        embed.set_footer(text=f'@{username} /coolbirbs')
         await ctx.send(embed=embed)
 
     async def get_birb(self) -> Tuple[str, str]:
