@@ -34,13 +34,20 @@ class Coolbirbs(commands.Cog):
         """Get a Random Cool Birb"""
         await ctx.typing()
         username: str = ctx.author.display_name or ctx.author.name
-        number, name = await self.get_birb()
-        static_url = f'{self.static_url}/birds/{number}.png'
+        bird_number, bird_name = await self.get_birb()
+        static_url = f'{self.static_url}/birds/{bird_number}.png'
+        fake_text: str = self.fake.text().replace('\n', ' ')
+        description = (
+            f'{fake_text}\n- '
+            f'**{self.fake.prefix()} {self.fake.name()}** - '
+            f'{self.fake.job()}'
+        )
         embed = discord.Embed(
-            title=name,
-            url=f'{self.base_url}/bird/{number}',
+            title=bird_name,
+            url=f'{self.base_url}/bird/{bird_number}',
             timestamp=datetime.datetime.now(),
-            description=self.fake.text(),
+            description=description,
+            color=discord.Color.random(),
         )
         embed.set_author(name=self.base_url.split('/')[2], url=self.base_url)
         embed.set_image(url=static_url)
