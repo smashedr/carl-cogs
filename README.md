@@ -34,6 +34,7 @@ If you run a bot compatible with Red Cogs:
 | **[botutils](botutils)**             | Custom stateless bot utilities for Carl Bot but useful for anyone.        |
 | **[chatgraph](chatgraph)**           | **API** - Generate Pie Graph of Messages in Current or Specified Channel. |
 | **[colorme](colorme)**               | Allow users to manage the color of their own name.                        |
+| **[consolecmds](consolecmds)**       | **WIP** - Random console commands converted to Python and Discord.        |
 | **[coolbirbs](coolbirbs)**           | Generate a Random Cool Birb from coolbirbs.com.                           |
 | **[dayinhistory](dayinhistory)**     | **Redis** - Gets and Posts Today in History.                              |
 | **[dictionary](dictionary)**         | Dictionary and Urban Dictionary lookups.                                  |

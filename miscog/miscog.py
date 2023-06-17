@@ -2,6 +2,7 @@ import discord
 import httpx
 import os
 import logging
+import socket
 from io import BytesIO
 from playwright.async_api import async_playwright
 from typing import Optional

@@ -2,6 +2,7 @@ import discord
 import httpx
 import json
 import logging
+import pytz
 import re
 import redis.asyncio as redis
 from datetime import datetime, timedelta
@@ -38,18 +39,18 @@ class DayInHistory(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_global(**self.global_default)
         self.config.register_guild(**self.guild_default)
-        self.client: Optional[redis.Redis] = None
+        self.redis: Optional[redis.Redis] = None
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
         data: dict = await self.bot.get_shared_api_tokens('redis')
-        self.client = redis.Redis(
+        self.redis = redis.Redis(
             host=data['host'] if 'host' in data else 'redis',
             port=int(data['port']) if 'port' in data else 6379,
             db=int(data['db']) if 'db' in data else 0,
             password=data['pass'] if 'pass' in data else None,
         )
-        await self.client.ping()
+        await self.redis.ping()
         self.main_loop.start()
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
@@ -62,12 +63,18 @@ class DayInHistory(commands.Cog):
         log.info('%s: Run Loop: main_loop', self.__cog_name__)
         now = datetime.now()
         current_time = now.time()
+        # log.debug('current_time.hour: %s', current_time.hour)
+        # log.debug('self.send_hour_utc: %s', self.send_hour_utc)
         if current_time.hour != self.send_hour_utc:
+            # log.debug('return --- time')
             return
         last = await self.config.last()
         if last:
             last = datetime.fromisoformat(last)
+            # log.debug('last.day: %s', last.day)
+            # log.debug('now.day: %s', now.day)
             if last.day == now.day:
+                # log.debug('return --- day')
                 return
 
         log.debug('loop: START')
@@ -76,12 +83,13 @@ class DayInHistory(commands.Cog):
         log.debug('all_guilds: %s', all_guilds)
         for guild_id, data in await AsyncIter(all_guilds.items(), delay=10, steps=5):
             log.debug('guild_id: %s', guild_id)
+            log.debug('data: %s', data)
             if not data['channel']:
                 continue
             guild: discord.Guild = self.bot.get_guild(guild_id)
             channel: discord.TextChannel = guild.get_channel(data['channel'])
-            data: Dict[str, Any] = await self.get_history(now)
-            em = discord.Embed.from_dict(data)
+            history: Dict[str, Any] = await self.get_history(now)
+            em = discord.Embed.from_dict(history)
             await channel.send(embed=em, silent=data['silent'], allowed_mentions=discord.AllowedMentions.none())
         log.debug('loop: DONE')
 
@@ -98,7 +106,7 @@ class DayInHistory(commands.Cog):
         """Post Today's history, or a specific day, in Current Channel"""
         # TODO: Make this a function
         await ctx.defer()
-        dt = datetime.now()
+        dt = datetime.now(pytz.timezone('America/Los_angeles'))
         if date:
             log.debug('date: %s', date)
             split = re.split('/|-| ', date)
@@ -121,7 +129,7 @@ class DayInHistory(commands.Cog):
         """Show Today's history, or a specific day, to You Only"""
         # TODO: Make this a function
         await ctx.defer()
-        dt = datetime.now()
+        dt = datetime.now(pytz.timezone('America/Los_angeles'))
         if date:
             log.debug('date: %s', date)
             split = re.split('/|-| ', date)
@@ -171,7 +179,7 @@ class DayInHistory(commands.Cog):
         now = datetime.now()
         if not date:
             date = now
-        data = json.loads(await self.client.get(f'history:{date.strftime("%m%d")}') or '{}')
+        data = json.loads(await self.redis.get(f'history:{date.strftime("%m%d")}') or '{}')
         if data:
             log.debug('--- cache call ---')
             return data
@@ -224,7 +232,7 @@ class DayInHistory(commands.Cog):
             },
             'timestamp': date.date().isoformat(),
         }
-        await self.client.setex(
+        await self.redis.setex(
             f'history:{date.strftime("%m%d")}',
             timedelta(days=self.cache_days),
             json.dumps(data),

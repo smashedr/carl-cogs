@@ -198,7 +198,7 @@ class Avherald(commands.Cog):
             dlist.append(f"**Updated**: {d['posted']}")
 
         dlist.append(f"\n**{data['title']}:**\n")
-        text = data['text'][:3400] + '...\n' if len(data['text']) > 3400 else data['text']
+        text = data['text'][:2800] + '...\n' if len(data['text']) > 3400 else data['text']
         dlist.append(text)
 
         if data['links']:

@@ -228,7 +228,7 @@ class Carlcog(commands.Cog):
         }
         await ctx.send(embed=em, view=ButtonsURLView(buttons))
 
-    @commands.command(name='uptime', aliases=['up', 'ping', 'latency'])
+    @commands.command(name='uptime', aliases=['up', 'latency'])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def cc_uptime(self, ctx: commands.Context):
         """Bot uptime command."""

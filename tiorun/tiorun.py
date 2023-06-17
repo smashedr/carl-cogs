@@ -49,9 +49,17 @@ class Tiorun(commands.Cog):
         if not languages:
             return await ctx.send('The author of this cog is, to be nice, the king of retards!')
         language = language.lower()
+        lang_list = ['languages', 'language', 'list', 'lang']
+        if language in lang_list:
+            return await ctx.send('')
         matches = {
             'python': 'python3-cython',
             'py': 'python3-cython',
+            'c': 'c-clang',
+            'cpp': 'cpp-clang',
+            'c++': 'cpp-clang',
+            'cs': 'cs-core',
+            'c#': 'cs-core',
         }
         if language in matches:
             match = matches[language]

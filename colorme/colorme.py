@@ -20,6 +20,13 @@ log = logging.getLogger('red.colorme')
 class ColorMe(commands.Cog):
     """Custom ColorMe Cog."""
 
+    error_message = (
+        '⛔ Not a valid color code. Use Hex, CSS3 Name or Discord Name.\n'
+        '**Examples:** `2ecc71` or `#009966` or `gold` or `dark_purple`\n'
+        '<https://www.w3.org/TR/css-color-3/#svg-color>\n'
+        '<https://discordpy.readthedocs.io/en/latest/api.html#colour>'
+    )
+
     guild_default = {
         'enabled': False,
         'blocked_roles': [],
@@ -66,23 +73,36 @@ class ColorMe(commands.Cog):
         Input:    Name, discord.Color name, CSS3 color name, 0xFFFFFF, #FFFFFF, FFFFFF
         Output:   0xFFFFFF or {prefix}FFFFFF
         """
-        prefix = prefix or ''
         log.debug('prefix: %s', prefix)
-        log.debug('hex_code_or_color_word: %s', hex_or_color)
+        log.debug('hex_or_color: %s', hex_or_color)
 
-        # #FFFFFF and FFFFFF to 0xFFFFFF
+        # 0xFFFFFF to {prefix}FFFFFF
+        if hex_or_color.lower().startswith('0x'):
+            hex_match = re.match(r'0x[a-f0-9]{6}', hex_or_color.lower())
+            if hex_match:
+                log.debug('-- 0x --')
+                return f"{prefix}{hex_or_color.replace('0x', '')}"
+
+        # #FFFFFF and FFFFFF to {prefix}FFFFFF
         hex_match = re.match(r'#?[a-f0-9]{6}', hex_or_color.lower())
         if hex_match:
             log.debug('-- hex --')
             return f"{prefix}{hex_or_color.lstrip('#')}"
 
-        # discord.Color checking
+        # int to {prefix}FFFFFF
+        if hex_or_color.isdigit():
+            newhex = '{0:06X}'.format(int(hex_or_color))
+            if len(newhex) == 6:
+                log.debug('-- int --')
+                return f"{prefix}{newhex}"
+
+        # discord.Color to {prefix}FFFFFF
         if hasattr(discord.Color, hex_or_color):
             log.debug('-- discord --')
             hex_code = str(getattr(discord.Color, hex_or_color.replace(' ', '_'))())
             return hex_code.replace('#', prefix)
 
-        # CSS3 color name checking
+        # CSS3 color name to {prefix}FFFFFF
         try:
             hex_code = webcolors.name_to_hex(hex_or_color)
             log.debug('-- css3 --')
@@ -90,7 +110,7 @@ class ColorMe(commands.Cog):
         except ValueError:
             pass
 
-        # Check Names from colors.py colors
+        # colors.py names to {prefix}FFFFFF
         if hex_or_color.lower() in names:
             log.debug('-- names --')
             return f"{prefix}{names[hex_or_color.lower()]}"
@@ -146,14 +166,94 @@ class ColorMe(commands.Cog):
     #     await member.add_roles(role, reason='Add Color Role')
     #     log.debug('Added Role %s to User %s', role.name, member.name)
 
+    async def gen_embed(self, colorhex: str) -> discord.Embed:
+        name = hexes[colorhex] if colorhex in hexes else 'Unknown'
+        log.debug('name: %s', name)
+        log.debug('colorhex: %s', colorhex)
+        # log.debug('description: %s', description)
+        # description = (
+        #     f'Hex: **#{colorhex}**'
+        #     f'Name: **{name}**'
+        # )
+        # description = 'Test'
+        embed = discord.Embed(
+            color=discord.Color(int(colorhex, 16)),
+            title=name,
+            url=f'{self.color_info_url}{colorhex}',
+            # description=description,
+        )
+        embed.add_field(name='Hex', value=f'`#{colorhex}`')
+        embed.add_field(name='Name', value=f'{name}')
+        # embed.set_author(name=f'@{user.display_name or user.name}')
+        return embed
+
     @commands.hybrid_command(name='hex')
     @app_commands.describe(color='Hex Value, CSS Name, or Discord Color Name')
-    async def hex_command(self, ctx: commands.Context, *, color: str):
-        """Get Color Name from <color>.
-        **color** must be a hex, css, or Discord color.
+    # async def hex_command(self, ctx: commands.Context, color_or_user: Union[str, discord.Member]):
+    async def hex_command(self, ctx: commands.Context,
+                          user: Optional[Union[discord.Member, discord.User]], *,
+                          color: Optional[str] = None):
+        """Get Color Name from <color> or <user>.
+        `color` must be a hex, css, or Discord color.
+        `user` Discord username, mention, or backslash \\ mention
         Examples: `2ecc71` or `#009966` or `gold` or `dark_purple`
         <https://www.w3.org/TR/css-color-3/#svg-color>
         """
+        user: discord.Member
+        if not color and not user:
+            return await ctx.send_help()
+
+        log.debug(0)
+        if not user:
+            log.debug(1)
+            m = re.search('[0-9]{8,24}', color)
+            if m and m.group(0):
+                log.debug(10)
+                user_id = int(m.group(0))
+                user = discord.utils.get(ctx.guild.members, id=user_id)
+            else:
+                log.debug(11)
+                user = discord.utils.get(ctx.guild.members, name=color)
+
+            for mention in ctx.message.mentions:
+                if mention.id != self.bot.user.id:
+                    user = mention
+                    break
+
+        if user:
+            log.debug(2)
+            colorhex = None
+            for role in user.roles:
+                if role.name.startswith(self.prefix):
+                    colorhex = role.name.replace(self.prefix, '')
+                    break
+            if not colorhex:
+                log.debug(3)
+                msg = f'⛔  No Color Roles found for user: {user.mention}'
+                return await ctx.send(msg, ephemeral=True, delete_after=30,
+                                      allowed_mentions=discord.AllowedMentions.none())
+        else:
+            log.debug(4)
+            colorhex = self.color_converter(color, None)
+
+        # member = None
+        # if isinstance(color_or_user, discord.Member):
+        #     member = color_or_user
+        # else:
+        #     member: discord.Member = discord.utils.get(ctx.guild.members, username=color_or_user)
+        # if member:
+        #     colorhex = None
+        #     for role in member.roles:
+        #         if role.name.startswith(self.prefix):
+        #             colorhex = role.name.replace(self.prefix, '')
+        #             break
+        #     if not colorhex:
+        #         msg = f'⛔  No Color Roles found for user: {user.mention}'
+        #         return await ctx.send(msg, ephemeral=True, delete_after=30,
+        #                               allowed_mentions=discord.AllowedMentions.none())
+        #
+        # colorhex = self.color_converter(color_or_user, None)
+
         # member: discord.Member = discord.utils.get(ctx.guild.members, username=color_or_user)
         # if member:
         #     colorhex = None
@@ -173,21 +273,19 @@ class ColorMe(commands.Cog):
         #     await ctx.send(msg, ephemeral=True, delete_after=30)
         #     return
         # color: str = color_or_user
-        colorhex = self.color_converter(color, None)
+        # colorhex = self.color_converter(color, None)
+
         log.debug('colorhex: %s', colorhex)
         if not colorhex:
-            msg = (
-                '⛔ Not a valid color code. Use Hex, CSS3 Name or Discord Name.\n'
-                '**Examples:** `2ecc71` or `#009966` or `gold` or `dark_purple`\n'
-                '<https://www.w3.org/TR/css-color-3/#svg-color>\n'
-                '<https://discordpy.readthedocs.io/en/latest/api.html#colour>'
-            )
-            await ctx.send(msg, ephemeral=True, delete_after=30)
-            return
+            return await ctx.send(self.error_message, ephemeral=True, delete_after=30)
 
-        name = hexes[colorhex] if colorhex in hexes else 'unknown'
-        msg = f'Hex `{colorhex}` is **{name}**\n{self.color_info_url}{colorhex}'
-        await ctx.send(msg, ephemeral=True, delete_after=120)
+        log.debug(5)
+        embed = await self.gen_embed(colorhex)
+        if user:
+            msg = f'{user.mention} has color hex `#{colorhex}`'
+        else:
+            msg = f'Color {color} has color hex `#{colorhex}`'
+        await ctx.send(msg, embed=embed, ephemeral=True, delete_after=300)
 
     @commands.hybrid_command(name='color')
     @commands.guild_only()
@@ -212,7 +310,8 @@ class ColorMe(commands.Cog):
 
         # Remove color if no color passed
         log.debug('color: %s', color)
-        if color.lower() in ['remove', 'reset', 'delete', 'del']:
+        remove = ['remove', 'reset', 'rm', 'delete', 'del', 'none', 'default', 'false', 'no']
+        if color.lower() in remove:
             removed = None
             for role in member.roles:
                 if role.name.startswith(self.prefix):
@@ -221,7 +320,7 @@ class ColorMe(commands.Cog):
                     await member.remove_roles(role, reason='Remove Color Role')
             if removed:
                 await ctx.send(f'✅ Color Removed: {removed.name}. Use `/color HEX` to set.',
-                               ephemeral=True, delete_after=60)
+                               ephemeral=True, delete_after=120)
             else:
                 await ctx.send(f'⛔ No Color Roles Found. Use `/color HEX` to set.',
                                ephemeral=True, delete_after=30)
@@ -231,14 +330,7 @@ class ColorMe(commands.Cog):
         newcolor = self.color_converter(color)
         log.debug('newcolor: %s', newcolor)
         if not newcolor:
-            msg = (
-                '⛔ Not a valid color code. Use Hex, CSS3 Name or Discord Name.\n'
-                '**Examples:** `2ecc71` or `#009966` or `gold` or `dark_purple`\n'
-                '<https://www.w3.org/TR/css-color-3/#svg-color>\n'
-                '<https://discordpy.readthedocs.io/en/latest/api.html#colour>'
-            )
-            await ctx.send(msg, ephemeral=True, delete_after=30)
-            return
+            return await ctx.send(self.error_message, ephemeral=True, delete_after=30)
 
         colorhex = newcolor.replace('0x', '')
         role_name = f'{self.prefix}{colorhex}'
@@ -275,7 +367,7 @@ class ColorMe(commands.Cog):
         await member.add_roles(role, reason='Add Color Role')
         log.debug('Added Role %s to User %s', role.name, member.name)
         msg = f'✅ Color Updated: **{newcolor}**\n{self.color_info_url}{colorhex}'
-        await ctx.send(msg, ephemeral=True, delete_after=60)
+        await ctx.send(msg, ephemeral=True, delete_after=120)
 
     @commands.group(name='colorme', aliases=['col'])
     @commands.guild_only()
