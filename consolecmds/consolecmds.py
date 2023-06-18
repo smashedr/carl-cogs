@@ -1,10 +1,13 @@
 import datetime
 import discord
 import httpx
+import ipaddress
 import logging
 import socket
 import sys
 import re
+import random
+import string
 from io import StringIO
 from typing import Optional, Union, Tuple, Dict, List, Any
 
@@ -19,11 +22,18 @@ log = logging.getLogger('red.consolecmds')
 class Consolecmds(commands.Cog):
     """Carl's Consolecmds Cog"""
 
+    ip_urls = {
+        'IPLocation': 'https://iplocation.io/ip/{ip}',
+        'WhatIS MyIPAddress': 'https://whatismyipaddress.com/ip/{ip}',
+        'WHOIS IPLocation': 'https://iplocation.io/ip-whois-lookup/{ip}',
+        'WHOIS DNSChecker': 'https://dnschecker.org/ip-whois-lookup.php?query={ip}',
+        'WHOIS ARIN': 'https://search.arin.net/rdap/?query={ip}',
+    }
+
     http_options = {
         'follow_redirects': False,
         'timeout': 6,
     }
-    url = 'https://intranet.cssnr.com/plotly/'
 
     def __init__(self, bot):
         self.bot = bot
@@ -50,8 +60,20 @@ class Consolecmds(commands.Cog):
     #     # run code here
 
     @commands.command(name='echo', aliases=['print', 'println'])
-    async def echo_command(self, ctx: commands.Context, *, string: str):
-        await ctx.send(string, allowed_mentions=discord.AllowedMentions.none())
+    async def echo_command(self, ctx: commands.Context, *, echo_string: str):
+        await ctx.send(echo_string, allowed_mentions=discord.AllowedMentions.none())
+
+    @commands.command(name='rand', aliases=['random'])
+    async def rand_command(self, ctx: commands.Context, string_length: Optional[int] = 24,
+                           number_of_strings: Optional[int] = 1):
+        passwords = []
+        for _ in range(number_of_strings):
+            choices = (string.ascii_uppercase + string.ascii_lowercase + string.digits)
+            for char in 'iIlLoO01':
+                choices = choices.replace(char, '')
+            passwords.append(''.join(random.choice(choices) for _ in range(string_length)))
+        content = cf.box('\n'.join(passwords))
+        await ctx.send(content, allowed_mentions=discord.AllowedMentions.none())
 
     @commands.command(name='host', aliases=['nslookup'])
     async def host_command(self, ctx: commands.Context, hostname: str):
@@ -116,3 +138,57 @@ class Consolecmds(commands.Cog):
         embed.set_author(name=status)
         embed.add_field(name='Headers', value=cf.box(r.headers))
         await ctx.send(embed=embed)
+
+    @commands.command(name='ipinfo', aliases=['ip', 'ipaddr', 'ipaddress', 'geo'])
+    async def ipinfo_command(self, ctx: commands.Context, ip_address: str):
+        await ctx.typing()
+        try:
+            ip = ipaddress.ip_address(ip_address)
+            data = await self.get_ip_data(ip.compressed)
+            log.debug('data: %s', data)
+            description = (
+                f"**Country**: {data['country_name']} - {data['country']}/{data['country_code']}\n"
+                f"**Region**: {data['region']} - {data['region_code']} / {data['continent_code']}\n"
+                f"**City**: {data['city']} / {data['region_code']}\n"
+                f"**Lat/Lon**: {data['latitude']} / {data['longitude']}\n"
+                f"**Org/ASN**: {data['org']} / {data['asn']}\n"
+                f"**Timezone**: {data['timezone']}\n"
+            )
+            locations = []
+            for name, url in self.ip_urls.items():
+                if 'WHOIS' in name:
+                    continue
+                locations.append(f'[{name}]({url.format(ip=ip_address)})')
+            description = description.strip() + '\n\n**IP Location Links**\n'
+            description += ' | '.join(locations)
+            whois = []
+            for name, url in self.ip_urls.items():
+                if 'WHOIS' not in name:
+                    continue
+                name = name.replace('WHOIS', '').strip()
+                whois.append(f'[{name}]({url.format(ip=ip_address)})')
+            description = description.strip() + '\n\n**IP Whois Links**\n'
+            description += ' | '.join(whois)
+            embed = discord.Embed(
+                title=data['ip'],
+                description=description,
+                color=discord.Color.dark_blue(),
+            )
+            await ctx.send(embed=embed)
+
+        except Exception as error:
+            log.error(error)
+            await ctx.send(f'⛔  Error: `{error}`')
+
+    async def get_ip_data(self, ip) -> Optional[Dict[str, Any]]:
+        try:
+            async with httpx.AsyncClient(**self.http_options) as client:
+                r = await client.get(f'https://ipapi.co/{ip}/json/')
+                r.raise_for_status()
+            if 'error' in r.json():
+                log.debug(r.json())
+                return None
+            return r.json()
+        except Exception as error:
+            log.error(error)
+            return None

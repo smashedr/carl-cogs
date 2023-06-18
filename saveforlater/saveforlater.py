@@ -40,8 +40,8 @@ class Saveforlater(commands.Cog):
         for attachment in message.attachments:
             files.append(await attachment.to_file())
         embeds: List[discord.Embed] = [e for e in message.embeds if e.type == 'rich']
-        content = (f'**Saved Message** from {message.jump_url} '
-                   f'by {message.author.mention}:\n{message.content}')
+        content = (f'**Saved Message** from {message.jump_url}\n'
+                   f'{message.author.mention}: {message.content}')
         await interaction.user.send(content, embeds=embeds, files=files, silent=True,
                                     allowed_mentions=discord.AllowedMentions.none())
         await interaction.response.send_message('✅ Message Saved in DM for Later.',
