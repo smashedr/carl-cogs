@@ -50,6 +50,7 @@ If you run a bot compatible with Red Cogs:
 | **[reactpost](reactpost)**           | Set channels to add Emoji->Channel mappings to post to channel.           |
 | **[saveforlater](saveforlater)**     | **WIP** - Save any message to later by having the bot send it to you.     |
 | **[stickyroles](stickyroles)**       | Remembers users roles and adds them on rejoin.                            |
+| **[sunsetrise](sunsetrise)**         | Get Sun Set and Sun Rise for Location.                                    |
 | **[timer](timer)**                   | **WIP** - Start and Stop Timers in Discord.                               |
 | **[tiorun](tiorun)**                 | **WIP** - Runs code on tio.run and returns the results.                   |
 | **[userchannels](userchannels)**     | Creates custom user rooms on the fly and cleans up when done.             |
@@ -63,6 +64,7 @@ If you run a bot compatible with Red Cogs:
 | **[captcha](captcha)**           | **API** - Protect server with CAPTCHA.                                            |
 | **[carlcog](carlcog)**           | Custom commands for Carl Bot that could end up in their own module.               |
 | **[createthings](createthings)** | **WIP** - Create pre-defined or user-defined role/emoji sets.                     |
+| **[github](github)**             | **WIP** - Github Functions in Discord.                                            |
 | **[grafana](grafana)**           | **WIP** - Grafana Graphs in Discord.                                              |
 | **[miscog](miscog)**             | Miscellaneous commands for Carl Bot that could end up in their own module.        |
 | **[planedb](planedb)**           | **WIP** - Add Name->NNumber Mappings to easily search.                            |
