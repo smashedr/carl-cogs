@@ -143,6 +143,8 @@ class Consolecmds(commands.Cog):
     async def ipinfo_command(self, ctx: commands.Context, ip_address: str):
         await ctx.typing()
         try:
+            if not re.match(r'^([0-9]{1,3}\.){3}[0-9]{1,3}$', ip_address):
+                ip_address, _, _ = socket.gethostbyaddr(ip_address)
             ip = ipaddress.ip_address(ip_address)
             data = await self.get_ip_data(ip.compressed)
             log.debug('data: %s', data)

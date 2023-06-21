@@ -149,7 +149,7 @@ class Grafana(commands.Cog):
                                   allowed_mentions=discord.AllowedMentions.none())
         graph_list: str = cf.humanize_list(list(graphs.keys()))
         content = f'Graphs for {user.mention}\n{graph_list}'
-        await ctx.send(content, ephemeral=True, delete_after=120,
+        await ctx.send(content, ephemeral=True,
                        allowed_mentions=discord.AllowedMentions.none())
 
 
@@ -201,5 +201,5 @@ class DataModal(discord.ui.Modal):
         }
         await self.view.cog.config.user(user).set(user_conf)
         log.debug(user_conf)
-        msg = '✅ Grafana Details Updated Successfully...'
+        msg = '✅  Grafana Details Updated Successfully...'
         await interaction.response.send_message(msg, ephemeral=True)
