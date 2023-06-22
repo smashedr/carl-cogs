@@ -19,14 +19,14 @@ class Sunsetrise(commands.Cog):
     sun_png = 'https://img.cssnr.com/p/20230621-181909363.png'
     moon_png = 'https://img.cssnr.com/p/20230621-181939767.png'
 
-    user_default = {
-        'location': None,
-    }
+    # user_default = {
+    #     'location': None,
+    # }
 
     def __init__(self, bot):
         self.bot = bot
-        self.config = Config.get_conf(self, 1337, True)
-        self.config.register_user(**self.user_default)
+        # self.config = Config.get_conf(self, 1337, True)
+        # self.config.register_user(**self.user_default)
         self.gl = Nominatim(user_agent=self.__cog_name__)
         self.tf = TimezoneFinder()
 
