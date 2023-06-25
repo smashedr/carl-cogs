@@ -21,6 +21,7 @@ class Weather(commands.Cog):
     http_options = {
         'follow_redirects': True,
         'timeout': 10,
+        'headers': {'user-agent': 'CarlBot'},
     }
 
     # user_default = {
@@ -48,20 +49,26 @@ class Weather(commands.Cog):
     async def weather_command(self, ctx: commands.Context, *, location: str):
         """Get Weather for <location>"""
         async with ctx.typing():
-            geo = self.gl.geocode(location)
-            if not geo or not geo.latitude or not geo.longitude:
-                return await ctx.send(f'⛔  Error getting Lat/Lon Data for: {location}')
-            weather, forecast = await self.get_weather(geo.latitude, geo.longitude)
-            if not weather or not weather['features']:
-                return await ctx.send(f'⛔  Error getting Weather for: {location}\n'
-                                      f'Lat: `{geo.latitude}` Lon: `{geo.longitude}`')
-            # tz = self.tf.timezone_at(lat=geo.latitude, lng=geo.longitude)
-            # timezone = pytz.timezone(tz)
-            # current_time_utc = datetime.datetime.now(pytz.UTC)
-            # current_time = current_time_utc.astimezone(timezone)
-            embed = self.gen_embed(geo, weather['features'][0]['properties'],
-                                   forecast['properties']['periods'][0])
-            await ctx.send(embed=embed)
+            try:
+                geo = self.gl.geocode(location)
+                if not geo or not geo.latitude or not geo.longitude:
+                    return await ctx.send(f'⛔  Error getting Lat/Lon Data for: {location}')
+                weather, forecast = await self.get_weather(geo.latitude, geo.longitude)
+                if not weather or not weather['features']:
+                    return await ctx.send(f'⛔  Error getting Weather for: {location}\n'
+                                          f'Lat: `{geo.latitude}` Lon: `{geo.longitude}`')
+                # tz = self.tf.timezone_at(lat=geo.latitude, lng=geo.longitude)
+                # timezone = pytz.timezone(tz)
+                # current_time_utc = datetime.datetime.now(pytz.UTC)
+                # current_time = current_time_utc.astimezone(timezone)
+                embed = self.gen_embed(geo, weather['features'][0]['properties'],
+                                       forecast['properties']['periods'][0])
+                await ctx.send(embed=embed)
+            except Exception as error:
+                log.exception(error)
+                content = (f'Error fetching Weather, please try again '
+                           f'or wait until later.\nError: `{error}`')
+                await ctx.send(content=content)
 
     def gen_embed(self, geo: geopy.location.Location, weather: Dict[str, Any],
                   period: Dict[str, Any]) -> discord.Embed:
@@ -121,14 +128,13 @@ class Weather(commands.Cog):
         direction += '°' if weather['windDirection']['value'] else ''
         embed.add_field(name='Wind Direction', value=f"{direction}")
 
+        if weather['barometricPressure']['value']:
+            pressure = format(weather['barometricPressure']['value'] / 3386.39, '.2f')
+            embed.add_field(name='Pressure', value=f"{pressure} inHg")
+
         if weather['elevation']['value']:
             elevation = self._num(weather['elevation']['value'] * 3.28084, suffix=' ft')
             embed.add_field(name='Elevation', value=f"{elevation}")
-
-        if weather['barometricPressure']['value']:
-            # pressure = self._num(weather['barometricPressure']['value'] / 3386.39, to=2, suffix=' inHg')
-            pressure = format(weather['barometricPressure']['value'] / 3386.39, '.2f')
-            embed.add_field(name='Pressure', value=f"{pressure} inHg")
 
         tz = self.tf.timezone_at(lat=geo.latitude, lng=geo.longitude)
         embed.add_field(name='Time Zone', value=f"{tz}")

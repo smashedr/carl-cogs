@@ -294,7 +294,7 @@ class Avherald(commands.Cog):
                 issue = ', '.join(split).strip()
 
                 op_type, location = None, None
-                for term in ['enroute', 'over', 'near', 'at']:
+                for term in [' enroute ', ' over ', ' near ', ' at ']:
                     if term in op_type_loc:
                         split = op_type_loc.split(term)
                         op_type = split[0].strip()
