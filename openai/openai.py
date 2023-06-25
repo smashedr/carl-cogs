@@ -20,13 +20,9 @@ class OpenAI(commands.Cog):
 
     chat_expire_min = 30
     chat_max_messages = 10
-    key = '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'
     http_options = {
         'follow_redirects': True,
         'timeout': 30,
-    }
-    headers = {
-        'Authorization': f'Bearer {key}',
     }
 
     def __init__(self, bot):
@@ -42,6 +38,11 @@ class OpenAI(commands.Cog):
             callback=self.msg_spelling_callback,
             type=discord.AppCommandType.message,
         )
+        data = await self.bot.get_shared_api_tokens('openai')
+        self.key = data['api_key']
+        self.headers = {
+            'Authorization': f'Bearer {self.key}',
+        }
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
