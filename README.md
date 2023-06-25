@@ -22,56 +22,57 @@ If you run a bot compatible with Red Cogs:
 
 ### Public Cogs
 
-| Cog | Description |
-| --- | --- |
-| **[activerole](activerole)** | **Redis** - Adds a role to active chatters. |
-| **[asn](asn)** | **Redis** - Aviation Safety Network data in discord. |
-| **[autoarchive](autoarchive)** | **WIP** - Automatically clones and archives channels before 10k. |
-| **[autochannels](autochannels)** |  Creates duplicate channels on the fly and cleans up when done. |
-| **[autodisconnect](autodisconnect)** |  Automatically disconnects users from the AFK channel. |
-| **[autoroles](autoroles)** |  Adds roles to new members on join. |
-| **[avherald](avherald)** | **Redis** - Get and post Aviation Herald data to Discord. |
-| **[botutils](botutils)** |  Custom stateless bot utilities for Carl Bot but useful for anyone. |
-| **[chatgraph](chatgraph)** | **API** - Generate Pie Graph of Messages in Current or Specified Channel. |
-| **[colorme](colorme)** |  Allow users to manage the color of their own name. |
-| **[consolecmds](consolecmds)** | **WIP** - Random console commands converted to Python and Discord. |
-| **[coolbirbs](coolbirbs)** |  Generate a Random Cool Birb from coolbirbs.com. |
-| **[dayinhistory](dayinhistory)** | **Redis** - Gets and Posts Today in History. |
-| **[dictionary](dictionary)** |  Dictionary and Urban Dictionary lookups. |
-| **[flightaware](flightaware)** | **Redis** - FlightAware Flights, Operators, Registration. |
-| **[heartbeat](heartbeat)** |  Pings a Heartbeat service every X seconds. |
-| **[imdbsearch](imdbsearch)** |  IMDB Search and lookups. |
-| **[liverole](liverole)** |  Give a role to users when they go live in Discord. |
-| **[lmgtfy](lmgtfy)** |  LMGTFY chat replies. |
-| **[ocrimage](ocrimage)** | **WIP** - Converts images to text via Flowery OCR API. |
-| **[openai](openai)** | **Redis** - OpenAI and ChatGPT Commands. |
-| **[qr](qr)** | **WIP** - Create QR Codes in Discord. |
-| **[qrscanner](qrscanner)** | **WIP** - Scans messages for attachments to parse and post QR Data. |
-| **[reactpost](reactpost)** |  Set channels to add Emoji->Channel mappings to post to channel. |
-| **[saveforlater](saveforlater)** | **WIP** - Save any message to later by having the bot send it to you. |
-| **[stickyroles](stickyroles)** |  Remembers users roles and adds them on rejoin. |
-| **[sunsetrise](sunsetrise)** |  Get Sun Set and Sun Rise for Location. |
-| **[timer](timer)** | **WIP** - Start and Stop Timers in Discord. |
-| **[tiorun](tiorun)** | **WIP** - Runs code on tio.run and returns the results. |
-| **[userchannels](userchannels)** |  Creates custom user rooms on the fly and cleans up when done. |
-| **[warcraftlogs](warcraftlogs)** | **WIP** - Split Warcraft Logs into multiple channels with filters. |
-| **[welcome](welcome)** |  Welcomes new users to your servers on join. |
+| Cog                                  | Description                                                               |
+|--------------------------------------|---------------------------------------------------------------------------|
+| **[activerole](activerole)**         | **Redis** - Adds a role to active chatters.                               |
+| **[asn](asn)**                       | **Redis** - Aviation Safety Network data in discord.                      |
+| **[autoarchive](autoarchive)**       | **WIP** - Automatically clones and archives channels before 10k.          |
+| **[autochannels](autochannels)**     | Creates duplicate channels on the fly and cleans up when done.            |
+| **[autodisconnect](autodisconnect)** | Automatically disconnects users from the AFK channel.                     |
+| **[autoroles](autoroles)**           | Adds roles to new members on join.                                        |
+| **[avherald](avherald)**             | **Redis** - Get and post Aviation Herald data to Discord.                 |
+| **[botutils](botutils)**             | Custom stateless bot utilities for Carl Bot but useful for anyone.        |
+| **[chatgraph](chatgraph)**           | **API** - Generate Pie Graph of Messages in Current or Specified Channel. |
+| **[colorme](colorme)**               | Allow users to manage the color of their own name.                        |
+| **[consolecmds](consolecmds)**       | **WIP** - Random console commands converted to Python and Discord.        |
+| **[coolbirbs](coolbirbs)**           | Generate a Random Cool Birb from coolbirbs.com.                           |
+| **[dayinhistory](dayinhistory)**     | **Redis** - Gets and Posts Today in History.                              |
+| **[dictionary](dictionary)**         | Dictionary and Urban Dictionary lookups.                                  |
+| **[flightaware](flightaware)**       | **Redis** - FlightAware Flights, Operators, Registration.                 |
+| **[heartbeat](heartbeat)**           | Pings a Heartbeat service every X seconds.                                |
+| **[imdbsearch](imdbsearch)**         | IMDB Search and lookups.                                                  |
+| **[liverole](liverole)**             | Give a role to users when they go live in Discord.                        |
+| **[lmgtfy](lmgtfy)**                 | LMGTFY chat replies.                                                      |
+| **[ocrimage](ocrimage)**             | **WIP** - Converts images to text via Flowery OCR API.                    |
+| **[openai](openai)**                 | **Redis** - OpenAI and ChatGPT Commands.                                  |
+| **[qr](qr)**                         | **WIP** - Create QR Codes in Discord.                                     |
+| **[qrscanner](qrscanner)**           | **WIP** - Scans messages for attachments to parse and post QR Data.       |
+| **[reactpost](reactpost)**           | Set channels to add Emoji->Channel mappings to post to channel.           |
+| **[saveforlater](saveforlater)**     | **WIP** - Save any message to later by having the bot send it to you.     |
+| **[stickyroles](stickyroles)**       | Remembers users roles and adds them on rejoin.                            |
+| **[sunsetrise](sunsetrise)**         | Get Sun Set and Sun Rise for Location.                                    |
+| **[timer](timer)**                   | **WIP** - Start and Stop Timers in Discord.                               |
+| **[tiorun](tiorun)**                 | **WIP** - Runs code on tio.run and returns the results.                   |
+| **[userchannels](userchannels)**     | Creates custom user rooms on the fly and cleans up when done.             |
+| **[warcraftlogs](warcraftlogs)**     | **WIP** - Split Warcraft Logs into multiple channels with filters.        |
+| **[welcome](welcome)**               | Welcomes new users to your servers on join.                               |
 
 ### Internal/Hidden Cogs
 
-| Cog | Description |
-| --- | --- |
-| **[captcha](captcha)** | **API** - Protect server with CAPTCHA. |
-| **[carlcog](carlcog)** |  Custom commands for Carl Bot that could end up in their own module. |
-| **[createthings](createthings)** | **WIP** - Create pre-defined or user-defined role/emoji sets. |
-| **[github](github)** | **WIP** - Github Functions in Discord. |
-| **[grafana](grafana)** | **WIP** - Grafana Graphs in Discord. |
-| **[miscog](miscog)** |  Miscellaneous commands for Carl Bot that could end up in their own module. |
-| **[planedb](planedb)** | **WIP** - Add Name->NNumber Mappings to easily search. |
-| **[pubsub](pubsub)** | **Redis, API** - Custom Redis pubsub module for Red and Carl Bot. |
-| **[reactroles](reactroles)** | **Deprecated** - Create Reaction Role sets to let users get roles from reactions. |
-| **[voicetext](voicetext)** | **WIP** - Creates Text Channels for Active Voice Channels and Cleans Up. |
-| **[youtube](youtube)** | **WIP** - Auto post YouTube videos to specified channels. |
+| Cog                              | Description                                                                       |
+|----------------------------------|-----------------------------------------------------------------------------------|
+| **[captcha](captcha)**           | **API** - Protect server with CAPTCHA.                                            |
+| **[carlcog](carlcog)**           | Custom commands for Carl Bot that could end up in their own module.               |
+| **[createthings](createthings)** | **WIP** - Create pre-defined or user-defined role/emoji sets.                     |
+| **[github](github)**             | **WIP** - Github Functions in Discord.                                            |
+| **[grafana](grafana)**           | **WIP** - Grafana Graphs in Discord.                                              |
+| **[miscog](miscog)**             | Miscellaneous commands for Carl Bot that could end up in their own module.        |
+| **[planedb](planedb)**           | **WIP** - Add Name->NNumber Mappings to easily search.                            |
+| **[pubsub](pubsub)**             | **Redis, API** - Custom Redis pubsub module for Red and Carl Bot.                 |
+| **[reactroles](reactroles)**     | **Deprecated** - Create Reaction Role sets to let users get roles from reactions. |
+| **[voicetext](voicetext)**       | **WIP** - Creates Text Channels for Active Voice Channels and Cleans Up.          |
+| **[weather](weather)**           | Get Weather for Location.                                                         |
+| **[youtube](youtube)**           | **WIP** - Auto post YouTube videos to specified channels.                         |
 
 # Additional Setup Information
 

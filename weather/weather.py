@@ -54,14 +54,17 @@ class Weather(commands.Cog):
                 if not geo or not geo.latitude or not geo.longitude:
                     return await ctx.send(f'⛔  Error getting Lat/Lon Data for: {location}')
                 weather, forecast = await self.get_weather(geo.latitude, geo.longitude)
-                if not weather or not weather['features']:
+                log.debug('-'*40)
+                log.debug(weather)
+                log.debug('-'*40)
+                if not weather or not weather['properties']:
                     return await ctx.send(f'⛔  Error getting Weather for: {location}\n'
                                           f'Lat: `{geo.latitude}` Lon: `{geo.longitude}`')
                 # tz = self.tf.timezone_at(lat=geo.latitude, lng=geo.longitude)
                 # timezone = pytz.timezone(tz)
                 # current_time_utc = datetime.datetime.now(pytz.UTC)
                 # current_time = current_time_utc.astimezone(timezone)
-                embed = self.gen_embed(geo, weather['features'][0]['properties'],
+                embed = self.gen_embed(geo, weather['properties'],
                                        forecast['properties']['periods'][0])
                 await ctx.send(embed=embed)
             except Exception as error:
@@ -169,8 +172,7 @@ class Weather(commands.Cog):
         stations_url: str = location_data["properties"]["observationStations"]
         stations: Dict[str, Any] = await self._get_json(stations_url)
 
-        # dt = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S+00:00')
-        observation_url: str = stations["features"][0]["id"] + f'/observations'
+        observation_url: str = stations["features"][0]["id"] + f'/observations/latest'
         observation: Dict[str, Any] = await self._get_json(observation_url)
 
         return observation, forecast
