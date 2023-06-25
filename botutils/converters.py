@@ -1,7 +1,5 @@
 import discord
-import logging
 import re
-
 from rapidfuzz import process
 from typing import List, Union
 from unidecode import unidecode
@@ -9,8 +7,6 @@ from unidecode import unidecode
 from discord.ext.commands.converter import IDConverter, _get_from_guilds
 from discord.ext.commands import errors
 from redbot.core import commands
-
-logger = logging.getLogger('red.botutils')
 
 
 class CarlRoleConverter(IDConverter):

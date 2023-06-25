@@ -1,0 +1,17 @@
+{
+  "name": "Tiorun",
+  "author": ["Shane#0816"],
+  "short": "Carl's Tiorun Module.",
+  "description": "Runs code on tio.run and returns the results.",
+  "install_msg": "Get started with `[p]run language code`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "tags": ["wip"],
+  "requirements": ["httpx", "thefuzz"],
+  "permissions" : [],
+  "required_cogs": {},
+  "min_bot_version": "3.4.0",
+  "min_python_version" : [3,8,0],
+  "disabled": false,
+  "hidden": false,
+  "type": "COG"
+}

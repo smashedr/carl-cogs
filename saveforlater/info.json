@@ -1,0 +1,17 @@
+{
+  "name": "Saveforlater",
+  "author": ["Shane#0816"],
+  "short": "Carl's Saveforlater Module.",
+  "description": "Save any message to later by having the bot send it to you.",
+  "install_msg": "Get started by right clicking a message. You may need to reload Ctrl+R.",
+  "end_user_data_statement": "Caveat Emptor.",
+  "tags": ["wip"],
+  "requirements": [],
+  "permissions" : [],
+  "required_cogs": {},
+  "min_bot_version": "3.4.0",
+  "min_python_version" : [3,8,0],
+  "disabled": false,
+  "hidden": false,
+  "type": "COG"
+}

@@ -1,15 +1,17 @@
 {
-  "name": "Activerole",
+  "name": "ActiveRole",
   "author": ["Shane#0816"],
-  "short": "Carl's Activerole Module.",
-  "description": "Gives a role to active users in chat; uses a redis server.",
-  "install_msg": "**This is not for public use.**\nBut can be used if you figure it out.",
+  "short": "Carl's ActiveRole Module.",
+  "description": "Adds a role to active chatters.",
+  "install_msg": "**This requires Redis.** Get started with `[p]activerole`",
   "end_user_data_statement": "Caveat Emptor.",
+  "tags": ["redis"],
+  "requirements": ["redis"],
+  "permissions" : ["manage_roles"],
   "required_cogs": {},
-  "requirements": ["aredis"],
   "min_bot_version": "3.4.0",
   "min_python_version" : [3,8,0],
   "disabled": false,
-  "hidden": true,
+  "hidden": false,
   "type": "COG"
 }

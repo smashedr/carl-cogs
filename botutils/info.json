@@ -5,11 +5,13 @@
   "description": "Custom stateless bot utilities for Carl Bot but useful for anyone.",
   "install_msg": "Has some useful commands. Get started with `[p]help Botutils`",
   "end_user_data_statement": "Caveat Emptor.",
+  "tags": [],
+  "requirements": ["tabulate", "rapidfuzz", "unidecode"],
+  "permissions" : [],
   "required_cogs": {},
-  "requirements": ["tabulate", "rapidfuzz", "unidecode "],
   "min_bot_version": "3.4.0",
   "min_python_version" : [3,8,0],
   "disabled": false,
-  "hidden": true,
+  "hidden": false,
   "type": "COG"
 }

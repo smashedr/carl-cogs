@@ -1,0 +1,17 @@
+{
+  "name": "Imdbsearch",
+  "author": ["Shane#0816"],
+  "short": "Carl's Imdbsearch Module.",
+  "description": "IMDB Search and lookups.",
+  "install_msg": "Get started with `[p]imdb`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "tags": [],
+  "requirements": ["cinemagoer"],
+  "permissions" : [],
+  "required_cogs": {},
+  "min_bot_version": "3.4.0",
+  "min_python_version" : [3,8,0],
+  "disabled": false,
+  "hidden": false,
+  "type": "COG"
+}

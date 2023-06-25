@@ -1,0 +1,17 @@
+{
+  "name": "LMGTFY",
+  "author": ["Shane#0816"],
+  "short": "Carl's LMGTFY Module.",
+  "description": "LMGTFY chat replies.",
+  "install_msg": "After someone ask a question, type `lmgtfy`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "tags": [],
+  "requirements": ["httpx"],
+  "permissions" : [],
+  "required_cogs": {},
+  "min_bot_version": "3.5.0",
+  "min_python_version" : [3,10,0],
+  "disabled": false,
+  "hidden": false,
+  "type": "COG"
+}

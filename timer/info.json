@@ -1,0 +1,17 @@
+{
+  "name": "Timer",
+  "author": ["Shane#0816"],
+  "short": "Carl's Timer Module.",
+  "description": "Start and Stop Timers in Discord.",
+  "install_msg": "Start a Timer with `[p]timer start`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "tags": ["wip"],
+  "requirements": [],
+  "permissions" : [],
+  "required_cogs": {},
+  "min_bot_version": "3.4.0",
+  "min_python_version" : [3,8,0],
+  "disabled": false,
+  "hidden": false,
+  "type": "COG"
+}

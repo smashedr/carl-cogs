@@ -1,38 +1,41 @@
 import discord
 import logging
+
 from redbot.core import commands, Config
 from redbot.core.utils import AsyncIter
 
-logger = logging.getLogger('red.autochannels')
-
-
-GUILD_SETTINGS = {
-    'enabled': False,
-    'channel': None,
-    'rooms': [],
-}
-
-CHANNEL_SETTINGS = {
-    'room': False,
-    'auto': False,
-    'parent': None,
-}
+log = logging.getLogger('red.autochannels')
 
 
 class Autochannels(commands.Cog):
     """Carl's Autochannels Cog"""
+
+    guild_default = {
+        'enabled': False,
+        'channel': None,
+        'rooms': [],
+    }
+    channel_default = {
+        'room': False,
+        'auto': False,
+        'parent': None,
+    }
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
-        self.config.register_guild(**GUILD_SETTINGS)
-        self.config.register_channel(**CHANNEL_SETTINGS)
+        self.config.register_guild(**self.guild_default)
+        self.config.register_channel(**self.channel_default)
 
-    async def initialize(self) -> None:
-        logger.info('Initializing Autochannels Cog')
+    async def cog_load(self):
+        log.info('%s: Cog Load', self.__cog_name__)
+
+    async def cog_unload(self):
+        log.info('%s: Cog Unload', self.__cog_name__)
 
     async def process_create(self, channel, member):
         config = await self.config.channel(channel).all()
-        logger.debug(config)
+        log.debug(config)
 
         # get channel name
         if config['parent']:
@@ -43,8 +46,8 @@ class Autochannels(commands.Cog):
         # get channels
         create, number = await self.check_create_number(
             channel.category.channels, parent.name)
-        logger.debug(create)
-        logger.debug(number)
+        log.debug(create)
+        log.debug(number)
 
         # create channel
         if create:
@@ -54,7 +57,7 @@ class Autochannels(commands.Cog):
             )
             data = {'room': True, 'auto': True, 'parent': parent.id}
             await self.config.channel(new_channel).set(data)
-            logger.debug('Created Channel')
+            log.debug('Created Channel')
 
     @classmethod
     async def check_create_number(cls, channels, base_name):
@@ -90,14 +93,14 @@ class Autochannels(commands.Cog):
 
     async def process_remove(self, channel, member):
         if channel.members:
-            logger.debug('Channel Not Empty')
+            log.debug('Channel Not Empty')
             return
         if not await self.config.channel(channel).room():
-            logger.debug('Channel Not Autoroom')
+            log.debug('Channel Not Autoroom')
             return
 
         config = await self.config.channel(channel).all()
-        logger.debug(config)
+        log.debug(config)
         if config['parent']:
             parent = member.guild.get_channel(config['parent'])
         else:
@@ -105,33 +108,33 @@ class Autochannels(commands.Cog):
 
         to_delete, match_channels = await self.check_channels_to_delete(
             parent.category.channels, parent.name)
-        logger.debug(to_delete)
+        log.debug(to_delete)
         if not to_delete:
-            logger.debug('Nothing to Delete')
+            log.debug('Nothing to Delete')
             return
 
-        logger.debug('Deleting the following:')
-        sorted_channels = sorted(match_channels, key=lambda d: d.name, reverse=True)
-        for i, channel in enumerate(sorted_channels):
+        log.debug('Deleting the following:')
+        channels = sorted(match_channels, key=lambda d: d.name, reverse=True)
+        for i, channel in enumerate(channels):
             if i == to_delete:
                 break
 
-            logger.debug(channel)
+            log.debug(channel)
             if not await self.config.channel(channel).auto():
-                logger.debug('Not Auto Channel')
+                log.debug('Not Auto Channel')
                 continue
             if channel.members:
-                logger.debug('Channel Not Empty')
+                log.debug('Channel Not Empty')
                 return
             try:
                 channel_id = channel.id
-                await channel.delete(reason='Userchannels channel empty.')
-                logger.debug('Removed Channel %s', channel_id)
+                await channel.delete(reason='Autochannels channel empty.')
+                log.debug('Removed Channel %s', channel_id)
             except discord.NotFound:
-                logger.debug('Channel Not Found')
+                log.debug('Channel Not Found')
 
             await self.config.channel(channel).clear()
-            logger.debug('Database Cleared')
+            log.debug('Database Cleared')
 
     @staticmethod
     async def check_channels_to_delete(channels, base_name):
@@ -144,49 +147,46 @@ class Autochannels(commands.Cog):
                     num_empty = num_empty + 1
 
         to_delete = num_empty - 1 if num_empty >= 2 else 0
-        logger.debug(to_delete)
+        log.debug(to_delete)
         return to_delete, match_channels
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, part, join):
         if member.bot:
-            logger.debug('bot')
+            log.debug('bot')
             return
 
         config = await self.config.guild(member.guild).all()
         if not config['enabled']:
-            logger.debug('disabled')
+            log.debug('disabled')
             return
 
         if join.channel:
             if await self.config.channel(join.channel).room():
-                logger.debug('autoroom channel join')
+                log.debug('autoroom channel join')
                 await self.process_create(join.channel, member)
 
         if part.channel:
             if await self.config.channel(part.channel).room():
-                logger.debug('autoroom channel part')
+                log.debug('autoroom channel part')
                 await self.process_remove(part.channel, member)
 
     @commands.group(name='autochannels', aliases=['ac'])
     @commands.guild_only()
     @commands.admin()
-    async def autochannels(self, ctx):
+    async def autochannels(self, ctx: commands.Context):
         """Options for managing Autochannels."""
 
     @autochannels.command(name='add', aliases=['a'])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def autochannels_add(self, ctx, *, channel: discord.VoiceChannel):
+    async def autochannels_add(self, ctx: commands.Context, *,
+                               channel: discord.VoiceChannel):
         """
         Adds a channel to Autochannels Autorooms configuration.
         [p]autochannels add Channel Name
         """
-        # log = category
-        # logger.debug(dir(log))
-        # logger.debug(type(log))
-        # logger.debug(log)
         rooms = await self.config.guild(ctx.guild).rooms()
-        logger.debug(rooms)
+        log.debug(rooms)
         if channel.id in rooms:
             await ctx.send(f'Autochannels already configured:\n'
                            f'**{channel.category.name}** - _{channel.name}_')
@@ -200,24 +200,25 @@ class Autochannels(commands.Cog):
 
     @autochannels.command(name='remove', aliases=['r', 'delete'])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def autochannels_remove(self, ctx, *, channel: discord.VoiceChannel):
+    async def autochannels_remove(self, ctx: commands.Context, *,
+                                  channel: discord.VoiceChannel):
         """
         Adds a channel to Autochannels Autorooms configuration.
         [p]autochannels add Channel Name
         """
         rooms = await self.config.guild(ctx.guild).rooms()
-        logger.debug(rooms)
+        log.debug(rooms)
         if channel.id not in rooms:
-            await ctx.send(f'Channel **{channel.name}** not in configuration.')
+            await ctx.send(f'Channel **{channel.name}** not in config.')
             return
 
         rooms.remove(channel.id)
         await self.config.channel(channel).clear()
         await self.config.guild(ctx.guild).rooms.set(rooms)
-        await ctx.send(f'Channel **{channel.name}** removed from configuration.')
+        await ctx.send(f'Channel **{channel.name}** removed from config.')
 
     @autochannels.command(name='enable', aliases=['e', 'on'])
-    async def autochannels_enable(self, ctx):
+    async def autochannels_enable(self, ctx: commands.Context):
         """Enable Autochannels Globally."""
         enabled = await self.config.guild(ctx.guild).enabled()
         if enabled:
@@ -227,7 +228,7 @@ class Autochannels(commands.Cog):
             await ctx.send('Autochannels has been enabled.')
 
     @autochannels.command(name='disable', aliases=['d', 'off'])
-    async def autochannels_disable(self, ctx):
+    async def autochannels_disable(self, ctx: commands.Context):
         """Disable Autochannels Globally."""
         enabled = await self.config.guild(ctx.guild).enabled()
         if not enabled:
@@ -237,10 +238,10 @@ class Autochannels(commands.Cog):
             await ctx.send('Autochannels has been disabled.')
 
     @autochannels.command(name='status', aliases=['s', 'stat', 'settings'])
-    async def autochannels_status(self, ctx):
+    async def autochannels_status(self, ctx: commands.Context):
         """Get Autochannels status."""
         config = await self.config.guild(ctx.guild).all()
-        logger.debug(config)
+        log.debug(config)
         status = '**Enabled**' if config['enabled'] else '**NOT ENABLED**'
         out = f'Autochannels Settings:\n' \
               f'Global Enabled: {status}\n' \

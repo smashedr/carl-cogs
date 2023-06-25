@@ -1,0 +1,17 @@
+{
+    "name" : "ReactPost",
+    "author" : ["Shane#0816"],
+    "short" : "Carl's ReactPost Module.",
+    "description" : "Set channels to add Emoji->Channel mappings to post to channel.",
+    "install_msg" : "Add Mappings with `[p]reactpost addmap` and enable channels with `[p]reactpost channel` and for help use `[p]help reactpost`",
+    "end_user_data_statement": "Caveat Emptor.",
+    "tags": [],
+    "requirements": [],
+    "permissions" : [],
+    "required_cogs": {},
+    "min_bot_version": "3.5.0",
+    "min_python_version" : [3,8,0],
+    "disabled": false,
+    "hidden": false,
+    "type": "COG"
+}

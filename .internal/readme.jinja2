@@ -1,0 +1,90 @@
+[![Discord](https://img.shields.io/discord/899171661457293343?color=7289da&label=discord&logo=discord&logoColor=white&style=plastic)](https://discord.gg/wXy6m2X8wY)
+[![Codacy grade](https://img.shields.io/codacy/grade/439cde1e5a5b4c649beca9b27ec108aa?logo=codacy&style=plastic)](https://app.codacy.com/gh/smashedr/carl-cogs/dashboard)
+[![](https://repository-images.githubusercontent.com/422749366/a8e0e86a-fcdf-42f4-a5f8-63946c0cd272)](https://carl.sapps.me/)
+# Carl-Cogs
+
+Cogs for Carl Bot and Red Discord Bot.
+
+[https://carl.sapps.me/](https://carl.sapps.me/)
+
+### Installing
+
+To add Carl Bot to your server visit: [https://carl.sapps.me/](https://carl.sapps.me/)
+
+If you run a bot compatible with Red Cogs:
+
+```text
+[p]repo add carl-cogs https://github.com/smashedr/carl-cogs
+[p]cog list carl-cogs
+[p]cog install carl-cogs name
+[p]load name
+```
+
+### Public Cogs
+
+| Cog | Description |
+| --- | --- |
+{% for cog, data in cog_data.items() %}
+{%- if not data['hidden'] %}| **[{{ cog }}]({{ cog }})** | {% if 'deprecated' in data['tags'] %}**Deprecated** -
+{%- elif 'wip' in data['tags'] -%}**WIP** -
+{%- else -%}
+    {%- if 'api' in data['tags'] or 'redis' in data['tags'] -%}**{%- endif -%}
+    {%- if 'redis' in data['tags'] -%}Redis{%- endif -%}
+    {%- if 'api' in data['tags'] and 'redis' in data['tags'] -%}, {% endif -%}
+    {%- if 'api' in data['tags'] -%}API{% endif -%}
+    {%- if 'api' in data['tags'] or 'redis' in data['tags'] -%}** - {%- endif -%}
+{%- endif %} {{ data['description'] }} |
+{% endif -%}
+{% endfor %}
+### Internal/Hidden Cogs
+
+| Cog | Description |
+| --- | --- |
+{% for cog, data in cog_data.items() %}
+{%- if data['hidden'] %}| **[{{ cog }}]({{ cog }})** | {% if 'deprecated' in data['tags'] %}**Deprecated** -
+{%- elif 'wip' in data['tags'] -%}**WIP** -
+{%- else -%}
+    {%- if 'api' in data['tags'] or 'redis' in data['tags'] -%}**{%- endif -%}
+    {%- if 'redis' in data['tags'] -%}Redis{%- endif -%}
+    {%- if 'api' in data['tags'] and 'redis' in data['tags'] -%}, {% endif -%}
+    {%- if 'api' in data['tags'] -%}API{% endif -%}
+    {%- if 'api' in data['tags'] or 'redis' in data['tags'] -%}** - {%- endif -%}
+{%- endif %} {{ data['description'] }} |
+{% endif -%}
+{% endfor %}
+# Additional Setup Information
+
+## Redis
+
+Many Cogs use Redis for data caching and setting expiry keys.
+Redis has a small footprint and is very fast.
+Running the docker Redis container will work with these cogs out of the box.
+To configure specific Redis settings, use the `set api` command.
+
+### Running Redis
+
+```text
+docker run --name redis -p 6379:6379 -d redis:alpine
+```
+
+### Configure Redis
+
+```text
+[p]set api
+```
+
+Name `redis` with data:
+```text
+host    redis
+port    6379
+db      0
+pass    onlyifrequired
+```
+
+Above information are the defaults. Password defaults to `None`.
+DO NOT enter a password in the config unless you require one.
+
+## API
+
+**Coming Soon.** New API will be posted soon.
+

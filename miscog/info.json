@@ -1,0 +1,17 @@
+{
+  "name": "MisCog",
+  "author": ["Shane#0816"],
+  "short": "Carl's Miscellaneous Module.",
+  "description": "Miscellaneous commands for Carl Bot that could end up in their own module.",
+  "install_msg": "Has some useful commands. Get started with `[p]help Misc`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "tags": [],
+  "requirements": ["httpx","pytest-playwright"],
+  "permissions" : [],
+  "required_cogs": {},
+  "min_bot_version": "3.5.0",
+  "min_python_version" : [3,8,0],
+  "disabled": false,
+  "hidden": true,
+  "type": "COG"
+}

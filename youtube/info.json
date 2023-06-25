@@ -1,0 +1,17 @@
+{
+  "name": "YouTube",
+  "author": ["Shane#0816"],
+  "short": "Carl's YouTube Module.",
+  "description": "Auto post YouTube videos to specified channels.",
+  "install_msg": "Get started with `/youtube add`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "tags": ["wip"],
+  "requirements": [],
+  "permissions" : [],
+  "required_cogs": {},
+  "min_bot_version": "3.5.0",
+  "min_python_version" : [3,8,0],
+  "disabled": false,
+  "hidden": true,
+  "type": "COG"
+}

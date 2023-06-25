@@ -3,5 +3,4 @@ from .dictionary import Dictionary
 
 async def setup(bot):
     cog = Dictionary(bot)
-    bot.add_cog(cog)
-    cog.post_init()
+    await bot.add_cog(cog)

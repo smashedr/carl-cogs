@@ -1,0 +1,17 @@
+{
+  "name": "VoiceText",
+  "author": ["Shane#0816"],
+  "short": "Carl's VoiceText Module.",
+  "description": "Creates Text Channels for Active Voice Channels and Cleans Up.",
+  "install_msg": "Manage this command with `[p]voicetext`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "tags": ["wip"],
+  "requirements": [],
+  "permissions" : [],
+  "required_cogs": {},
+  "min_bot_version": "3.4.0",
+  "min_python_version" : [3,8,0],
+  "disabled": false,
+  "hidden": true,
+  "type": "COG"
+}

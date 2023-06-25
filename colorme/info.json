@@ -1,0 +1,17 @@
+{
+    "name" : "ColorMe",
+    "author" : ["Shane#0816"],
+    "short" : "Carl's ColorMe Module.",
+    "description" : "Allow users to manage the color of their own name.",
+    "install_msg" : "Set your color with: `/color hex_code`",
+    "end_user_data_statement": "Caveat Emptor.",
+    "tags": [],
+    "requirements": ["webcolors", "distinctipy[all]"],
+    "permissions" : ["manage_roles"],
+    "required_cogs": {},
+    "min_bot_version": "3.5.0",
+    "min_python_version" : [3,8,0],
+    "disabled": false,
+    "hidden": false,
+    "type": "COG"
+}

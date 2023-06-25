@@ -1,0 +1,17 @@
+{
+  "name": "Grafana",
+  "author": ["Shane#0816"],
+  "short": "Carl's Grafana Module.",
+  "description": "Grafana Graphs in Discord.",
+  "install_msg": "Get started with `[p]graph`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "tags": ["wip"],
+  "requirements": [],
+  "permissions" : [],
+  "required_cogs": {},
+  "min_bot_version": "3.4.0",
+  "min_python_version" : [3,8,0],
+  "disabled": true,
+  "hidden": true,
+  "type": "COG"
+}
