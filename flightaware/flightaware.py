@@ -2,6 +2,7 @@ import discord
 import httpx
 import json
 import logging
+import pathlib
 import re
 
 import redis.asyncio as redis
@@ -26,6 +27,7 @@ class Flightaware(commands.Cog):
         self.bot: Red = bot
         self.api_key: Optional[str] = None
         self.redis: Optional[redis.Redis] = None
+        self.cog_dir = pathlib.Path(__file__).parent.resolve()
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
@@ -67,13 +69,13 @@ class Flightaware(commands.Cog):
             return
 
         valid = False
-        file = '/data/cogs/flightaware/icao.txt'
+        file = f'{self.cog_dir}/icao.txt'
         with open(file) as f:
             if fn[:3] in f.read():
                 valid = True
                 log.debug('ICAO')
         if not valid:
-            file = '/data/cogs/flightaware/iata.txt'
+            file = f'{self.cog_dir}/iata.txt'
             with open(file) as f:
                 if fn[:2] in f.read():
                     valid = True

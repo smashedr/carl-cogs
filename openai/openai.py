@@ -8,7 +8,7 @@ import validators
 import redis.asyncio as redis
 from datetime import timedelta
 from PIL import Image
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from redbot.core import commands, app_commands
 
@@ -28,6 +28,8 @@ class OpenAI(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.redis: Optional[redis.Redis] = None
+        self.key: Optional[str] = None
+        self.headers: Optional[Dict[str, str]] = None
         self.msg_chatgpt = discord.app_commands.ContextMenu(
             name="AI ChatGPT",
             callback=self.msg_chatgpt_callback,
@@ -38,11 +40,6 @@ class OpenAI(commands.Cog):
             callback=self.msg_spelling_callback,
             type=discord.AppCommandType.message,
         )
-        data = await self.bot.get_shared_api_tokens('openai')
-        self.key = data['api_key']
-        self.headers = {
-            'Authorization': f'Bearer {self.key}',
-        }
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
@@ -54,6 +51,11 @@ class OpenAI(commands.Cog):
             password=data['pass'] if 'pass' in data else None,
         )
         await self.redis.ping()
+        openai = await self.bot.get_shared_api_tokens('openai')
+        self.key = openai['api_key']
+        self.headers = {
+            'Authorization': f'Bearer {self.key}',
+        }
         self.bot.tree.add_command(self.msg_chatgpt)
         self.bot.tree.add_command(self.msg_spelling)
         log.info('%s: Cog Load Finish', self.__cog_name__)
