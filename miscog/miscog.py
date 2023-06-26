@@ -2,6 +2,7 @@ import discord
 import httpx
 import os
 import logging
+import pathlib
 import re
 import socket
 from io import BytesIO
@@ -29,11 +30,12 @@ class Miscog(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_global(**self.global_default)
+        self.cog_dir = pathlib.Path(__file__).parent.resolve()
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
-        os.system('/data/carlldev/cogs/'
-                  'Downloader/lib/playwright/driver/playwright.sh install')
+        os.system(f"/data/{os.environ['BOT_NAME']}/cogs/"
+                  f'Downloader/lib/playwright/driver/playwright.sh install')
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):

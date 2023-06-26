@@ -6,7 +6,7 @@
   "install_msg": "Go Nuts with `[p]coolbirbs`",
   "end_user_data_statement": "Caveat Emptor.",
   "tags": [],
-  "requirements": [],
+  "requirements": ["faker"],
   "permissions" : [],
   "required_cogs": {},
   "min_bot_version": "3.4.0",
