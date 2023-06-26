@@ -189,7 +189,6 @@ class ColorMe(commands.Cog):
 
     @commands.hybrid_command(name='hex')
     @app_commands.describe(color='Hex Value, CSS Name, or Discord Color Name')
-    # async def hex_command(self, ctx: commands.Context, color_or_user: Union[str, discord.Member]):
     async def hex_command(self, ctx: commands.Context,
                           user: Optional[Union[discord.Member, discord.User]], *,
                           color: Optional[str] = None):
@@ -229,7 +228,7 @@ class ColorMe(commands.Cog):
                     break
             if not colorhex:
                 log.debug(3)
-                msg = f'⛔  No Color Roles found for user: {user.mention}'
+                msg = f'⛔ No Color Roles found for user: {user.mention}'
                 return await ctx.send(msg, ephemeral=True, delete_after=30,
                                       allowed_mentions=discord.AllowedMentions.none())
         else:
@@ -248,7 +247,7 @@ class ColorMe(commands.Cog):
         #             colorhex = role.name.replace(self.prefix, '')
         #             break
         #     if not colorhex:
-        #         msg = f'⛔  No Color Roles found for user: {user.mention}'
+        #         msg = f'⛔ No Color Roles found for user: {user.mention}'
         #         return await ctx.send(msg, ephemeral=True, delete_after=30,
         #                               allowed_mentions=discord.AllowedMentions.none())
         #
@@ -305,8 +304,7 @@ class ColorMe(commands.Cog):
         enabled = await self.config.guild(guild).enabled()
         if not enabled:
             msg = '⛔ Color Not Enabled in this Guild. Contact Server Manager to Enable.'
-            await ctx.send(msg, ephemeral=True, delete_after=30)
-            return
+            return await ctx.send(msg, ephemeral=True, delete_after=30)
 
         # Remove color if no color passed
         log.debug('color: %s', color)
@@ -319,12 +317,11 @@ class ColorMe(commands.Cog):
                     log.debug('Removing Role %s from Member %s', role.name, member.name)
                     await member.remove_roles(role, reason='Remove Color Role')
             if removed:
-                await ctx.send(f'✅ Color Removed: {removed.name}. Use `/color HEX` to set.',
-                               ephemeral=True, delete_after=120)
+                msg = f'✅ Color Removed: {removed.name}. Use `/color HEX` to set.'
+                return await ctx.send(msg, ephemeral=True, delete_after=120)
             else:
-                await ctx.send(f'⛔ No Color Roles Found. Use `/color HEX` to set.',
-                               ephemeral=True, delete_after=30)
-            return
+                msg = '⛔ No Color Roles Found. Use `/color HEX` to set.'
+                return await ctx.send(msg, ephemeral=True, delete_after=30)
 
         # Validate color passed
         newcolor = self.color_converter(color)
@@ -384,9 +381,9 @@ class ColorMe(commands.Cog):
         enabled = await self.config.guild(ctx.guild).enabled()
         if enabled:
             await self.config.guild(ctx.guild).enabled.set(False)
-            return await ctx.send(f'\U00002705  {self.__cog_name__} Disabled.', delete_after=120)  # ✅
+            return await ctx.send(f'✅ {self.__cog_name__} Disabled.', delete_after=120)
         await self.config.guild(ctx.guild).enabled.set(True)
-        await ctx.send(f'\U00002705  {self.__cog_name__} Enabled.', delete_after=120)  # ✅
+        await ctx.send(f'✅ {self.__cog_name__} Enabled.', delete_after=120)
 
     @_colorme.command(name='colorall', aliases=['all'])
     @commands.guild_only()
@@ -397,7 +394,7 @@ class ColorMe(commands.Cog):
         enabled: bool = await self.config.guild(ctx.guild).enabled()
         if not enabled:
             await self.config.guild(ctx.guild).enabled.set(False)
-            return await ctx.send(f'\U000026D4  {self.__cog_name__} Disabled.', delete_after=120)  # ⛔
+            return await ctx.send(f'⛔ {self.__cog_name__} Disabled.', delete_after=120)
         await ctx.typing()
         blocked_roles: List[int] = await self.config.guild(ctx.guild).blocked_roles()
         needs_color: List[discord.Member] = []
@@ -455,8 +452,8 @@ class ColorMe(commands.Cog):
         log.debug('pred.result: %s', pred.result)
         if pred.result is not True:
             return await ctx.send('⛔ Cancelled...', delete_after=120)
-        process = await ctx.send(f'⌛ Processing {len(needs_color)} members with {len(colors)} colors.',
-                                 delete_after=120)
+        msg = f'⌛ Processing {len(needs_color)} members with {len(colors)} colors.'
+        process = await ctx.send(msg, delete_after=120)
         async with ctx.typing():
             async for member, color in AsyncIter(zip(needs_color, colors), delay=2, steps=10):
                 guild: discord.Guild = member.guild
@@ -479,8 +476,8 @@ class ColorMe(commands.Cog):
 
         await question.delete()
         await process.delete()
-        await ctx.send(f'✅ Done processing {len(needs_color)} members with {len(colors)} colors.',
-                       delete_after=120)
+        msg = f'✅ Done processing {len(needs_color)} members with {len(colors)} colors.'
+        await ctx.send(msg, delete_after=120)
 
     @_colorme.command(name='uncolorall', aliases=['uncolor', 'removeall', 'deleteall'])
     @commands.guild_only()
@@ -496,7 +493,7 @@ class ColorMe(commands.Cog):
         if not color_roles:
             return await ctx.send('⛔ No Color Roles Found...', delete_after=120)
         lines = [x.mention for x in color_roles]
-        content = '❔ Will **delete** the following roles; Proceed? ' + ' '.join(lines)
+        content = '❔  Will **delete** the following roles; Proceed? ' + ' '.join(lines)
         question = await ctx.send(content, delete_after=120, allowed_mentions=discord.AllowedMentions.none())
         start_adding_reactions(question, ReactionPredicate.YES_OR_NO_EMOJIS)
         pred = ReactionPredicate.yes_or_no(question, ctx.author)

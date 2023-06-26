@@ -6,7 +6,7 @@ Split Warcraft Logs into multiple channels with filters.
 
 ## Install
 
-```
+```text
 [p]cog list carl-cogs
 [p]cog install carl-cogs warcraftlogs
 [p]load warcraftlogs

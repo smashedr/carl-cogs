@@ -6,7 +6,7 @@ Converts images to text via Flowery OCR API.
 
 ## Install
 
-```
+```text
 [p]cog list carl-cogs
 [p]cog install carl-cogs ocrimage
 [p]load ocrimage

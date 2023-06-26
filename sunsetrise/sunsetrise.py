@@ -6,9 +6,9 @@ import logging
 import pytz
 from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
-from typing import Optional, Union, Tuple, Dict, List, Any
+from typing import Optional, Union, Tuple, Dict, Any
 
-from redbot.core import app_commands, commands, Config
+from redbot.core import app_commands, commands
 
 log = logging.getLogger('red.sunsetrise')
 
@@ -84,7 +84,7 @@ class Sunsetrise(commands.Cog):
         embed.add_field(name='Local Time', value=current_time.strftime('%I:%M:%S %p'))
         embed.add_field(name='Time Zone', value=tz)
         embed.set_author(name=f'Lat: {geo.latitude} / Lon: {geo.longitude}')
-        content = f'{icon}  **{location}**'
+        content = f"{icon}  **{location}**"
         await ctx.send(content=content, embed=embed)
 
     @staticmethod
@@ -92,7 +92,7 @@ class Sunsetrise(commands.Cog):
         _params = {'lat': lat, 'lng': lon, 'formatted': 0}
         if kwargs:
             _params.update(kwargs)
-        url = f'https://api.sunrise-sunset.org/json'
+        url = "https://api.sunrise-sunset.org/json"
         async with httpx.AsyncClient() as client:
             r = await client.get(url, params=_params)
             r.raise_for_status()
@@ -102,8 +102,8 @@ class Sunsetrise(commands.Cog):
         name = name.replace(' ', '_') if name else geo.raw['display_name'].replace(' ', '_')
         dn, mn, sn = self.dd2dms(geo.latitude)
         dw, mw, sw = self.dd2dms(geo.longitude)
-        params = f'{dn}_{mn}_{sn}_N_{dw}_{mw}_{sw}_W_scale:500000'
-        return f'https://geohack.toolforge.org/geohack.php?pagename={name}&params={params}'
+        params = f"{dn}_{mn}_{sn}_N_{dw}_{mw}_{sw}_W_scale:500000"
+        return f"https://geohack.toolforge.org/geohack.php?pagename={name}&params={params}"
 
     @staticmethod
     def dd2dms(dd: Union[float, int]) -> Tuple[int, int, int]:

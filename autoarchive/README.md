@@ -6,7 +6,7 @@ Automatically clones and archives channels before 10k.
 
 ## Install
 
-```
+```text
 [p]cog list carl-cogs
 [p]cog install carl-cogs autoarchive
 [p]load autoarchive

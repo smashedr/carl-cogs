@@ -33,16 +33,15 @@ class Saveforlater(commands.Cog):
         # await ctx.defer(ephemeral=True, thinking=False)
         # await interaction.response.defer()
         if not can_user_send_messages_in(interaction.user.guild.me, interaction.user):
-            msg = (f'⛔ Unable to send you a Direct Message. '
-                   f'Check your privacy settings for the guild and enable Direct Messages.')
+            msg = ("⛔ Unable to send you a Direct Message. "
+                   "Check your privacy settings for the guild and enable Direct Messages.")
             return await interaction.response.send_message(msg, ephemeral=True, delete_after=60)
         files = []
         for attachment in message.attachments:
             files.append(await attachment.to_file())
         embeds: List[discord.Embed] = [e for e in message.embeds if e.type == 'rich']
-        content = (f'**Saved Message** from {message.jump_url}\n'
-                   f'{message.author.mention}: {message.content}')
+        content = (f"**Saved Message** from {message.jump_url}\n"
+                   f"{message.author.mention}: {message.content}")
         await interaction.user.send(content, embeds=embeds, files=files, silent=True,
                                     allowed_mentions=discord.AllowedMentions.none())
-        await interaction.response.send_message('✅ Message Saved in DM for Later.',
-                                                ephemeral=True, delete_after=15)
+        await interaction.response.send_message("✅ Message Saved in DM for Later.", ephemeral=True, delete_after=15)

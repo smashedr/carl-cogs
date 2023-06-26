@@ -1,6 +1,6 @@
 import discord
 import logging
-from typing import Optional, cast
+from typing import Optional
 
 from redbot.core import commands, Config
 
@@ -30,6 +30,8 @@ class Welcome(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
+        if member.bot:
+            return
         guild: discord.Guild = member.guild
         config = await self.config.guild(guild).all()
         if not config['enabled'] or not config['channel']:
@@ -114,7 +116,7 @@ class Welcome(commands.Cog):
         if channel:
             out += f"Channel: #{channel.name} - {channel.id}\n"
         else:
-            out += f"Channel: **NOT SET**\n"
+            out += "Channel: **NOT SET**\n"
         out += f"Message: {config['message']}```"
         await ctx.send(out)
 

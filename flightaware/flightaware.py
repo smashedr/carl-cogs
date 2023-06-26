@@ -9,7 +9,7 @@ import redis.asyncio as redis
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from html import unescape
-from typing import Optional, List, Tuple, Dict, Union
+from typing import Optional, List, Union
 
 from redbot.core import commands, app_commands
 from redbot.core.bot import Red
@@ -125,8 +125,8 @@ class Flightaware(commands.Cog):
         if not ident:
             if silent:
                 return
-            return await ctx.send(F'Unable to validate `ident`: **{ident_str}**',
-                                  ephemeral=True, delete_after=10)
+            msg = f'Unable to validate `ident`: **{ident_str}**'
+            return await ctx.send(msg, ephemeral=True, delete_after=10)
         fa = FlightAware(self.api_key)
         fdata: dict = json.loads(await self.redis.get(f'fa:{ident}') or '{}')
         if not fdata:
@@ -188,14 +188,14 @@ class Flightaware(commands.Cog):
                     or any([x in d['status'].lower() for x in matches]):
                 index = i
                 log.debug('set index on PROGRESS or MATCH')
-                msgs.append(f'\U0001F7E2 [Live Now on FlightAware]({fa.fa_flight_url}{ident}) ')  # :green_circle:
+                msgs.append(f'🟢 [Live Now on FlightAware]({fa.fa_flight_url}{ident}) ')
                 em.colour = discord.Colour.green()
             if d['position_only']:
-                msgs.append(f'\U0001F535 **Position Only!** ')  # 🔵
+                msgs.append('🔵 **Position Only!** ')
             if d['cancelled']:
-                msgs.append(f'\U0001F534 **Cancelled!** ')  # 🔴
+                msgs.append('🔴 **Cancelled!** ')
             if d['diverted']:
-                msgs.append(f'\U0001F7E1 **Diverted!** ')  # :yellow_circle:
+                msgs.append('🟡 **Diverted!** ')
             msgs = ['\n'.join(msgs)]
             msgs.append(
                 f"```ini\n"
@@ -224,7 +224,7 @@ class Flightaware(commands.Cog):
             value = ''
             if d['registration']:
                 value += f"[{d['registration']}]({fa.fa_registration_url}{d['registration']}) " \
-                         f"[\U0001F5BC\U0000FE0F]({fa.jetphotos_url}{d['registration']}) | "  # 🖼️
+                         f"[🖼️]({fa.jetphotos_url}{d['registration']}) | "
             if d['aircraft_type']:
                 wiki_url = await self.get_wiki_url(d['aircraft_type'])
                 if wiki_url:
@@ -233,10 +233,10 @@ class Flightaware(commands.Cog):
                     value += f"{d['aircraft_type']} | "
             if d['origin'] and d['origin']['code_icao']:
                 value += f"[{d['origin']['code_icao']}]({fa.airnav_url}{d['origin']['code_icao']}) " \
-                         f"[\U0001F508]({fa.liveatc_url}{d['origin']['code_icao']}) | "  # 🔈
+                         f"[🔈]({fa.liveatc_url}{d['origin']['code_icao']}) | "
             if d['destination'] and d['destination']['code_icao']:
                 value += f"[{d['destination']['code_icao']}]({fa.airnav_url}{d['destination']['code_icao']}) " \
-                         f"[\U0001F508]({fa.liveatc_url}{d['destination']['code_icao']}) | "  # 🔈
+                         f"[🔈]({fa.liveatc_url}{d['destination']['code_icao']}) | "
             value = value.strip('| ')
             # value += f"\n{i+1}/{len(fdata['flights'])}"
             em.add_field(name='Links', value=value)
@@ -257,8 +257,8 @@ class Flightaware(commands.Cog):
         operator_id = self.validate_ident(code)
         log.debug('operator_id: %s', operator_id)
         if not operator_id:
-            return await ctx.send(F'Unable to validate `id`: **{code}**',
-                                  ephemeral=True, delete_after=10)
+            msg = f'Unable to validate `id`: **{code}**'
+            return await ctx.send(msg, ephemeral=True, delete_after=10)
 
         fa = FlightAware(self.api_key)
         fdata = json.loads(await self.redis.get(f'fa:{operator_id}') or '{}')
@@ -268,8 +268,8 @@ class Flightaware(commands.Cog):
             fdata = await fa.operators_id(operator_id)
             log.debug(fdata)
         if not fdata:
-            return await ctx.send(f'No results for operator id: `{operator_id}`',
-                                  ephemeral=True, delete_after=10)
+            msg = f'No results for operator id: `{operator_id}`'
+            return await ctx.send(msg, ephemeral=True, delete_after=10)
 
         await self.redis.setex(f'fa:{operator_id}', timedelta(days=30), json.dumps(fdata))
         d = fdata
@@ -301,8 +301,7 @@ class Flightaware(commands.Cog):
         identifier = self.validate_ident(ident)
         log.debug('identifier: %s', identifier)
         if not identifier:
-            return await ctx.send(F'Unable to validate `id`: **{ident}**',
-                                  ephemeral=True, delete_after=10)
+            return await ctx.send(f'Unable to validate `id`: **{ident}**', ephemeral=True, delete_after=10)
 
         fa = FlightAware(self.api_key)
         fdata = json.loads(await self.redis.get(f'fa:{identifier}') or '{}')
@@ -312,8 +311,7 @@ class Flightaware(commands.Cog):
             fdata = await fa.owner_ident(identifier)
             log.debug(fdata)
         if not fdata:
-            return await ctx.send(f'No results for ident: `{identifier}`',
-                                  ephemeral=True, delete_after=10)
+            return await ctx.send(f'No results for ident: `{identifier}`', ephemeral=True, delete_after=10)
 
         await self.redis.setex(f'fa:{identifier}', timedelta(days=30), json.dumps(fdata))
         d = fdata['owner']
@@ -337,7 +335,7 @@ class Flightaware(commands.Cog):
 
     async def get_wiki_url(self, icao_type: str) -> Optional[str]:
         icao_type = icao_type.upper()
-        base_url = f'https://en.wikipedia.org'
+        base_url = 'https://en.wikipedia.org'
         try:
             aircraft_data: dict = json.loads(await self.redis.get('fa:wiki_aircraft_type') or '{}')
             if not aircraft_data:
@@ -351,7 +349,7 @@ class Flightaware(commands.Cog):
     async def gen_wiki_type_data(self) -> dict:
         # TODO: Make this a task in a loop
         log.info('--- REMOTE CALL ---')
-        url = f'https://en.wikipedia.org/wiki/List_of_aircraft_type_designators'
+        url = 'https://en.wikipedia.org/wiki/List_of_aircraft_type_designators'
         http_options = {
             'follow_redirects': True,
             'timeout': 30,
@@ -447,8 +445,8 @@ class EmbedsView(discord.ui.View):
         if td.seconds >= self.owner_only_sec:
             return True
         remaining = self.owner_only_sec - td.seconds
-        msg = (f"\U000026D4 The creator has control for {remaining} more seconds...\n"
-               f"You can create your own response with the `/flight` command.")  # ⛔
+        msg = (f"⛔ The creator has control for {remaining} more seconds...\n"
+               f"You can create your own response with the `/flight` command.")
         await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
         return False
 
@@ -482,12 +480,11 @@ class EmbedsView(discord.ui.View):
     @discord.ui.button(label='Delete', style=discord.ButtonStyle.red)
     async def delete_button(self, interaction, button):
         if not interaction.user.id == self.user_id:
-            msg = ("\U000026D4 Looks like you didn't create this response.\n"
-                   f"You can create your own response with the `/history` command.")  # ⛔
+            msg = ("⛔ Looks like you didn't create this response.\n"
+                   "You can create your own response with the `/history` command.")
             return await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
         await interaction.message.delete()
-        await interaction.response.send_message('\U00002705 Your wish is my command!',
-                                                ephemeral=True, delete_after=10)  # ✅
+        await interaction.response.send_message('✅ Your wish is my command!', ephemeral=True, delete_after=10)
 
     # async def disable_enable_buttons(self, interaction):
     #     log.debug('self.index: %s', self.index)

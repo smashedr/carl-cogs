@@ -5,7 +5,6 @@ import re
 import emojis
 
 from redbot.core import commands, Config
-from redbot.core.utils import AsyncIter
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import MessagePredicate
 
@@ -164,11 +163,13 @@ class Reactroles(commands.Cog):
         return
 
     async def edit_rr(self, ctx, name):
-        msg = f'Now updating React Role **{name}**\nPlease enter one set of ' \
-              '`emoji` `role name` pairs per line and in the order you want ' \
-              'them to appear. Example: \n:red_square: ' \
-              'Red Role\nWhen finished adding all emoji/role pairs type ' \
-              '`done` or to abort type `cancel` the request. '
+        msg = (
+            f'Now updating React Role **{name}**\nPlease enter one set of '
+            f'`emoji` `role name` pairs per line and in the order you want '
+            f'them to appear. Example: \n:red_square: '
+            f'Red Role\nWhen finished adding all emoji/role pairs type '
+            f'`done` or to abort type `cancel` the request. '
+        )
         org_msg = await ctx.send(msg)
         init_msg = await ctx.send('Emoji/Role pairs will show up here:')
         roles = {}
@@ -177,7 +178,7 @@ class Reactroles(commands.Cog):
             try:
                 message = await self.bot.wait_for("message", check=pred, timeout=30)
             except asyncio.TimeoutError:
-                await ctx.send(f'Request timed out. You need to start over.')
+                await ctx.send('Request timed out. You need to start over.')
                 await org_msg.delete()
                 await init_msg.delete()
                 return

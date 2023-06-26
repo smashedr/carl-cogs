@@ -65,13 +65,11 @@ class Dictionary(commands.Cog):
                 r.raise_for_status()
         except Exception as error:
             log.exception(error)
-            await ctx.send(f'Error performing lookup: `{error}`')
-            return
+            return await ctx.send(f'Error performing lookup: `{error}`')
 
         result = r.json()
         if len(result) < 1:
-            await ctx.send(f'No results for: `{term}`')
-            return
+            return await ctx.send(f'No results for: `{term}`')
 
         data = result[0]
         log.debug(data)
@@ -117,14 +115,12 @@ class Dictionary(commands.Cog):
                 r.raise_for_status()
         except Exception as error:
             log.exception(error)
-            await ctx.send(f'Error performing lookup: `{error}`')
-            return
+            return await ctx.send(f'Error performing lookup: `{error}`')
 
         result = r.json()
         data = result['list']
         if len(data) < 1:
-            await ctx.send(f'No results for: `{term}`')
-            return
+            return await ctx.send(f'No results for: `{term}`')
 
         em = discord.Embed()
         em.colour = discord.Colour.blue()

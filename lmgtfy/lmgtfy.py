@@ -41,8 +41,7 @@ class Lmgtfy(commands.Cog):
             break
 
         if not msg:
-            await channel.send('No recent queries found...', delete_after=5)
-            return
+            return await channel.send('No recent queries found...', delete_after=5)
 
         safe_string = urllib.parse.quote_plus(msg.content)
         # response = f'https://lmgtfy.app/?q={safe_string}'

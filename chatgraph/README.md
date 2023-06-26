@@ -6,7 +6,7 @@ Generate Pie Graph of Messages in Current or Specified Channel.
 
 ## Install
 
-```
+```text
 [p]cog list carl-cogs
 [p]cog install carl-cogs chatgraph
 [p]load chatgraph

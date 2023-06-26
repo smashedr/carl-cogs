@@ -6,7 +6,7 @@ Create QR Codes in Discord.
 
 ## Install
 
-```
+```text
 [p]cog list carl-cogs
 [p]cog install carl-cogs qr
 [p]load qr

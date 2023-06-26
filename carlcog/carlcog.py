@@ -4,7 +4,6 @@ import fuckit
 import logging
 import platform
 import traceback
-from typing import Optional
 
 from redbot.core import Config, commands
 from redbot.core.utils import chat_formatting as cf
@@ -211,7 +210,7 @@ class Carlcog(commands.Cog):
 
         em = discord.Embed()
         em.colour = discord.Colour(int('6F42C1', 16))
-        em.title = f'Carl Bot'
+        em.title = 'Carl Bot'
         em.set_thumbnail(url=self.bot.user.avatar.url)
         em.set_author(name=str(self.bot.user), url=inv_url)
         em.description = desc_txt

@@ -152,19 +152,19 @@ class AviationSafetyNetwork(commands.Cog):
         """Post a specific incident to the current channel"""
         m = re.search('[0-9-]{4,10}', entry)
         if not m or not m.group(0):
-            return await ctx.send(f'\U0001F534 Unable to parse ID from entry: {entry}',
-                                  ephemeral=True, delete_after=10)  # 🔴
+            return await ctx.send(f'🔴 Unable to parse ID from entry: {entry}',
+                                  ephemeral=True, delete_after=10)
 
         if '-' in m.group(0):
-            return await ctx.send(f'\U0001F534 Database Entry Records are not currently supported: {entry}',
-                                  ephemeral=True, delete_after=10)  # 🔴
+            return await ctx.send(f'🔴 Database Entry Records are not currently supported: {entry}',
+                                  ephemeral=True, delete_after=10)
 
         await ctx.defer()
         href = f'/wikibase/{m.group(0)}'
         entry = await self.get_wiki_entry(href)
         if not entry:
-            return await ctx.send(f'\U0001F534 No data for entry: {entry}',
-                                  ephemeral=True, delete_after=10)  # 🔴
+            return await ctx.send(f'🔴 No data for entry: {entry}',
+                                  ephemeral=True, delete_after=10)
         embed = await self.gen_embed(entry)
         await ctx.send(embed=embed)
 
@@ -180,18 +180,16 @@ class AviationSafetyNetwork(commands.Cog):
         channel: discord.TextChannel
         if not channel:
             await self.config.guild(ctx.guild).channel.set(0)
-            return await ctx.send(f'\U0001F7E2 Disabled. Specify a channel to Enable.',
-                                  ephemeral=True)  # :green_circle:
+            return await ctx.send('🟢 Disabled. Specify a channel to Enable.', ephemeral=True)
 
         log.debug('channel: %s', channel)
         log.debug('channel.type: %s', channel.type)
         if not str(channel.type) == 'text':
-            return await ctx.send('\U0001F534 Channel must be a Text Channel.',
-                                  ephemeral=True)  # 🔴
+            return await ctx.send('🔴 Channel must be a Text Channel.', ephemeral=True)
 
         guild_data = {'channel': channel.id, 'silent': post_silent}
         await self.config.guild(ctx.guild).set(guild_data)
-        msg = f'\U0001F7E2 Will post ASN updates to channel: {channel.name}'  # :green_circle:
+        msg = f'🟢 Will post ASN updates to channel: {channel.name}'
         if post_silent:
             msg += '\nMessages will post Silently as to not send notifications.'
         await ctx.send(msg, ephemeral=True)
@@ -350,7 +348,6 @@ class AviationSafetyNetwork(commands.Cog):
                     cache_min = self.cache_long
             except Exception as error:
                 log.exception(error)
-                pass
 
         await self.redis.setex(
             f"asn:{data['href']}",
@@ -366,13 +363,9 @@ class AviationSafetyNetwork(commands.Cog):
             r = await client.get(self.wiki_n, headers=self.http_headers)
             r.raise_for_status()
         html = r.text
-        # log.debug('--- BEGIN html  ---')
-        # log.debug(html)
-        # log.debug('--- END html  ---')
         soup = BeautifulSoup(html, 'html.parser')
         table_rows = soup.find_all('tr', class_=['list', 'listmain'])
         entries = []
-
         for row in table_rows:
             row_data = {}
             cells = row.find_all('td', class_=['list', 'listmain'])
@@ -394,10 +387,6 @@ class AviationSafetyNetwork(commands.Cog):
                 else:
                     row_data[header] = cell.text.strip()
             entries.append(row_data)
-
-        # log.debug('--- BEGIN entries  ---')
-        # log.debug(entries)
-        # log.debug('--- END entries  ---')
         await self.redis.set('asn:latest', json.dumps(entries))
 
 
@@ -434,8 +423,8 @@ class ListView(discord.ui.View):
         if td.seconds >= self.owner_only_sec:
             return True
         remaining = self.owner_only_sec - td.seconds
-        msg = (f"\U000026D4 The creator has control for {remaining} more seconds...\n"
-               f"You can create your own response with the `/asn` command.")  # ⛔
+        msg = (f"⛔ The creator has control for {remaining} more seconds...\n"
+               f"You can create your own response with the `/asn` command.")
         await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
         return False
 
@@ -483,11 +472,11 @@ class ListView(discord.ui.View):
     @discord.ui.button(label='Delete', style=discord.ButtonStyle.red)
     async def delete_button(self, interaction: discord.Interaction, button):
         if not interaction.user.id == self.user_id:
-            msg = ("\U000026D4 Looks like you didn't create this response.\n"
-                   f"You can create your own response with the `/history` command.")  # ⛔
+            msg = ("⛔ Looks like you didn't create this response.\n"
+                   "You can create your own response with the `/history` command.")
             await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
             return
         self.stop()
         await interaction.message.delete()
-        await interaction.response.send_message('\U00002705 Your wish is my command!',
-                                                ephemeral=True, delete_after=10)  # ✅
+        await interaction.response.send_message("✅ Your wish is my command!",
+                                                ephemeral=True, delete_after=10)

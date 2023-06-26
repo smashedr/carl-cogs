@@ -2,7 +2,7 @@ import asyncio
 import datetime
 import discord
 import logging
-from typing import Optional, Union, Tuple, Dict, List
+from typing import Optional, Union, List
 
 from discord.ext import tasks
 from redbot.core import app_commands, commands, Config
@@ -113,12 +113,12 @@ class Autoarchive(commands.Cog):
             url=clone.jump_url,
         )
         embed.description = (
-            '**Channel Archived to Preserve History**\n\n'
-            'Discord limits channels to 10,000 messages. '
-            'To preserve the message history, '
-            'this channel has been archived; however,  '
+            f'**Channel Archived to Preserve History**\n\n'
+            f'Discord limits channels to 10,000 messages. '
+            f'To preserve the message history, '
+            f'this channel has been archived; however,  '
             f'a [new channel]({clone.jump_url}) '
-            'has been created to replace this one.\n\n'
+            f'has been created to replace this one.\n\n'
             f'**[Go To New Channel...]({clone.jump_url})**'
         )
         embed.set_thumbnail(url='https://img.cssnr.com/p/20230611-182505549.png')
@@ -137,12 +137,12 @@ class Autoarchive(commands.Cog):
             url=channel.jump_url,
         )
         embed.description = (
-            '**Channel Archived to Preserve History**\n\n'
-            'Discord limits channels to 10,000 messages. '
-            'To preserve the message history, '
-            'this channel has been archived; however,  '
+            f'**Channel Archived to Preserve History**\n\n'
+            f'Discord limits channels to 10,000 messages. '
+            f'To preserve the message history, '
+            f'this channel has been archived; however,  '
             f'the [old channel]({channel.jump_url}) '
-            'is still available to view history.\n\n'
+            f'is still available to view history.\n\n'
             f'**[Go To Original Channel...]({channel.jump_url})**'
         )
         embed.set_thumbnail(url='https://img.cssnr.com/p/20230611-182505549.png')
@@ -183,8 +183,8 @@ class Autoarchive(commands.Cog):
     async def _aa_channel(self, ctx: commands.Context):
         """Set Channels to Auto Archive"""
         view = ChannelView(self, ctx.author)
-        msg = 'Select channels to **Auto Archive**:'
-        await view.send_initial_message(ctx, msg, True)
+        message = "Select channels to **Auto Archive**:"
+        await view.send_initial_message(ctx, message, True)
 
 
 class ChannelView(discord.ui.View):
@@ -210,7 +210,7 @@ class ChannelView(discord.ui.View):
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id == self.user_id:
             return True
-        msg = f"\U000026D4 Looks like you did not create this response."  # ⛔
+        msg = "⛔ Looks like you did not create this response."
         await interaction.response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
         return False
 
@@ -223,10 +223,10 @@ class ChannelView(discord.ui.View):
             channels.append(value)
         if not channels:
             await self.cog.config.guild(interaction.guild).channels.set([])
-            msg = f'\U00002705 No Channel Selected. Auto Archive Disabled.'  # ✅
+            msg = "✅ No Channel Selected. Auto Archive Disabled."
             return await response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
         ids = [x.id for x in channels]
         await self.cog.config.guild(interaction.guild).channels.set(ids)
         names = [x.name for x in channels]
-        msg = f'\U00002705 Auto Archive Enabled for Channels: {cf.humanize_list(names)}'  # ✅
+        msg = f"✅ Auto Archive Enabled for Channels: {cf.humanize_list(names)}"
         return await response.send_message(msg, ephemeral=True, delete_after=self.delete_after)

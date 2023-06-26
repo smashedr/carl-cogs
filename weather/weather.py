@@ -3,12 +3,11 @@ import discord
 import geopy
 import httpx
 import logging
-import pytz
 from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
-from typing import Optional, Union, Tuple, Dict, List, Any
+from typing import Optional, Union, Tuple, Dict, Any
 
-from redbot.core import app_commands, commands, Config
+from redbot.core import app_commands, commands
 
 log = logging.getLogger('red.weather')
 
@@ -42,8 +41,7 @@ class Weather(commands.Cog):
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
 
-    @commands.hybrid_command(name='weather', aliases=['noaa'],
-                             description='Get Weather for <location>')
+    @commands.hybrid_command(name='weather', aliases=['noaa'], description='Get Weather for <location>')
     @commands.guild_only()
     @app_commands.describe(location='Location to get Weather for')
     async def weather_command(self, ctx: commands.Context, *, location: str):
@@ -52,20 +50,19 @@ class Weather(commands.Cog):
             try:
                 geo = self.gl.geocode(location)
                 if not geo or not geo.latitude or not geo.longitude:
-                    return await ctx.send(f'⛔  Error getting Lat/Lon Data for: {location}')
+                    return await ctx.send(f'⛔ Error getting Lat/Lon Data for: {location}')
                 weather, forecast = await self.get_weather(geo.latitude, geo.longitude)
                 log.debug('-'*40)
                 log.debug(weather)
                 log.debug('-'*40)
                 if not weather or not weather['properties']:
-                    return await ctx.send(f'⛔  Error getting Weather for: {location}\n'
+                    return await ctx.send(f'⛔ Error getting Weather for: {location}\n'
                                           f'Lat: `{geo.latitude}` Lon: `{geo.longitude}`')
                 # tz = self.tf.timezone_at(lat=geo.latitude, lng=geo.longitude)
                 # timezone = pytz.timezone(tz)
                 # current_time_utc = datetime.datetime.now(pytz.UTC)
                 # current_time = current_time_utc.astimezone(timezone)
-                embed = self.gen_embed(geo, weather['properties'],
-                                       forecast['properties']['periods'][0])
+                embed = self.gen_embed(geo, weather['properties'], forecast['properties']['periods'][0])
                 await ctx.send(embed=embed)
             except Exception as error:
                 log.exception(error)
@@ -172,7 +169,7 @@ class Weather(commands.Cog):
         stations_url: str = location_data["properties"]["observationStations"]
         stations: Dict[str, Any] = await self._get_json(stations_url)
 
-        observation_url: str = stations["features"][0]["id"] + f'/observations/latest'
+        observation_url: str = stations["features"][0]["id"] + '/observations/latest'
         observation: Dict[str, Any] = await self._get_json(observation_url)
 
         return observation, forecast

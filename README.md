@@ -7,7 +7,7 @@ Cogs for Carl Bot and Red Discord Bot.
 
 [https://carl.sapps.me/](https://carl.sapps.me/)
 
-### Installing
+## Installing
 
 To add Carl Bot to your server visit: [https://carl.sapps.me/](https://carl.sapps.me/)
 
@@ -20,7 +20,7 @@ If you run a bot compatible with Red Cogs:
 [p]load name
 ```
 
-### Public Cogs
+## Public Cogs
 
 | Cog                                  | Description                                                               |
 |--------------------------------------|---------------------------------------------------------------------------|
@@ -57,7 +57,7 @@ If you run a bot compatible with Red Cogs:
 | **[warcraftlogs](warcraftlogs)**     | **WIP** - Split Warcraft Logs into multiple channels with filters.        |
 | **[welcome](welcome)**               | Welcomes new users to your servers on join.                               |
 
-### Internal/Hidden Cogs
+## Internal/Hidden Cogs
 
 | Cog                              | Description                                                                       |
 |----------------------------------|-----------------------------------------------------------------------------------|

@@ -119,15 +119,14 @@ class ReactPost(commands.Cog):
         if emoji in maps:
             map_channel = ctx.guild.get_channel(maps[str(emoji)])
             if map_channel:
-                await ctx.send(f'⛔ Emoji {emoji} already mapped to {channel.mention}',
-                               ephemeral=True, delete_after=15)
-                return
+                msg = f'⛔ Emoji {emoji} already mapped to {channel.mention}'
+                return await ctx.send(msg, ephemeral=True, delete_after=15)
         maps.update({str(emoji): channel.id})
         # maps[str(emoji)] = channel.id
         log.debug('maps: %s', maps)
         await self.config.guild(ctx.guild).maps.set(maps)
-        await ctx.send(f'✅ Mapped Emoji {emoji} to post to channel {channel.mention}',
-                       ephemeral=True, delete_after=60)
+        msg = f'✅ Mapped Emoji {emoji} to post to channel {channel.mention}'
+        await ctx.send(msg, ephemeral=True, delete_after=60)
 
     @_rp.command(name='delmap', aliases=['d', 'del', 'dmap', 'deletemap'])
     async def _rp_delmap(self, ctx: commands.Context,
@@ -137,15 +136,14 @@ class ReactPost(commands.Cog):
         maps: dict = await self.config.guild(ctx.guild).maps()
         log.debug('maps: %s', maps)
         if str(emoji) not in maps:
-            await ctx.send(f'⛔ Emoji {emoji} is not mapped to any channel.',
-                           ephemeral=True, delete_after=15)
-            return
+            msg = f'⛔ Emoji {emoji} is not mapped to any channel.'
+            return await ctx.send(msg, ephemeral=True, delete_after=15)
         channel = ctx.guild.get_channel(maps[str(emoji)])
         del maps[str(emoji)]
         log.debug('maps: %s', maps)
         await self.config.guild(ctx.guild).maps.set(maps)
-        await ctx.send(f'✅ Removed Emoji {emoji} mapped to channel {channel.mention}',
-                       ephemeral=True, delete_after=60)
+        msg = f'✅ Removed Emoji {emoji} mapped to channel {channel.mention}'
+        await ctx.send(msg, ephemeral=True, delete_after=60)
 
     @_rp.command(name='enable', aliases=['on'])
     async def _rp_enable(self, ctx: commands.Context,
@@ -156,14 +154,12 @@ class ReactPost(commands.Cog):
         channels: list = await self.config.guild(ctx.guild).channels()
         log.debug('channels: %s', channels)
         if channel.id in channels:
-            await ctx.send(f'⛔ Channel {channel.mention} already Enabled.',
-                           ephemeral=True, delete_after=15)
-            return
+            msg = f'⛔ Channel {channel.mention} already Enabled.'
+            return await ctx.send(msg, ephemeral=True, delete_after=15)
         channels.append(channel.id)
         log.debug('channels: %s', channels)
         await self.config.guild(ctx.guild).channels.set(channels)
-        await ctx.send(f'✅ Enabled Channel {channel.mention}',
-                       ephemeral=True, delete_after=60)
+        await ctx.send(f'✅ Enabled Channel {channel.mention}', ephemeral=True, delete_after=60)
 
     @_rp.command(name='disable', aliases=['off'])
     async def _rp_disable(self, ctx: commands.Context,
@@ -174,14 +170,12 @@ class ReactPost(commands.Cog):
         channels: list = await self.config.guild(ctx.guild).channels()
         log.debug('channels: %s', channels)
         if channel.id not in channels:
-            await ctx.send(f'⛔ Channel {channel.mention} already Disabled.',
-                           ephemeral=True, delete_after=15)
-            return
+            msg = f'⛔ Channel {channel.mention} already Disabled.'
+            return await ctx.send(msg, ephemeral=True, delete_after=15)
         channels.remove(channel.id)
         log.debug('channels: %s', channels)
         await self.config.guild(ctx.guild).enabled.set(True)
-        await ctx.send(f'✅ Disabled Channel {channel.mention}',
-                       ephemeral=True, delete_after=60)
+        await ctx.send(f'✅ Disabled Channel {channel.mention}', ephemeral=True, delete_after=60)
 
     @_rp.command(name='status', aliases=['s', 'maps', 'mapping', 'list'])
     async def _rp_status(self, ctx: commands.Context):
@@ -200,8 +194,6 @@ class ReactPost(commands.Cog):
         channels = cf.humanize_list(channels) if channels else 'No Channels.'
         msg = (
             f'_ReactPost Settings._\n**Enabled Channels:**\n'
-            f'{channels}\n\n'
-            f'**Mappings:**\n'
-            f'{mappings}'
+            f'{channels}\n\n**Mappings:**\n{mappings}'
         )
         await ctx.send(msg, ephemeral=True, delete_after=300)

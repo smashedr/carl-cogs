@@ -121,14 +121,13 @@ class Createthings(commands.Cog):
         name = name.lower()
         log.debug(name)
         if name not in ROLE_SETS:
-            await ctx.send(f'Role set not found: {name}\n'
-                           f'Use `{ctx.prefix}createroles list`')
-            return
+            msg = f'Role set not found: {name}\nUse `{ctx.prefix}createroles list`'
+            return await ctx.send(msg)
 
         await ctx.send(f'Creating role set: {name}')
         async with ctx.channel.typing():
             results = await self.create_role_set(ctx, ROLE_SETS[name])
-            out = [f'Role Creation Complete. Results:'] + results
+            out = ['Role Creation Complete. Results:'] + results
         await ctx.send('\n'.join(out))
 
     @commands.group(name='createemoji', aliases=['ce'])
@@ -156,21 +155,19 @@ class Createthings(commands.Cog):
         name = name.lower()
         log.debug(name)
         if name not in EMOJI_SETS:
-            await ctx.send(f'Emoji set not found: **{name}**\n'
-                           f'Use `{ctx.prefix}createemoji list`')
-            return
+            msg = f'Emoji set not found: **{name}**\nUse `{ctx.prefix}createemoji list`'
+            return await ctx.send(msg)
 
         emoji = EMOJI_SETS[name]
         slots = ctx.guild.emoji_limit - len(ctx.guild.emojis)
         if slots <= len(emoji):
-            await ctx.send(f'You requested to create {len(emoji)} emoji '
-                           f'but only have room for {slots}, make room.')
-            return
+            msg = f'You requested to create {len(emoji)} emoji but only have room for {slots}, make room.'
+            return await ctx.send(msg)
 
         await ctx.send(f'Creating emoji set: **{name}**')
         async with ctx.channel.typing():
             results = await self.create_emoji_set(ctx, EMOJI_SETS[name])
-            out = [f'Emoji Creation Complete. Results:'] + results
+            out = ['Emoji Creation Complete. Results:'] + results
         await ctx.send('\n'.join(out))
 
     def get_discord_image_data(self, url=str(), content=bytes()) -> bytes:

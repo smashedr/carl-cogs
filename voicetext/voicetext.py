@@ -85,7 +85,7 @@ class VoiceText(commands.Cog):
             if name.id in channels:
                 channels.append(name.id)
                 await self.config.guild(ctx.guild).categories.set(channels)
-        msg = f'\U00002705 {name.type.title()} `{name}` now ignored from VoiceText creation.'  # ✅
+        msg = f'✅ {name.type.title()} `{name}` now ignored from VoiceText creation.'
         await ctx.send(msg, ephemeral=True)
 
     @_vt.command(name='unignore', aliases=['u'],
@@ -109,7 +109,7 @@ class VoiceText(commands.Cog):
             if name.id not in channels:
                 channels.remove(name.id)
                 await self.config.guild(ctx.guild).categories.set(channels)
-        msg = f'\U00002705 {name.type.title()} `{name}` no longer ignored from VoiceText creation.'  # ✅
+        msg = f'✅ {name.type.title()} `{name}` no longer ignored from VoiceText creation.'
         await ctx.send(msg, ephemeral=True)
 
     @_vt.command(name='archive', aliases=['a'],
@@ -124,7 +124,7 @@ class VoiceText(commands.Cog):
         log.debug('vt_archive')
         log.debug('name: %s', category)
         await self.config.guild(ctx.guild).archive.set(category.id)
-        msg = f'\U00002705 Archive Category set to: {category.name}'  # ✅
+        msg = f'✅ Archive Category set to: {category.name}'
         await ctx.send(msg, ephemeral=True)
 
     @_vt.command(name='enable', aliases=['e', 'on'], description='Enable VoiceText in the Guild')
@@ -138,12 +138,12 @@ class VoiceText(commands.Cog):
         config: dict = await self.config.guild(ctx.guild).all()
         log.debug('config: %s', config)
         if not config['archive']:
-            msg = f'\U000026D4 Archive Category not set! To set: {ctx.clean_prefix}voicetext archive <category>'  # ⛔
+            msg = f'⛔ Archive Category not set! To set: {ctx.clean_prefix}voicetext archive <category>'
             await ctx.send(msg, ephemeral=True)
             return
 
         if config['enabled']:
-            await ctx.send('\U00002705 VoiceText is already enabled.', ephemeral=True)  # ✅
+            await ctx.send('✅ VoiceText is already enabled.', ephemeral=True)
         else:
             await self.config.guild(ctx.guild).enabled.set(True)
             await ctx.send('VoiceText has been enabled.', ephemeral=True)
@@ -158,10 +158,10 @@ class VoiceText(commands.Cog):
         enabled: bool = await self.config.guild(ctx.guild).enabled()
         log.debug('enabled: %s', enabled)
         if not enabled:
-            await ctx.send('\U00002705 VoiceText is already disabled.', ephemeral=True)
+            await ctx.send('✅ VoiceText is already disabled.', ephemeral=True)
         else:
             await self.config.guild(ctx.guild).enabled.set(False)
-            await ctx.send('\U00002705 VoiceText has been disabled.', ephemeral=True)
+            await ctx.send('✅ VoiceText has been disabled.', ephemeral=True)
 
     @_vt.command(name='status', aliases=['s', 'settings'], description='Show VoiceText Status in Guild')
     @commands.max_concurrency(1, commands.BucketType.guild)
@@ -172,8 +172,7 @@ class VoiceText(commands.Cog):
         log.debug('vt_status')
         config: dict = await self.config.guild(ctx.guild).all()
         log.debug(config)
-        #  ✅  ⛔
-        is_enabled = '\U00002705 Enabled' if config['enabled'] else '\U000026D4 Disabled'
+        is_enabled = '✅ Enabled' if config['enabled'] else '⛔ Disabled'
         archive = ctx.guild.get_channel(config['archive']) if config['archive'] else None
         msg = (
             f"**VoiceText Settings:**\n"

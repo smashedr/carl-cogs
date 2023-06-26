@@ -1,10 +1,9 @@
-import datetime
 import discord
 import logging
 from io import BytesIO
 from PIL import Image
 from pyzbar.pyzbar import Decoded, decode, ZBarSymbol
-from typing import Optional, Union, Tuple, Dict, List
+from typing import Optional, Union, List
 
 from redbot.core import app_commands, commands, Config
 from redbot.core.utils import chat_formatting as cf
@@ -122,7 +121,7 @@ class ChannelView(discord.ui.View):
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id == self.user_id:
             return True
-        msg = f"\U000026D4 Looks like you did not create this response."  # ⛔
+        msg = "⛔ Looks like you did not create this response."
         await interaction.response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
         return False
 
@@ -135,10 +134,10 @@ class ChannelView(discord.ui.View):
             channels.append(value)
         if not channels:
             await self.cog.config.guild(interaction.guild).channels.set([])
-            msg = f'\U00002705 No Channel Selected. Now QR Scanning All Channels'  # ✅
+            msg = "✅ No Channel Selected. Now QR Scanning All Channels"
             return await response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
         ids = [x.id for x in channels]
         await self.cog.config.guild(interaction.guild).channels.set(ids)
         names = [x.name for x in channels]
-        msg = f'\U00002705 QR Scanning now Limited to Channels: {cf.humanize_list(names)}'  # ✅
+        msg = f"✅ QR Scanning now Limited to Channels: {cf.humanize_list(names)}"
         return await response.send_message(msg, ephemeral=True, delete_after=self.delete_after)

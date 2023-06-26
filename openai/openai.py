@@ -53,9 +53,7 @@ class OpenAI(commands.Cog):
         await self.redis.ping()
         openai = await self.bot.get_shared_api_tokens('openai')
         self.key = openai['api_key']
-        self.headers = {
-            'Authorization': f'Bearer {self.key}',
-        }
+        self.headers = {'Authorization': f'Bearer {self.key}'}
         self.bot.tree.add_command(self.msg_chatgpt)
         self.bot.tree.add_command(self.msg_spelling)
         log.info('%s: Cog Load Finish', self.__cog_name__)
@@ -67,8 +65,7 @@ class OpenAI(commands.Cog):
 
     async def msg_chatgpt_callback(self, interaction, message: discord.Message):
         if not message.content:
-            return await interaction.response.send_message('Message has no content.',
-                                                           ephemeral=True, delete_after=60)
+            return await interaction.response.send_message('Message has no content.', ephemeral=True, delete_after=60)
         # ctx = await self.bot.get_context(interaction)
         # await ctx.defer(ephemeral=True, thinking=False)
         await interaction.response.defer()
@@ -76,11 +73,10 @@ class OpenAI(commands.Cog):
 
     async def msg_spelling_callback(self, interaction, message: discord.Message):
         if not message.content:
-            return await interaction.response.send_message('Message has no content.',
-                                                           ephemeral=True, delete_after=60)
+            return await interaction.response.send_message('Message has no content.', ephemeral=True, delete_after=60)
         # ctx = await self.bot.get_context(interaction)
         # await ctx.defer(ephemeral=True)
-        await interaction.response.send_message('\U0000231B', ephemeral=True, delete_after=1)
+        await interaction.response.send_message('⌛', ephemeral=True, delete_after=1)
         await self.process_fuck(message)
 
     @commands.Cog.listener(name='on_message_without_command')
@@ -125,7 +121,6 @@ class OpenAI(commands.Cog):
 
     async def process_chatgpt_reply(self, message: discord.Message) -> None:
         """Listens for chatgpt replies."""
-        pass
 
     async def process_chatgpt(self, message: discord.Message, search=False) -> None:
         """Listens for chatgpt."""
@@ -152,7 +147,7 @@ class OpenAI(commands.Cog):
             return
 
         bm: discord.Message = await channel.send(
-            '\U0000231B Querying ChatGPT Now...',
+            '⌛ Querying ChatGPT Now...',
             delete_after=self.http_options['timeout']
         )
         try:
@@ -168,8 +163,7 @@ class OpenAI(commands.Cog):
 
         except Exception as error:
             log.exception(error)
-            await channel.send(f'Error performing lookup: `{error}`',
-                               delete_after=10)
+            await channel.send(f'Error performing lookup: `{error}`', delete_after=10)
 
         finally:
             await bm.delete()
@@ -194,7 +188,7 @@ class OpenAI(commands.Cog):
             return
 
         bm: discord.Message = await channel.send(
-            f'\U0000231B Querying OpenAI for: `{match.content}`',
+            f'⌛ Querying OpenAI for: `{match.content}`',
             delete_after=self.http_options['timeout']
         )
         try:
@@ -202,22 +196,20 @@ class OpenAI(commands.Cog):
             img_response = await self.openai_generations(match.content)
             log.debug(img_response)
             if not img_response['data']:
-                await channel.send('Error: No data returned from OpenAI!',
-                                   delete_after=10)
+                await channel.send('Error: No data returned from OpenAI!', delete_after=10)
                 return
 
-            await bm.edit(content='\U0000231B Downloading Image from OpenAI...')
+            await bm.edit(content='⌛ Downloading Image from OpenAI...')
             await channel.typing()
             url = img_response['data'][0]['url']
             async with httpx.AsyncClient(**self.http_options) as client:
                 r = await client.get(url=url)
             if not r.is_success:
                 log.error('r.status_code: %s', r.status_code)
-                await channel.send('Error: Downloading image from OpenAI!',
-                                   delete_after=10)
+                await channel.send('Error: Downloading image from OpenAI!', delete_after=10)
                 r.raise_for_status()
 
-            await bm.edit(content='\U0000231B Uploading Image to Discord...')
+            await bm.edit(content='⌛ Uploading Image to Discord...')
             await channel.typing()
             data = io.BytesIO()
             data.write(r.content)
@@ -228,8 +220,7 @@ class OpenAI(commands.Cog):
 
         except Exception as error:
             log.exception(error)
-            await channel.send(f'Error performing lookup: `{error}`',
-                               delete_after=10)
+            await channel.send(f'Error performing lookup: `{error}`', delete_after=10)
         finally:
             await bm.delete()
 
@@ -256,7 +247,7 @@ class OpenAI(commands.Cog):
         await ctx.typing()
         if messages:
             bm: discord.Message = await ctx.send(
-                '\U0000231B Continuing ChatGPT chat...',
+                '⌛ Continuing ChatGPT chat...',
                 delete_after=self.http_options['timeout']
             )
         else:
@@ -264,7 +255,7 @@ class OpenAI(commands.Cog):
                 {'role': 'system', 'content': 'You are a helpful assistant.'},
             ]
             bm: discord.Message = await ctx.send(
-                '\U0000231B Starting a new ChatGPT...',
+                '⌛ Starting a new ChatGPT...',
                 delete_after=self.http_options['timeout']
             )
         try:
@@ -274,8 +265,7 @@ class OpenAI(commands.Cog):
 
         except Exception as error:
             log.exception(error)
-            await ctx.send(f'Error performing lookup: `{error}`',
-                           delete_after=10)
+            await ctx.send(f'Error performing lookup: `{error}`', delete_after=10)
         finally:
             await bm.delete()
 
@@ -285,7 +275,7 @@ class OpenAI(commands.Cog):
         """Start a new ChatGPT with <question>."""
         await ctx.typing()
         bm: discord.Message = await ctx.send(
-            '\U0000231B Starting a new ChatGPT...',
+            '⌛ Starting a new ChatGPT...',
             delete_after=self.http_options['timeout']
         )
         try:
@@ -297,8 +287,7 @@ class OpenAI(commands.Cog):
             await ctx.send(chat_response)
         except Exception as error:
             log.exception(error)
-            await ctx.send(f'Error performing lookup: `{error}`',
-                           delete_after=10)
+            await ctx.send(f'Error performing lookup: `{error}`', delete_after=10)
         finally:
             await bm.delete()
 
@@ -308,7 +297,7 @@ class OpenAI(commands.Cog):
         """Fix spelling of <content>."""
         log.debug('content: %s', content)
         bm: discord.Message = await ctx.send(
-            f'\U0000231B Querying OpenAI Now...',
+            '⌛ Querying OpenAI Now...',
             delete_after=self.http_options['timeout'],
             ephemeral=True,
         )
@@ -330,28 +319,25 @@ class OpenAI(commands.Cog):
                 size = m.group(0)
                 query = query.replace(size, '').strip()
             else:
-                await ctx.send(f'Valid sizes: {sizes}', delete_after=60)
-                return
+                return await ctx.send(f'Valid sizes: {sizes}', delete_after=60)
 
         await ctx.typing()
         bm: discord.Message = await ctx.send(
-            f'\U0000231B Generating Image at size {size} now...',
+            f'⌛ Generating Image at size {size} now...',
             delete_after=self.http_options['timeout']
         )
         try:
             img_response = await self.openai_generations(query, size)
             log.debug(img_response)
             if not img_response['data']:
-                await ctx.send('Error: No data returned!', delete_after=10)
-                return
+                return await ctx.send('Error: No data returned!', delete_after=10)
 
             url = img_response['data'][0]['url']
             async with httpx.AsyncClient(**self.http_options) as client:
                 r = await client.get(url=url)
             if not r.is_success:
                 log.error('r.status_code: %s', r.status_code)
-                await ctx.send(f'Error downloading URL: {url}',
-                               delete_after=10)
+                await ctx.send(f'Error downloading URL: {url}', delete_after=10)
                 r.raise_for_status()
 
             data = io.BytesIO()
@@ -364,8 +350,7 @@ class OpenAI(commands.Cog):
 
         except Exception as error:
             log.exception(error)
-            await ctx.send(f'Error performing lookup: `{error}`',
-                           delete_after=10)
+            await ctx.send(f'Error performing lookup: `{error}`', delete_after=10)
         finally:
             await bm.delete()
 
@@ -379,12 +364,11 @@ class OpenAI(commands.Cog):
         log.debug(ctx.message.attachments)
 
         if not query or ctx.message.attachments:
-            await ctx.send_help()
-            return
+            return await ctx.send_help()
 
         await ctx.typing()
         bm: discord.Message = await ctx.send(
-            f'\U0000231B Processing Image Variation...',
+            '⌛ Processing Image Variation...',
             delete_after=self.http_options['timeout']
         )
         # await ctx.typing()
@@ -392,11 +376,10 @@ class OpenAI(commands.Cog):
             query = query.strip('< >')
             log.debug('query: %s', query)
             if not validators.url(query):
-                await ctx.send(f'Not a valid url: {query}')
-                return
+                return await ctx.send(f'Not a valid url: {query}')
 
             # Step 1: Make a GET request and save response to BytesIO object
-            await bm.edit(content='\U0000231B Downloading provided URL...')
+            await bm.edit(content='⌛ Downloading provided URL...')
             # await ctx.typing()
             async with httpx.AsyncClient(**self.http_options) as client:
                 r = await client.get(url=query, headers=self.headers)
@@ -405,18 +388,15 @@ class OpenAI(commands.Cog):
                 await bm.delete()
                 await ctx.send(f'Error fetching URL: {query}')
                 r.raise_for_status()
-
             image_bytes = io.BytesIO(r.content)
 
         if ctx.message.attachments:
-            await ctx.send(f'Error: Attachments are not supported yet!',
-                           delete_after=10)
-            return
+            return await ctx.send('Error: Attachments are not supported yet!', delete_after=10)
 
         # Step 3: Convert to PNG if it's not already a PNG
         image = Image.open(image_bytes)
         if image.format != 'PNG':
-            await bm.edit(content='\U0000231B Converting to PNG...')
+            await bm.edit(content='⌛ Converting to PNG...')
             # await ctx.typing()
             log.debug('Converting Image to PNG...')
             png_image = io.BytesIO()
@@ -425,7 +405,7 @@ class OpenAI(commands.Cog):
             image_bytes = png_image
 
         log.debug('Querying OpenAI for Data...')
-        await bm.edit(content='\U0000231B Querying OpenAI for New Image...')
+        await bm.edit(content='⌛ Querying OpenAI for New Image...')
         # await ctx.typing()
         size = self.determine_best_size(image)
         log.debug('size: %s', size)
@@ -433,12 +413,11 @@ class OpenAI(commands.Cog):
         log.debug(img_response)
         if not img_response['data']:
             await ctx.send('Error: No data returned...', delete_after=10)
-            await bm.delete()
-            return
+            return await bm.delete()
 
         try:
             log.debug('Retrieving Image from URL...')
-            await bm.edit(content='\U0000231B Downloading Image from OpenAI...')
+            await bm.edit(content='⌛ Downloading Image from OpenAI...')
             # await ctx.typing()
             url = img_response['data'][0]['url']
             log.debug('url: %s', url)
@@ -451,7 +430,7 @@ class OpenAI(commands.Cog):
                 r.raise_for_status()
 
             log.debug('Uploading Image to Discord...')
-            await bm.edit(content='\U0000231B Uploading Image to Discord...')
+            await bm.edit(content='⌛ Uploading Image to Discord...')
             # await ctx.typing()
             data = io.BytesIO()
             data.write(r.content)
@@ -461,8 +440,7 @@ class OpenAI(commands.Cog):
 
         except Exception as error:
             log.exception(error)
-            await ctx.send(f'Error performing lookup: `{error}`',
-                           delete_after=10)
+            await ctx.send(f'Error performing lookup: `{error}`', delete_after=10)
         finally:
             await bm.delete()
 

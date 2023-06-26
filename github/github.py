@@ -1,13 +1,11 @@
 import datetime
 import discord
 import logging
-import re
-from typing import Optional, Union, Tuple, Dict, List, Any
+from typing import Optional, Dict, Any
 
 from discord.ext import tasks
-from redbot.core import app_commands, commands, Config
+from redbot.core import commands, Config
 from redbot.core.utils import can_user_send_messages_in
-from redbot.core.utils import chat_formatting as cf
 
 from .gh import GitHub
 
@@ -109,37 +107,36 @@ class Github(commands.Cog):
 
     @_github.command(name='add', aliases=['new', 'notification'])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def _github_add(self, ctx: commands.Context, name: str,
-                          channel: Optional[discord.TextChannel]):
+    async def _github_add(self, ctx: commands.Context, name: str, channel: Optional[discord.TextChannel]):
         """Add GitHub Notification
         name: The full name of the repository. Ex: `django/django`
         channel: Optional channel to send notifications to
         """
         channel = channel or ctx.channel
         if not can_user_send_messages_in(ctx.author, channel):
-            content = f'⛔  You are unable to send messages in channel: {channel.mention}'
+            content = f'⛔ You are unable to send messages in channel: {channel.mention}'
             return await ctx.send(content, ephemeral=True, delete_after=120,
                                   allowed_mentions=discord.AllowedMentions.none())
         user_conf: Dict[str, Any] = await self.config.user(ctx.author).all()
         if not user_conf['token']:
             view = ModalView(self)
-            msg = (f'⛔  No GitHub Access Token found for {ctx.author.mention}\n'
+            msg = (f'⛔ No GitHub Access Token found for {ctx.author.mention}\n'
                    f'Click the button to set Access Token.')
             return await ctx.send(msg, view=view, ephemeral=True,
                                   allowed_mentions=discord.AllowedMentions.none())
         notifications: Dict[str, int] = user_conf['notifications']
         if name in notifications:
             # need to check channels to make sure no duplicates
-            notify = notifications[name]
-            content = (f'⛔  There is already an alert setup up for {name}. '
-                       'The ability to send alerts for one repo to multiple '
-                       'channels is a WIP and not yet finished.')
+            # notify = notifications[name]
+            content = (f'⛔ There is already an alert setup up for {name}. '
+                       f'The ability to send alerts for one repo to multiple '
+                       f'channels is a WIP and not yet finished.')
             return await ctx.send(content, ephemeral=True, delete_after=120,
                                   allowed_mentions=discord.AllowedMentions.none())
         notifications[name] = channel.id
         await self.config.user(ctx.author).notifications.set(notifications)
         content = (
-            f'✅  Added GitHub notifications for **{name}** to channel {channel.mention}\n'
+            f'✅ Added GitHub notifications for **{name}** to channel {channel.mention}\n'
             f'**IMPORTANT** Make sure you subscribe to notifications for: <{self.github_url}/{name}>'
         )
         await ctx.send(content, ephemeral=True)
@@ -150,7 +147,7 @@ class Github(commands.Cog):
         """List GitHub Notifications"""
         notifications: Dict[str, int] = await self.config.user(ctx.author).notifications()
         if not notifications:
-            content = f'⛔  No notifications found. Add them with: `{ctx.prefix}github add`'
+            content = f'⛔ No notifications found. Add them with: `{ctx.prefix}github add`'
             return await ctx.send(content, ephemeral=True, delete_after=120,
                                   allowed_mentions=discord.AllowedMentions.none())
         notify_list = []
@@ -158,7 +155,7 @@ class Github(commands.Cog):
             channel = ctx.guild.get_channel(channel_id)
             notify_list.append(f'{repo} -> {channel.mention}')
         notify = '\n'.join(notify_list)
-        content = f'ℹ️  Configured Notifications:\n{notify}'
+        content = f'ℹ️ Configured Notifications:\n{notify}'
         await ctx.send(content, ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
 
     @_github.command(name='token', aliases=['auth', 'access', 'authorization'])
@@ -167,8 +164,7 @@ class Github(commands.Cog):
         """Set GitHub Access Token"""
         view = ModalView(self)
         content = 'Press the Button to set your Access Token.'
-        return await ctx.send(content, view=view, ephemeral=True,
-                              allowed_mentions=discord.AllowedMentions.none())
+        return await ctx.send(content, view=view, ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
 
 
 class ModalView(discord.ui.View):
@@ -203,5 +199,5 @@ class DataModal(discord.ui.Modal):
         user: discord.Member = interaction.user
         log.debug('self.access_token.value: %s', self.access_token.value)
         await self.view.cog.config.user(user).token.set(self.access_token.value)
-        msg = '✅  GitHub Access Token Updated Successfully...'
+        msg = '✅ GitHub Access Token Updated Successfully...'
         await interaction.response.send_message(msg, ephemeral=True)

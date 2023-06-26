@@ -82,7 +82,7 @@ class Autochannels(commands.Cog):
                 continue
             try:
                 num = int(name.split(' ')[-1])
-            except:
+            except Exception:
                 i = i - 1
                 continue
             if i == num:

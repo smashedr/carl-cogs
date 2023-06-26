@@ -6,7 +6,7 @@ Runs code on tio.run and returns the results.
 
 ## Install
 
-```
+```text
 [p]cog list carl-cogs
 [p]cog install carl-cogs tiorun
 [p]load tiorun

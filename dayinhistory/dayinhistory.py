@@ -63,18 +63,12 @@ class DayInHistory(commands.Cog):
         log.info('%s: Run Loop: main_loop', self.__cog_name__)
         now = datetime.now()
         current_time = now.time()
-        # log.debug('current_time.hour: %s', current_time.hour)
-        # log.debug('self.send_hour_utc: %s', self.send_hour_utc)
         if current_time.hour != self.send_hour_utc:
-            # log.debug('return --- time')
             return
         last = await self.config.last()
         if last:
             last = datetime.fromisoformat(last)
-            # log.debug('last.day: %s', last.day)
-            # log.debug('now.day: %s', now.day)
             if last.day == now.day:
-                # log.debug('return --- day')
                 return
 
         log.debug('loop: START')
@@ -115,10 +109,9 @@ class DayInHistory(commands.Cog):
             log.debug('str_date: %s', str_date)
             try:
                 dt = datetime.strptime(str_date, '%m-%d')
-            except:
-                msg = '\U000026D4 Error processing `date`. Example: **9-11**'
-                await ctx.send(msg, ephemeral=True, delete_after=10)  # ⛔
-                return
+            except Exception:
+                msg = '⛔ Error processing `date`. Example: **9-11**'
+                return await ctx.send(msg, ephemeral=True, delete_after=10)
         view = HistoryView(self, ctx.author)
         await view.send_initial_message(ctx, dt)
 
@@ -134,14 +127,14 @@ class DayInHistory(commands.Cog):
             log.debug('date: %s', date)
             split = re.split('/|-| ', date)
             log.debug('split: %s', split)
-            str_date = f"{split[0]}-{split[1]}"
+            str_date = f'{split[0]}-{split[1]}'
             log.debug('str_date: %s', str_date)
             try:
                 dt = datetime.strptime(str_date, '%m-%d')
-            except:
-                msg = '\U000026D4 Error processing `date`. Example: **9-11**'
-                await ctx.send(msg, ephemeral=True, delete_after=10)  # ⛔
-                return
+            except Exception:
+                msg = '⛔ Error processing `date`. Example: **9-11**'
+                return await ctx.send(msg, ephemeral=True, delete_after=10)
+
         view = HistoryView(self, ctx.author)
         await view.send_initial_message(ctx, dt, ephemeral=True)
 
@@ -158,18 +151,16 @@ class DayInHistory(commands.Cog):
         log.debug('vt_channel')
         if not channel:
             await self.config.guild(ctx.guild).channel.set(0)
-            return await ctx.send(f'\U00002705 Disabled. Specify a channel to Enable.',
-                                  ephemeral=True)  # ✅
+            return await ctx.send('✅ Disabled. Specify a channel to Enable.', ephemeral=True)
 
         log.debug('channel: %s', channel)
         log.debug('channel.type: %s', channel.type)
         if not str(channel.type) == 'text':
-            return await ctx.send('\U000026D4 Channel must be a Text Channel.',
-                                  ephemeral=True)  # ⛔
+            return await ctx.send('⛔ Channel must be a Text Channel.', ephemeral=True)
 
         guild_data = {'channel': channel.id, 'silent': post_silent}
         await self.config.guild(ctx.guild).set(guild_data)
-        msg = f'\U00002705 Will post daily history in channel: {channel.name}'  # ✅
+        msg = f'✅ Will post daily history in channel: {channel.name}'
         if post_silent:
             msg += '\nMessages will post Silently as to not send notifications.'
         await ctx.send(msg, ephemeral=True)
@@ -269,8 +260,8 @@ class HistoryView(discord.ui.View):
         if td.seconds >= self.owner_only_sec:
             return True
         remaining = self.owner_only_sec - td.seconds
-        msg = (f"\U000026D4 The creator has control for {remaining} more seconds...\n"
-               f"You can create your own response with the `/history` command.")  # ⛔
+        msg = (f"⛔ The creator has control for {remaining} more seconds...\n"
+               f"You can create your own response with the `/history` command.")
         await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
         return False
 
@@ -297,10 +288,8 @@ class HistoryView(discord.ui.View):
     @discord.ui.button(label='Delete', style=discord.ButtonStyle.red)
     async def delete_button(self, interaction, button):
         if not interaction.user.id == self.user_id:
-            msg = ("\U000026D4 Looks like you didn't create this response.\n"
-                   f"You can create your own response with the `/history` command.")  # ⛔
-            await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
-            return
+            msg = ("⛔ Looks like you didn't create this response.\n"
+                   "You can create your own response with the `/history` command.")
+            return await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
         await interaction.message.delete()
-        await interaction.response.send_message('\U00002705 Your wish is my command!',
-                                                ephemeral=True, delete_after=10)  # ✅
+        await interaction.response.send_message("✅ Your wish is my command!", ephemeral=True, delete_after=10)
