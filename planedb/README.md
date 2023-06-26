@@ -6,7 +6,7 @@ Add Name->NNumber Mappings to easily search.
 
 ## Install
 
-```
+```text
 [p]cog list carl-cogs
 [p]cog install carl-cogs planedb
 [p]load planedb

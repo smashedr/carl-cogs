@@ -6,7 +6,7 @@ Save any message to later by having the bot send it to you.
 
 ## Install
 
-```
+```text
 [p]cog list carl-cogs
 [p]cog install carl-cogs saveforlater
 [p]load saveforlater

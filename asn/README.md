@@ -6,7 +6,7 @@ Aviation Safety Network data in discord.
 
 ## Install
 
-```
+```text
 [p]cog list carl-cogs
 [p]cog install carl-cogs asn
 [p]load asn
@@ -31,6 +31,6 @@ pass    onlyifrequired
 ```
 
 To start a Redis instance with all defaults run:
-```
+```text
 docker run --name redis -p 6379:6379 -d redis:alpine
 ```
