@@ -1,13 +1,11 @@
-import datetime
 import discord
 import httpx
-import io
 import logging
 import zlib
 from thefuzz import process
-from typing import Optional, Union, Tuple, Dict, List, Any
+from typing import Optional, Tuple, Dict, List, Any
 
-from redbot.core import app_commands, commands, checks, Config
+from redbot.core import app_commands, commands, Config
 from redbot.core.utils import chat_formatting as cf
 
 log = logging.getLogger('red.tiorun')
@@ -64,7 +62,7 @@ class Tiorun(commands.Cog):
         if language in matches:
             match = matches[language]
         else:
-            match, score = process.extractOne(language, languages.keys())
+            match, _ = process.extractOne(language, languages.keys())
         log.debug('match: %s', match)
         lang = languages[match]
         log.debug('lang: %s', lang)
@@ -144,10 +142,10 @@ class Tiorun(commands.Cog):
             if "payload" in instr:
                 [(name, value)] = instr["payload"].items()
                 req += b"%s\0" % name.encode()
-                if type(value) == str:
+                if isinstance(value, str):
                     value = value.encode()
                 req += b"%u\0" % len(value)
-                if type(value) != bytes:
+                if not isinstance(value, bytes):
                     value = "\0".join(value).encode() + b"\0"
                 req += value
 

@@ -60,14 +60,11 @@ class Autodisconnect(commands.Cog):
         if isinstance(minutes, str):
             if minutes.lower() in ['disable', 'off', 'stop']:
                 await self.config.guild(ctx.guild).timeout.set(-1)
-                await ctx.send('Autodisconnect disabled.')
-                return
-
+                return await ctx.send("Autodisconnect disabled.")
         try:
             minutes = int(minutes)
             await self.config.guild(ctx.guild).timeout.set(minutes)
-            await ctx.send(f'Autodisconnect timeout set to **{minutes}** '
-                           f'minutes.')
+            await ctx.send(f"Autodisconnect timeout set to **{minutes}** minutes.")
         except Exception as error:
             log.error(error)
             await ctx.send(f"I don't know what to do with: **{minutes}**")

@@ -1,5 +1,4 @@
 import asyncio
-import contextlib
 import inspect
 import io
 import json
@@ -14,7 +13,6 @@ from qrcode.exceptions import DataOverflowError
 from qrcode.image import styledpil, styles
 from redbot.core import commands
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import humanize_list
 from redbot.core.utils.predicates import MessagePredicate
 
 _EXCLUDED_COLOURS = (

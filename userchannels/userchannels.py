@@ -64,11 +64,9 @@ class Userchannels(commands.Cog):
 
     async def process_remove(self, channel):
         if channel.members:
-            log.debug('Channel Not Empty')
-            return
+            return log.debug('Channel Not Empty')
         if not await self.config.channel(channel).auto():
-            log.debug('Channel Not Autochannel')
-            return
+            return log.debug('Channel Not Autochannel')
 
         try:
             channel_id = channel.id
@@ -129,13 +127,11 @@ class Userchannels(commands.Cog):
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, part, join):
         if member.bot:
-            log.debug('bot')
-            return
+            return log.debug('bot')
 
         config = await self.config.guild(member.guild).all()
         if not config['enabled']:
-            log.debug('disabled')
-            return
+            return log.debug('disabled')
 
         if join.channel:
             if config['channel'] == join.channel.id:
@@ -156,23 +152,20 @@ class Userchannels(commands.Cog):
     @userchannels.command(name='setup', aliases=['auto', 'a'])
     async def userchannels_setup(self, ctx: commands.Context):
         """AUTO Setup of Userchannels!"""
-        message = await ctx.send('This will automatically create the '
-                                 'Userchannels category, channel, and enable '
-                                 'the module.\nProceed?',
-                                 delete_after=30)
+        msg = ('This will automatically create the Userchannels category, '
+               'channel, and enable the module.\nProceed?')
+        message = await ctx.send(msg, delete_after=30)
         pred = ReactionPredicate.yes_or_no(message, ctx.author)
         start_adding_reactions(message, ReactionPredicate.YES_OR_NO_EMOJIS)
         try:
             await self.bot.wait_for('reaction_add', check=pred, timeout=30)
         except asyncio.TimeoutError:
             await ctx.send('Request timed out. Aborting.', delete_after=5)
-            await message.delete()
-            return
+            return await message.delete()
 
         if not pred.result:
             await ctx.send('Aborting.', delete_after=5)
-            await message.delete()
-            return
+            return await message.delete()
 
         await message.clear_reactions()
         await message.edit(content='Creating Userchannels now...')
@@ -183,22 +176,22 @@ class Userchannels(commands.Cog):
 
         await self.config.guild(ctx.guild).enabled.set(True)
         category = await ctx.guild.create_category('USER ROOMS')
-        log.debug(category)
-        log.debug(category.id)
+        log.debug('category: %s', category)
+        log.debug('category.id: %s', category.id)
         await self.config.guild(ctx.guild).category.set(category.id)
         channel = await ctx.guild.create_voice_channel(
             name='👪 Get a Room',
             category=category,
             reason='Userchannels primary room.',
         )
-        log.debug(channel)
-        log.debug(channel.id)
+        log.debug('channel: %s', channel)
+        log.debug('channel.id: %s', channel.id)
         await self.config.guild(ctx.guild).channel.set(channel.id)
         await self.userchannels_status(ctx)
-        await ctx.send('User category and channel created and enabled!\n'
-                       'It should appear at the bottom of the list. You '
-                       'should drag the category towards the top so '
-                       'members can see it...')
+        msg = ('User category and channel created and enabled!\n'
+               'It should appear at the bottom of the list. You should '
+               'drag the category towards the top so members can see it.')
+        await ctx.send(msg)
 
     @userchannels.command(name='enable', aliases=['e', 'on'])
     async def userchannels_enable(self, ctx: commands.Context):
@@ -222,13 +215,11 @@ class Userchannels(commands.Cog):
 
     @userchannels.command(name='channel', aliases=['ch', 'chan', 'chann'])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def userchannels_channel(self, ctx: commands.Context, *,
-                                   channel: discord.VoiceChannel):
+    async def userchannels_channel(self, ctx: commands.Context, *, channel: discord.VoiceChannel):
         """Set Userchannels channel."""
         log.debug(channel.id)
         await self.config.guild(ctx.guild).channel.set(channel.id)
-        await ctx.send(f'Userchannels Userchannels Channel set to:\n'
-                       f'**{channel.name}** - {channel.id}')
+        await ctx.send(f'Userchannels Userchannels Channel set to:\n**{channel.name}** - {channel.id}')
 
     @userchannels.command(name='category', aliases=['ca', 'cat'])
     @commands.max_concurrency(1, commands.BucketType.guild)
@@ -237,8 +228,7 @@ class Userchannels(commands.Cog):
         """Set Userchannels category."""
         log.debug(category.id)
         await self.config.guild(ctx.guild).category.set(category.id)
-        await ctx.send(f'Userchannels Userchannels Category set to:\n'
-                       f'**{category.name}** - {category.id}')
+        await ctx.send(f'Userchannels Userchannels Category set to:\n**{category.name}** - {category.id}')
 
     @userchannels.command(name='status', aliases=['s', 'stat', 'settings'])
     async def userchannels_status(self, ctx: commands.Context):
@@ -248,8 +238,8 @@ class Userchannels(commands.Cog):
         status = '**Enabled**' if config['enabled'] else '**NOT ENABLED**'
         channel = ctx.guild.get_channel(config['channel'])
         category = ctx.guild.get_channel(config['category'])
-        out = ('Userchannels Userchannels Settings:\n'
+        msg = ('Userchannels Userchannels Settings:\n'
                f'Global Enabled: {status}\n'
                f'Users Category: {category}'
                f'Users Channel: {channel}\n')
-        await ctx.send(out)
+        await ctx.send(msg)

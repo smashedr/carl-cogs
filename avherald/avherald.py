@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Union, Dict, Any, List
 
 from discord.ext import tasks
-from redbot.core import commands, app_commands, Config
+from redbot.core import commands, Config
 from redbot.core.bot import Red
 from redbot.core.utils import AsyncIter
 
@@ -139,18 +139,18 @@ class Avherald(commands.Cog):
     #     """Post a specific incident to the current channel"""
     #     m = re.search('[0-9-]{4,10}', entry)
     #     if not m or not m.group(0):
-    #         await ctx.send(f'\U0001F534 Unable to parse ID from entry: {entry}', ephemeral=True, delete_after=10)  # 🔴
+    #         await ctx.send(f'🔴 Unable to parse ID from entry: {entry}', ephemeral=True, delete_after=10)
     #         return
     #
     #     if '-' in m.group(0):
-    #         await ctx.send(f'\U0001F534 Database Entry Records are not currently supported: {entry}', ephemeral=True, delete_after=10)  # 🔴
+    #         await ctx.send(f🔴 Database Entry Records are not currently supported: {entry}', ephemeral=True, delete_after=10)
     #         return
     #
     #     await ctx.defer()
     #     href = f'/wikibase/{m.group(0)}'
     #     entry = await self.get_wiki_entry(href)
     #     if not entry:
-    #         await ctx.send(f'\U0001F534 No data for entry: {entry}', ephemeral=True, delete_after=10)  # 🔴
+    #         await ctx.send(f'🔴 No data for entry: {entry}', ephemeral=True, delete_after=10)
     #         return
     #     embed = await self.gen_embed(entry)
     #     await ctx.send(embed=embed)
@@ -256,7 +256,7 @@ class Avherald(commands.Cog):
         data = {'text': text, 'links': links, 'images': images}
         data.update(entry)
         await self.redis.setex(
-            f'avherald:{data["href"]}',
+            f"avherald:{data['href']}",
             timedelta(hours=2),
             json.dumps(data),
         )
@@ -353,8 +353,8 @@ class ListView(discord.ui.View):
         if td.seconds >= self.owner_only_sec:
             return True
         remaining = self.owner_only_sec - td.seconds
-        msg = (f"\U000026D4 The creator has control for {remaining} more seconds...\n"
-               f"You can create your own response with the `/avherald` command.")  # ⛔
+        msg = (f"⛔ The creator has control for {remaining} more seconds...\n"
+               f"You can create your own response with the `/avherald` command.")
         await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
         return False
 
@@ -369,9 +369,8 @@ class ListView(discord.ui.View):
     async def prev_button(self, interaction: discord.Interaction, button):
         if not self.index < len(self.data_list) - 1:
             log.debug('end of list: %s', self.index)
-            msg = 'At the end, use: `Next`'
-            await interaction.response.send_message(msg, ephemeral=True, delete_after=4)
-            return
+            msg = "At the end, use: `Next`"
+            return await interaction.response.send_message(msg, ephemeral=True, delete_after=4)
 
         await interaction.response.defer()
         log.debug('prev.index.before: %s', self.index)
@@ -386,9 +385,8 @@ class ListView(discord.ui.View):
     async def next_button(self, interaction: discord.Interaction, button):
         if self.index < 1:
             log.debug('beginning of list: %s', self.index)
-            msg = 'At the beginning, use: `Prev`'
-            await interaction.response.send_message(msg, ephemeral=True, delete_after=4)
-            return
+            msg = "At the beginning, use: `Prev`"
+            return await interaction.response.send_message(msg, ephemeral=True, delete_after=4)
 
         await interaction.response.defer()
         log.debug('next.index.before: %s', self.index)
@@ -402,14 +400,12 @@ class ListView(discord.ui.View):
     @discord.ui.button(label='Delete', style=discord.ButtonStyle.red)
     async def delete_button(self, interaction: discord.Interaction, button):
         if not interaction.user.id == self.user_id:
-            msg = ("\U000026D4 Looks like you didn't create this response.\n"
-                   f"You can create your own response with the `/history` command.")  # ⛔
-            await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
-            return
+            msg = (f"⛔ Looks like you didn't create this response.\n"
+                   f"You can create your own response with the `/history` command.")
+            return await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
         self.stop()
         await interaction.message.delete()
-        await interaction.response.send_message('\U00002705 Your wish is my command!',
-                                                ephemeral=True, delete_after=10)  # ✅
+        await interaction.response.send_message('✅ Your wish is my command!', ephemeral=True, delete_after=10)
 
 
 class ChannelView(discord.ui.View):
@@ -434,7 +430,7 @@ class ChannelView(discord.ui.View):
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id == self.user_id:
             return True
-        msg = f"\U000026D4 Looks like you did not create this response."  # ⛔
+        msg = "⛔ Looks like you did not create this response."
         await interaction.response.send_message(msg, ephemeral=True, delete_after=60)
         return False
 
@@ -447,8 +443,8 @@ class ChannelView(discord.ui.View):
             channels.append(value)
         if not channels:
             await self.cog.config.guild(interaction.guild).channel.set(0)
-            msg = f'No Channel Selected. Auto Posts Disabled.'
+            msg = "No Channel Selected. Auto Posts Disabled."
             return await response.send_message(msg, ephemeral=True, delete_after=60)
         await self.cog.config.guild(interaction.guild).channel.set(channels[0].id)
-        msg = f'Now Auto Posting to Channel {channels[0].mention}'
+        msg = f"Now Auto Posting to Channel {channels[0].mention}"
         return await response.send_message(msg, ephemeral=True, delete_after=60)

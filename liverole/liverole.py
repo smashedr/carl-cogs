@@ -94,7 +94,7 @@ class Liverole(commands.Cog):
         config = await self.config.guild(ctx.guild).all()
         role: discord.Role = ctx.guild.get_role(config['role'])
         role_name = f'`@{role.name}`' if role else '**NOT SET**'
-        out = f'Liverole Settings:\n' \
+        msg = f'Liverole Settings:\n' \
               f'Status: **{config["enabled"]}**\n' \
               f'Role: {role_name}'
-        await ctx.send(out)
+        await ctx.send(msg)

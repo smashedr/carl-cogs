@@ -42,15 +42,13 @@ class Ocrimage(commands.Cog):
     async def ocr_command(self, ctx: commands.Context, link: Optional[str]):
         async with ctx.typing():
             if not link and not ctx.message.attachments:
-                return await ctx.send('⛔ Requires Image Link or Attachment.',
-                                      delete_after=60)
+                return await ctx.send('⛔ Requires Image Link or Attachment.', delete_after=60)
             if not link:
                 link = ctx.message.attachments[0].url
             async with httpx.AsyncClient(**self.http_options) as client:
                 r = await client.get(url=self.ocr_url, params={'url': link})
             if not r.is_success:
-                return await ctx.send(f'⛔ OCR Request Failed: {r.status_code}',
-                                      delete_after=60)
+                return await ctx.send(f'⛔ OCR Request Failed: {r.status_code}', delete_after=60)
             embed = discord.Embed(
                 title='OCR Results',
                 url=link,

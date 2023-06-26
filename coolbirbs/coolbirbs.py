@@ -4,7 +4,7 @@ import httpx
 import logging
 from bs4 import BeautifulSoup
 from faker import Faker
-from typing import Optional, Union, Dict, List, Any, Tuple
+from typing import Tuple
 
 from redbot.core import commands
 

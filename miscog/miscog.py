@@ -4,10 +4,9 @@ import os
 import logging
 import pathlib
 import re
-import socket
 from io import BytesIO
 from playwright.async_api import async_playwright
-from typing import Optional, Union, Tuple, Dict, List, Any
+from typing import Optional, Dict, List
 
 from redbot.core import commands, Config
 from redbot.core.utils import chat_formatting as cf
@@ -89,7 +88,7 @@ class Miscog(commands.Cog):
             'timeout': 10,
         }
         await ctx.message.delete()
-        msg = await ctx.send(f'\U0000231B Checking Status...')
+        msg = await ctx.send('⌛ Checking Status...')
         await ctx.typing()
 
         if auth:
@@ -119,7 +118,7 @@ class Miscog(commands.Cog):
             return
         except httpx.ConnectTimeout:
             await msg.delete()
-            await ctx.send(f'Connection timeout after 10 seconds...')
+            await ctx.send('Connection timeout after 10 seconds...')
             return
         except httpx.HTTPError as error:
             await msg.delete()
@@ -140,14 +139,14 @@ class Miscog(commands.Cog):
         content = f'Response: ✅ **{r.status_code}**\nURL: <{r.url}>'
         await msg.edit(content=content)
 
-        ss = await ctx.send(f'\U0000231B Generating Screenshots...')
+        ss = await ctx.send('⌛ Generating Screenshots...')
         try:
             files = []
             async with async_playwright() as p:
                 for browser_type in [p.chromium, p.firefox]:
                     async with ctx.typing():
                         # browser_type = p.chromium
-                        await ss.edit(content=f'\U0000231B Generating Screenshot: '
+                        await ss.edit(content=f'⌛ Generating Screenshot: '
                                               f'{browser_type.name.title()}')
                         await ctx.typing()
                         try:
@@ -169,7 +168,7 @@ class Miscog(commands.Cog):
                             log.exception(error)
                             pass
 
-            await ss.edit(content=f'\U0000231B Uploading to Discord.')
+            await ss.edit(content='⌛ Uploading to Discord.')
             await ctx.send(content=content, files=files)
             await msg.delete()
             await ss.delete()

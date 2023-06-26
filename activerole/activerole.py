@@ -48,19 +48,14 @@ class ActiveRole(commands.Cog):
     @tasks.loop(minutes=2.0)
     async def main_loop(self):
         await self.bot.wait_until_ready()
-        # log.debug('%s: Run Loop: main_loop', self.__cog_name__)
-        all_guilds = await self.config.all_guilds()
+        all_guilds: dict = await self.config.all_guilds()
         for guild_id, data in await AsyncIter(all_guilds.items()):
-            guild = self.bot.get_guild(guild_id)
-            role = guild.get_role(data['active_role'])
-            # log.debug('role.id: %s', role.id)
+            guild: discord.Guild = self.bot.get_guild(guild_id)
+            role: discord.Role = guild.get_role(data['active_role'])
             for member in role.members:
-                key = f'active:{guild.id}-{member.id}'
-                # log.debug('key: %s', key)
-                if not await self.redis.exists(key):
-                    log.debug('Inactive Remove Role: "%s"', member.name)
-                    reason = f'Activerole user inactive.'
-                    await member.remove_roles(role, reason=reason)
+                if not await self.redis.exists(f'active:{guild.id}-{member.id}'):
+                    log.debug('Inactive Remove Role: %s', member.name)
+                    await member.remove_roles(role, reason="Activerole user inactive.")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -76,7 +71,6 @@ class ActiveRole(commands.Cog):
         if member.bot:
             return
         config: dict = await self.config.guild(guild).all()
-        # log.debug('config: %s', config)
         if not config['active_role']:
             return
         active_role: discord.Role = member.guild.get_role(config['active_role'])
@@ -99,10 +93,8 @@ class ActiveRole(commands.Cog):
         expire = timedelta(minutes=config['active_minutes'])
         await self.redis.setex(key, expire, 1)
         if needs_role:
-            log.debug('Applying Role "%s" to "%s"',
-                      active_role.name, member.name)
-            reason = f'Activerole user active.'
-            await member.add_roles(active_role, reason=reason)
+            log.debug('Applying Role %s to %s', active_role.name, member.name)
+            await member.add_roles(active_role, reason="Activerole user active.")
 
     @commands.group(name='activerole', aliases=['acr'])
     @commands.admin()
@@ -116,7 +108,7 @@ class ActiveRole(commands.Cog):
         await ctx.typing()
         log.debug(role)
         await self.config.guild(ctx.guild).active_role.set(role.id)
-        await ctx.send(f'✅ Activerole set to role {role.mention}')
+        await ctx.send(f"✅ Activerole set to role {role.mention}")
 
     @activerole.command(name='reset')
     async def activerole_reset(self, ctx: commands.Context, setting: str):
@@ -129,33 +121,31 @@ class ActiveRole(commands.Cog):
         elif setting in ['roles', 'role', 'all']:
             await self.config.guild(ctx.guild).roles.set([])
         else:
-            await ctx.send(f'Setting "{setting}" not found. Available: '
-                           f'`channels` or `roles` or `all`')
-            return
-        await ctx.send(f'✅ Excludes have been painfully exterminated.')
+            content = (f'Setting `{setting}` not found. Available: '
+                       '`channels` or `roles` or `all`')
+            return await ctx.send(content)
+        await ctx.send("✅ Excludes have been painfully exterminated.")
 
     @activerole.command(name='disable', aliases=['d'])
     async def activerole_disable(self, ctx: commands.Context):
         """Disables Activerole, set a new role to re-enable it."""
         await ctx.typing()
         await self.config.guild(ctx.guild).active_role.set(None)
-        await ctx.send(f'⛔ Activerole disabled in guild...')
+        await ctx.send("⛔ Activerole disabled in guild...")
 
     @activerole.command(name='status', aliases=['s', 'settings'])
     async def activerole_status(self, ctx: commands.Context):
         """Get Activerole status."""
         await ctx.typing()
         config = await self.config.guild(ctx.guild).all()
-        # status = 'Enabled' if await self.config.enabled() else 'DISABLED'
-        out = [
-            'Activerole Settings:',
-            # f'Global Status (bot owner): **{status}**',
-            f'Active User Role: `{config["active_role"]}`',
-            f'Excluded Channels: `{config["channels"]}`',
-            f'Excluded Roles: `{config["roles"]}`',
-            f'Active Minutes: `{config["active_minutes"]}`',
+        lines = [
+            f"Activerole Settings:",
+            f"Active User Role: `{config['active_role']}`",
+            f"Excluded Channels: `{config['channels']}`",
+            f"Excluded Roles: `{config['roles']}`",
+            f"Active Minutes: `{config['active_minutes']}`",
         ]
-        await ctx.send('\n'.join(out))
+        await ctx.send('\n'.join(lines))
 
     @activerole.group(name='exclude', aliases=['e'])
     @commands.admin()
@@ -182,7 +172,7 @@ class ActiveRole(commands.Cog):
                 if role_id not in exclude_roles:
                     exclude_roles.append(role_id)
         exclude_roles = await self.config.guild(ctx.guild).roles()
-        await ctx.send(f'Excluded Roles: ```{exclude_roles}```')
+        await ctx.send(f"Excluded Roles: ```{exclude_roles}```")
 
     @acr_exclude.command(name='channel', aliases=['c', 'channels'])
     async def acr_exclude_channel(self, ctx: commands.Context,
@@ -205,4 +195,4 @@ class ActiveRole(commands.Cog):
                 if channel_id not in exclude_channels:
                     exclude_channels.append(channel_id)
         exclude_channels = await self.config.guild(ctx.guild).channels()
-        await ctx.send(f'Excluded Channels: ```{exclude_channels}```')
+        await ctx.send(f"Excluded Channels: ```{exclude_channels}```")

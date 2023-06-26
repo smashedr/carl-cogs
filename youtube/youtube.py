@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 import discord
 import httpx
 import json
@@ -7,7 +6,7 @@ import logging
 import xmltodict
 import redis.asyncio as redis
 from bs4 import BeautifulSoup
-from typing import Optional, Union, Dict, List, Any
+from typing import Optional, Union, Dict
 
 from discord.ext import tasks
 from redbot.core import app_commands, commands, Config
@@ -186,7 +185,7 @@ class YouTube(commands.Cog):
         all_channels: dict = await self.config.all_channels()
         log.debug('all_channels: %s', all_channels)
         for _, chans in all_channels.items():
-            for chan, name in chans['channels'].items():
+            for chan, _ in chans['channels'].items():
                 if chan not in new_channels:
                     new_channels.append(chan)
         before = await self.config.channels()
@@ -203,15 +202,13 @@ class YouTube(commands.Cog):
         await self.config.videos.set(new_videos)
         log.info('%s: Update Chan - Finish', self.__cog_name__)
 
-    @commands.hybrid_group(name='youtube', aliases=['yt'],
-                           description='Options for manging YouTube')
+    @commands.hybrid_group(name='youtube', aliases=['yt'], description='Options for manging YouTube')
     @commands.guild_only()
     @commands.admin_or_can_manage_channel()
     async def _yt(self, ctx: commands.Context):
         """Options for manging YouTube"""
 
-    @_yt.command(name='add', aliases=['a'],
-                 description='Add one or more YouTube channels to current channel')
+    @_yt.command(name='add', aliases=['a'], description='Add one or more YouTube channels to current channel')
     @app_commands.describe(names='Name or Names of YouTube Channel(s) to add')
     @commands.max_concurrency(1, commands.BucketType.default)
     @commands.guild_only()
@@ -226,14 +223,12 @@ class YouTube(commands.Cog):
         try:
             chan_data = [await self.get_channel_data(x) for x in names_split]
             if not chan_data or not chan_data[0]:
-                await ctx.send(f'⛔ No channels found for one or more passed channels: `{names}`',
-                               ephemeral=True, delete_after=15)
-                return
+                msg = f'⛔ No channels found for one or more passed channels: `{names}`'
+                return await ctx.send(msg, ephemeral=True, delete_after=15)
         except Exception as error:
             log.debug(error)
-            await ctx.send(f'⛔ Error processing one or more passed channels: `{names}`',
-                           ephemeral=True, delete_after=15)
-            return
+            msg = f'⛔ Error processing one or more passed channels: `{names}`'
+            return await ctx.send(msg, ephemeral=True, delete_after=15)
 
         chan_conf: dict = await self.config.channel(ctx.channel).channels()
         log.debug('chan_conf: %s', chan_conf)
@@ -251,15 +246,16 @@ class YouTube(commands.Cog):
         for chan in chan_data:
             cid = list(chan.keys())[0]
             if cid not in all_channels:
-                r = await self.sub_to_channel(cid)
-                if not r.is_success:
-                    continue  # TODO: Process Error
+                # r = await self.sub_to_channel(cid)
+                # if not r.is_success:
+                #     continue  # TODO: Process Error
                 all_channels: list = await self.config.channels()
                 all_channels.append(cid)
                 await self.config.channels.set(all_channels)
                 await asyncio.sleep(0.1)
-        await ctx.send(f'✅ Added YouTube Channels: **{cf.humanize_list(names_split)}** '
-                       f'to Discord Channel: `{ctx.channel.name}`', ephemeral=True, delete_after=60)
+        msg = (f'✅ Added YouTube Channels: **{cf.humanize_list(names_split)}** '
+               f'to Discord Channel: `{ctx.channel.name}`')
+        await ctx.send(msg, ephemeral=True, delete_after=60)
 
     @_yt.command(name='remove', aliases=['r'],
                  description='Remove all YouTube Channels from the Current Channel')
@@ -273,11 +269,9 @@ class YouTube(commands.Cog):
         log.debug('channels: %s', channels)
         await self.config.channel(ctx.channel).clear()
         clist = list(channels.values()) if channels else 'None'
-        await ctx.send(f'All Channels Removed from This Channel: {clist}',
-                       ephemeral=True, delete_after=60)
+        await ctx.send(f'All Channels Removed from This Channel: {clist}', ephemeral=True, delete_after=60)
 
-    @_yt.command(name='status', aliases=['s', 'settings'],
-                 description='Show all configured YouTube Channels')
+    @_yt.command(name='status', aliases=['s', 'settings'], description='Show all configured YouTube Channels')
     @commands.max_concurrency(1, commands.BucketType.default)
     @commands.guild_only()
     @commands.admin_or_can_manage_channel()
@@ -297,8 +291,7 @@ class YouTube(commands.Cog):
                 for cid, name in yt_channels['channels'].items():
                     chans.append(f'- {name}: <https://www.youtube.com/channel/{cid}>')
         if not chans:
-            await ctx.send('⛔ No configurations found.', ephemeral=True, delete_after=15)
-            return
+            return await ctx.send('⛔ No configurations found.', ephemeral=True, delete_after=15)
         chans_str = '\n'.join(chans)
         await ctx.send(f'YouTube Configurations:\n{chans_str}', ephemeral=True, delete_after=300)
 

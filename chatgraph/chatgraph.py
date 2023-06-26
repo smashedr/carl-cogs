@@ -5,7 +5,7 @@ import logging
 import plotly.express as px
 import plotly.io as pio
 from io import BytesIO
-from typing import Optional, Tuple, Union, Dict, List, Any
+from typing import Optional, Dict, List, Any
 
 from redbot.core import commands, Config
 

@@ -102,13 +102,11 @@ class Stickyroles(commands.Cog):
         try:
             await self.bot.wait_for('reaction_add', check=pred, timeout=60)
         except asyncio.TimeoutError:
-            await ctx.send('Request timed out.', delete_after=30)
-            return
+            return await ctx.send('Request timed out.', delete_after=30)
 
         if not pred.result:
             await message.delete()
-            await ctx.send('So be it!', delete_after=10)
-            return
+            return await ctx.send('So be it!', delete_after=10)
 
         await message.clear_reactions()
         await message.edit(content='Role sync in progress now...')

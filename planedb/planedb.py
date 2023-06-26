@@ -5,11 +5,10 @@ import logging
 import re
 from bs4 import BeautifulSoup
 from thefuzz import process
-from typing import Optional, Union, Tuple, Dict, List, Any
+from typing import Optional, Tuple, Dict, List
 import redis.asyncio as redis
 
 from redbot.core import app_commands, commands, Config
-from redbot.core.utils import chat_formatting as cf
 
 log = logging.getLogger('red.planedb')
 
@@ -63,8 +62,7 @@ class Planedb(commands.Cog):
         results: List[Tuple] = process.extract(name, names, limit=5)
         log.debug('results: %s', results)
         if not results:
-            return await ctx.send(f"⛔  No Planes found for: {name}",
-                                  ephemeral=True, delete_after=60)
+            return await ctx.send(f"⛔  No Planes found for: {name}", ephemeral=True, delete_after=60)
         if len(results) > 1:
             results = [(name, score) for name, score in results if score > 60]
 
@@ -76,18 +74,16 @@ class Planedb(commands.Cog):
         else:
             # TODO: Send Planes and wait_for Selection
             plane = None
-            return await ctx.send(f"⛔  WIP: Multiple Planes Found For: {name}",
-                                  ephemeral=True, delete_after=60)
+            msg = f"⛔ WIP: Multiple Planes Found For: {name}"
+            return await ctx.send(msg, ephemeral=True, delete_after=60)
         if not plane:
-            return await ctx.send(f"⛔  BUG: Plane Matched but Not Found: {name}",
-                                  ephemeral=True, delete_after=60)
+            msg = f"⛔ BUG: Plane Matched but Not Found: {name}"
+            return await ctx.send(msg, ephemeral=True, delete_after=60)
         embed = await self.gen_embed(plane)
         await ctx.send(embed=embed, ephemeral=True)
 
-    @_planedb.command(name='add', aliases=['a', 'new'],
-                      description='Add a Plane to Plane DB')
-    @app_commands.describe(registration='Aircraft Registration Number',
-                           name='Name of the Resource')
+    @_planedb.command(name='add', aliases=['a', 'new'], description='Add a Plane to Plane DB')
+    @app_commands.describe(registration='Aircraft Registration Number', name='Name of the Resource')
     @commands.guild_only()
     async def _planedb_add(self, ctx: commands.Context, registration: str, *, name: str):
         """Add a Plane to Plane DB"""
@@ -99,17 +95,17 @@ class Planedb(commands.Cog):
         log.debug('planes: %s', planes)
         plane = next((x for x in planes if x['name'] == name), None)
         if plane:
-            return await ctx.send(f"⛔  Plane found for name: {name} - {plane['registration']}",
-                                  ephemeral=True, delete_after=60)
+            msg = f"⛔ Plane found for name: {name} - {plane['registration']}"
+            return await ctx.send(msg, ephemeral=True, delete_after=60)
         m = re.search('[A-Z0-9-]{3,7}', registration.upper())
         if not m or not m.group(0):
-            return await ctx.send(f'⛔  Unable to validate registration: {registration}',
-                                  ephemeral=True, delete_after=60)
+            msg = f'⛔ Unable to validate registration: {registration}'
+            return await ctx.send(msg, ephemeral=True, delete_after=60)
         registration = m.group(0)
         log.debug('registration: %s', registration)
         # m = re.search('^[a-fA-F0-9]{6}$', icao_hex.lower())
         # if not m or not m.group(0):
-        #     return await ctx.send(f'⛔  Unable to validate registration: {registration}',
+        #     return await ctx.send(f'⛔ Unable to validate registration: {registration}',
         #                           ephemeral=True, delete_after=60)
         # icao_hex = m.group(0)
         icao_hex = await self._get_icao_hex(registration)
@@ -122,7 +118,7 @@ class Planedb(commands.Cog):
         log.debug('plane: %s', plane)
         planes.append(plane)
         await self.config.planes.set(planes)
-        content = (f"✅  Plane Added: {plane['name']} - "
+        content = (f"✅ Plane Added: {plane['name']} - "
                    f"{plane['registration']} - "
                    f"{plane['icao_hex']}")
         await ctx.send(content, ephemeral=True)
@@ -190,9 +186,9 @@ class Planedb(commands.Cog):
             return cache
         log.debug('--- remote call ---')
         http_options = {
-                           'follow_redirects': True,
-                           'timeout': 30,
-                       } or http_options
+            'follow_redirects': True,
+            'timeout': 30,
+        } or http_options
         chrome_agent = (
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
             'AppleWebKit/537.36 (KHTML, like Gecko) '

@@ -9,7 +9,7 @@ import re
 import random
 import string
 from io import StringIO
-from typing import Optional, Union, Tuple, Dict, List, Any
+from typing import Optional, Dict, Any
 
 from redbot.core import commands
 from redbot.core.utils import chat_formatting as cf
@@ -87,10 +87,10 @@ class Consolecmds(commands.Cog):
             if result:
                 await ctx.send(f'**{hostname}:** `{result}`')
             else:
-                await ctx.send(f'⛔  No result for: `{hostname}:`')
+                await ctx.send(f'⛔ No result for: `{hostname}:`')
         except Exception as error:
             log.error(error)
-            await ctx.send(f'⛔  Error: `{error}`')
+            await ctx.send(f'⛔ Error: `{error}`')
 
     @commands.command(name='ping')
     async def ping_command(self, ctx: commands.Context, hostname: str):
@@ -104,7 +104,7 @@ class Consolecmds(commands.Cog):
             await ctx.send(cf.box(text=value))
         except Exception as error:
             log.error(error)
-            await ctx.send(f'⛔  Error: `{error}`')
+            await ctx.send(f'⛔ Error: `{error}`')
 
     @commands.command(name='curl', aliases=['wget'])
     async def curl_command(self, ctx: commands.Context, url: str):
@@ -116,10 +116,10 @@ class Consolecmds(commands.Cog):
                 r = await client.get(url)
         except Exception as error:
             log.error(error)
-            return await ctx.send(f'⛔  Error: `{error}`')
+            return await ctx.send(f'⛔ Error: `{error}`')
         if 100 <= r.status_code <= 399:
             color = discord.Color.green()
-            status = f'✅  {r.status_code}'
+            status = f'✅ {r.status_code}'
             try:
                 text = cf.box(r.json()[:2020], lang='json')
             except Exception as error:
@@ -127,7 +127,7 @@ class Consolecmds(commands.Cog):
                 text = cf.box(r.text[:2020], lang='plain')
         else:
             color = discord.Color.red()
-            status = f'⛔  {r.status_code}'
+            status = f'⛔ {r.status_code}'
             text = cf.box(r.text[:2020], lang='plain')
         embed = discord.Embed(
             title=url,
@@ -180,7 +180,7 @@ class Consolecmds(commands.Cog):
 
         except Exception as error:
             log.error(error)
-            await ctx.send(f'⛔  Error: `{error}`')
+            await ctx.send(f'⛔ Error: `{error}`')
 
     async def get_ip_data(self, ip) -> Optional[Dict[str, Any]]:
         try:

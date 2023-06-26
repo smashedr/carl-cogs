@@ -1,7 +1,6 @@
-import datetime
 import discord
 import logging
-from typing import Optional, Union, Tuple, Dict, List, Any
+from typing import Optional, Union, List
 
 from redbot.core import app_commands, commands, Config
 from redbot.core.utils import chat_formatting as cf
@@ -66,9 +65,9 @@ class Basecog(commands.Cog):
         enabled = await self.config.guild(ctx.guild).enabled()
         if enabled:
             await self.config.guild(ctx.guild).enabled.set(False)
-            return await ctx.send(f'\U00002705  {self.__cog_name__} Disabled.')  # ✅
+            return await ctx.send(f'✅ {self.__cog_name__} Disabled.')
         await self.config.guild(ctx.guild).enabled.set(True)
-        await ctx.send(f'\U00002705  {self.__cog_name__} Enabled.')  # ✅
+        await ctx.send(f'✅ {self.__cog_name__} Enabled.')
 
 
 class ChannelView(discord.ui.View):
@@ -94,7 +93,7 @@ class ChannelView(discord.ui.View):
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id == self.user_id:
             return True
-        msg = f"\U000026D4 Looks like you did not create this response."  # ⛔
+        msg = f"⛔ Looks like you did not create this response."
         await interaction.response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
         return False
 
@@ -107,10 +106,10 @@ class ChannelView(discord.ui.View):
             channels.append(value)
         if not channels:
             await self.cog.config.guild(interaction.guild).channels.set([])
-            msg = f'\U00002705 No Channel Selected. All Channels Cleared.'  # ✅
+            msg = f'✅ No Channel Selected. All Channels Cleared.'
             return await response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
         ids = [x.id for x in channels]
         await self.cog.config.guild(interaction.guild).channels.set(ids)
         names = [x.name for x in channels]
-        msg = f'\U00002705 Basecog Set to Channels: {cf.humanize_list(names)}'  # ✅
+        msg = f'✅ Basecog Set to Channels: {cf.humanize_list(names)}'
         return await response.send_message(msg, ephemeral=True, delete_after=self.delete_after)

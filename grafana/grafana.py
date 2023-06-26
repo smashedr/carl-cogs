@@ -1,11 +1,10 @@
-import datetime
 import discord
 import httpx
 import io
 import logging
 import re
 from thefuzz import process
-from typing import Optional, Union, Tuple, Dict, List, Any
+from typing import Optional, Union, Dict, Any
 
 from redbot.core import app_commands, commands, Config
 from redbot.core.utils import chat_formatting as cf
@@ -85,7 +84,7 @@ class Grafana(commands.Cog):
         log.debug('-'*20)
         match = re.search('([0-9]+)([mhdwMY])', from_time)
         if not match:
-            msg = f'⛔ Invalid format for **from_time**. Examples: `12h`, `2d`, `1w`'
+            msg = "⛔ Invalid format for **from_time**. Examples: `12h`, `2d`, `1w`"
             return await ctx.send(msg, ephemeral=True, delete_after=120)
         # from_time = int((datetime.datetime.now() - date).timestamp()) * 1000
         # to_time = int(datetime.datetime.now().timestamp()) * 1000
@@ -115,8 +114,7 @@ class Grafana(commands.Cog):
 
     @_grafana.command(name='add', aliases=['new', 'addgraph'])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def _grafana_add(self, ctx: commands.Context,
-                           dashboard: str, panel: int, name: str):
+    async def _grafana_add(self, ctx: commands.Context, dashboard: str, panel: int, name: str):
         """Add Graph to Grafana
         dashboard: The Dashboard `id/name` from the URL just after `/d/`
         panel: The Panel ID from the `viewPanel=` URL param when viewing the graph
@@ -126,15 +124,15 @@ class Grafana(commands.Cog):
         name = name.lower()
         if name in graphs:
             graph = cf.box(graphs[name])
-            return await ctx.send(f'⛔  Graph `{name}` already exists:\n{graph}',
-                                  ephemeral=True, delete_after=120)
+            msg = f'⛔ Graph `{name}` already exists:\n{graph}'
+            return await ctx.send(msg, ephemeral=True, delete_after=120)
         graphs[name] = {
             'dashboard': dashboard,
             'panel': panel,
         }
         await self.config.user(ctx.author).graphs.set(graphs)
         graph = cf.box(graphs[name])
-        await ctx.send(f'✅  Graph `{name}` added:\n{graph}', ephemeral=True)  # ✅
+        await ctx.send(f'✅ Graph `{name}` added:\n{graph}', ephemeral=True)
 
     @_grafana.command(name='list', aliases=['all', 'show', 'view'])
     @commands.max_concurrency(1, commands.BucketType.guild)
@@ -149,8 +147,7 @@ class Grafana(commands.Cog):
                                   allowed_mentions=discord.AllowedMentions.none())
         graph_list: str = cf.humanize_list(list(graphs.keys()))
         content = f'Graphs for {user.mention}\n{graph_list}'
-        await ctx.send(content, ephemeral=True,
-                       allowed_mentions=discord.AllowedMentions.none())
+        await ctx.send(content, ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
 
 
 class ModalView(discord.ui.View):
@@ -190,7 +187,7 @@ class DataModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         # discord.interactions.InteractionResponse
         log.debug('ReplyModal - on_submit')
-        message: discord.Message = interaction.message
+        # message: discord.Message = interaction.message
         user: discord.Member = interaction.user
         # user_conf: Dict[str, str] = await self.view.cog.config.user(user).all()
         log.debug('self.base_url.value: %s', self.base_url.value)
@@ -201,5 +198,5 @@ class DataModal(discord.ui.Modal):
         }
         await self.view.cog.config.user(user).set(user_conf)
         log.debug(user_conf)
-        msg = '✅  Grafana Details Updated Successfully...'
+        msg = "✅ Grafana Details Updated Successfully..."
         await interaction.response.send_message(msg, ephemeral=True)

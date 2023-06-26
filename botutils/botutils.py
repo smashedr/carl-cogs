@@ -411,7 +411,7 @@ class Botutils(commands.Cog):
         if not result:
             roles = [g.roles for g in self.bot.guilds]
             check_all = (
-                    self.bot.guilds + self.bot.emojis
+                    self.bot.guilds + self.bot.emojis  # TODO: FIX THIS
                     + list(itertools.chain.from_iterable(roles))
                     + [m for m in self.bot.get_all_members()]
                     + [c for c in self.bot.get_all_channels()]
@@ -470,7 +470,7 @@ class Botutils(commands.Cog):
         months = 0
         m_temp = 0
         mo_len = next(cy)
-        for i in range(1, days + 1):
+        for _ in range(1, days + 1):
             m_temp += 1
             if m_temp == mo_len:
                 months += 1
@@ -486,14 +486,14 @@ class Botutils(commands.Cog):
     def channel_type_emoji(channel: discord.abc.GuildChannel) -> str:
         if getattr(channel, 'type', False):
             if str(channel.type) == 'text':
-                return f'\U0001F4AC'  # {SPEECH BALLOON}
+                return '\U0001F4AC'  # {SPEECH BALLOON}
             elif str(channel.type) == 'voice':
-                return f'\U0001F50A'  # :loud_sound:
+                return '\U0001F50A'  # :loud_sound:
             elif str(channel.type) == 'category':
-                return f'\U0001F53B'  # :red_triangle_pointed_down:
+                return '\U0001F53B'  # :red_triangle_pointed_down:
             elif str(channel.type) == 'stage_voice':
-                return f'\U0001F3A7'  # :headphones:
-        return f'\U00002753'  # {BLACK QUESTION MARK ORNAMENT}
+                return '\U0001F3A7'  # :headphones:
+        return '\U00002753'  # {BLACK QUESTION MARK ORNAMENT}
 
     async def guild_embed(self, guild: discord.Guild) -> discord.Embed:
         """Builds a guild embed."""
