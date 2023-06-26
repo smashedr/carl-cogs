@@ -400,8 +400,8 @@ class ListView(discord.ui.View):
     @discord.ui.button(label='Delete', style=discord.ButtonStyle.red)
     async def delete_button(self, interaction: discord.Interaction, button):
         if not interaction.user.id == self.user_id:
-            msg = (f"⛔ Looks like you didn't create this response.\n"
-                   f"You can create your own response with the `/history` command.")
+            msg = ("⛔ Looks like you didn't create this response.\n"
+                   "You can create your own response with the `/history` command.")
             return await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
         self.stop()
         await interaction.message.delete()

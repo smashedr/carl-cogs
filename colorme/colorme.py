@@ -320,7 +320,7 @@ class ColorMe(commands.Cog):
                 msg = f'✅ Color Removed: {removed.name}. Use `/color HEX` to set.'
                 return await ctx.send(msg, ephemeral=True, delete_after=120)
             else:
-                msg = f'⛔ No Color Roles Found. Use `/color HEX` to set.'
+                msg = '⛔ No Color Roles Found. Use `/color HEX` to set.'
                 return await ctx.send(msg, ephemeral=True, delete_after=30)
 
         # Validate color passed

@@ -151,7 +151,7 @@ class DayInHistory(commands.Cog):
         log.debug('vt_channel')
         if not channel:
             await self.config.guild(ctx.guild).channel.set(0)
-            return await ctx.send(f'✅ Disabled. Specify a channel to Enable.', ephemeral=True)
+            return await ctx.send('✅ Disabled. Specify a channel to Enable.', ephemeral=True)
 
         log.debug('channel: %s', channel)
         log.debug('channel.type: %s', channel.type)

@@ -139,7 +139,7 @@ class ActiveRole(commands.Cog):
         await ctx.typing()
         config = await self.config.guild(ctx.guild).all()
         lines = [
-            f"Activerole Settings:",
+            "Activerole Settings:",
             f"Active User Role: `{config['active_role']}`",
             f"Excluded Channels: `{config['channels']}`",
             f"Excluded Roles: `{config['roles']}`",
