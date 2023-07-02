@@ -3,12 +3,13 @@ import discord
 import httpx
 import io
 import logging
+import validators
 import plotly.graph_objects as go
 import plotly.io as pio
 from typing import Optional, Union, Dict, Any, List
 
 from redbot.core import app_commands, commands, Config
-from redbot.core.utils import chat_formatting as cf
+from redbot.core.utils import can_user_send_messages_in
 
 log = logging.getLogger('red.zipline')
 
@@ -65,6 +66,11 @@ class Zipline(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_user(**self.user_default)
         self.url: Optional[str] = None
+        self.upload_to_zipline = discord.app_commands.ContextMenu(
+            name="Upload to Zipline",
+            callback=self.upload_to_zipline_callback,
+            type=discord.AppCommandType.message,
+        )
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
@@ -76,6 +82,60 @@ class Zipline(commands.Cog):
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
+
+    async def upload_to_zipline_callback(self, interaction, message: discord.Message):
+        user: discord.User = interaction.user
+        # ctx = await self.bot.get_context(interaction)
+        # await ctx.defer(ephemeral=True, thinking=False)
+        await interaction.response.defer()
+        user_conf: Dict[str, Any] = await self.config.user(user).all()
+        log.debug('user_conf: %s', user_conf)
+        if not user_conf['base_url'] or not user_conf['zip_token']:
+            view = ModalView(self)
+            msg = ('You are missing Zipline details. '
+                   'Click the button to set Zipline URL and Token.')
+            return await interaction.response.send_message(msg, view=view, ephemeral=True, delete_after=300,
+                                                           allowed_mentions=discord.AllowedMentions.none())
+
+        if message.attachments:
+            log.debug('FILE ATTACHMENT FOUND')
+            # files = []
+            # for attachment in message.attachments:
+            #     files.append(await attachment.to_file())
+            msg = 'File Attachment Found - WIP'
+            return await interaction.response.send_message(msg, ephemeral=True, delete_after=15,
+                                                           allowed_mentions=discord.AllowedMentions.none())
+
+        if message.embeds:
+            embeds: List[discord.Embed] = [e for e in message.embeds if e.type == 'rich']
+            images = []
+            if embeds:
+                for embed in embeds:
+                    if embed.image:
+                        images.append(embed.image)
+            if images:
+                log.debug('EMBED IMAGE FOUND')
+                msg = 'Embed Image Found - WIP'
+                return await interaction.response.send_message(msg, ephemeral=True, delete_after=15,
+                                                               allowed_mentions=discord.AllowedMentions.none())
+        if validators.url(message.content.strip('<>')):
+            url = message.content.strip('<>')
+            log.debug('URL FOUND')
+            msg = 'URL Found - WIP'
+            return await interaction.response.send_message(msg, ephemeral=True, delete_after=15,
+                                                           allowed_mentions=discord.AllowedMentions.none())
+
+        if message.content:
+            log.debug('MESSAGE CONTENT FOUND')
+            content = message.content.strip('`')
+            msg = 'Message Content Found - WIP'
+            return await interaction.response.send_message(msg, ephemeral=True, delete_after=15,
+                                                           allowed_mentions=discord.AllowedMentions.none())
+
+        log.debug('NOTHING FOUND')
+        msg = 'Nothing Found - WIP (or done)'
+        return await interaction.response.send_message(msg, ephemeral=True, delete_after=15,
+                                                       allowed_mentions=discord.AllowedMentions.none())
 
     @commands.hybrid_command(name='zipline', aliases=['zip'])
     @commands.guild_only()
@@ -90,7 +150,8 @@ class Zipline(commands.Cog):
             view = ModalView(self)
             msg = (f'{user.mention} is missing Zipline details. '
                    f'Click the button to set Zipline URL and Token.')
-            return await ctx.send(msg, view=view, ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
+            return await ctx.send(msg, view=view, ephemeral=True, delete_after=300,
+                                  allowed_mentions=discord.AllowedMentions.none())
         stats: List[dict] = await self.get_stats(user_conf['base_url'], user_conf['zip_token'])
         data: Dict[str, Any] = stats[0]['data']
         log.debug('data: %s', data)
