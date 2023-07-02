@@ -130,11 +130,11 @@ class Miscog(commands.Cog):
             await ctx.send(f'Exception: `{error}`')
             return
 
-        if r.status_code > 399:
-            await msg.delete()
-            await ctx.send(f'Response: ⛔ **{r.status_code} - {r.reason_phrase}**\n'
-                           f'URL: <{r.url}>\nReason: <{mdn_url}/{r.status_code}>')
-            return
+        # if r.status_code > 399:
+        #     await msg.delete()
+        #     await ctx.send(f'Response: ⛔ **{r.status_code} - {r.reason_phrase}**\n'
+        #                    f'URL: <{r.url}>\nReason: <{mdn_url}/{r.status_code}>')
+        #     return
 
         content = f'Response: ✅ **{r.status_code}**\nURL: <{r.url}>'
         await msg.edit(content=content)

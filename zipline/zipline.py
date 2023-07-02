@@ -17,6 +17,7 @@ class Zipline(commands.Cog):
     """Carl's Zipline Cog"""
 
     amount = 60
+    max_types = 8
 
     type_icons = {
         'image/jpeg': '🖼️',
@@ -106,17 +107,17 @@ class Zipline(commands.Cog):
         lines = []
         i = 0
         for i, count in enumerate(data['types_count'], 1):
-            if i == 10:
+            if i > self.max_types:
                 break
             icon = self.type_icons.get(count['mimetype'], '❔')
             lines.append(f"**{count['count']}** `{count['mimetype']}` {icon}")
         file_types = '\n'.join(lines)
         embed.description = (
-            f"**Top {i} Types for {user.mention}**\n\n"
+            f"**Top {i-1} Types for {user.mention}**\n\n"
             f"{file_types}\n\n**Overall Stats**"
         )
         embed.set_author(name=user.display_name, icon_url=user.avatar.url, url=user_conf['base_url'])
-        embed.set_footer(text='Zipline')
+        embed.set_footer(text='Zipline Stats Last Update')
 
         fig = self.gen_fig(stats)
         if self.url:
