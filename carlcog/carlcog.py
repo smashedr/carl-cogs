@@ -1,11 +1,13 @@
 import datetime
+import os
 import discord
 import fuckit
 import logging
 import platform
 import traceback
+from typing import List, Optional
 
-from redbot.core import Config, commands
+from redbot.core import Config, commands, version_info
 from redbot.core.utils import chat_formatting as cf
 
 log = logging.getLogger('red.carlcog')
@@ -13,6 +15,9 @@ log = logging.getLogger('red.carlcog')
 
 class Carlcog(commands.Cog):
     """Carl's Carlcog Cog"""
+
+    carl_name = 'Carl Bot'
+    carl_cogs = 'https://github.com/smashedr/carl-cogs'
 
     embedset_command = None
     forgetme_command = None
@@ -26,9 +31,13 @@ class Carlcog(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_global(alert_channel=None)
+        self.info: Optional[dict] = None
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
+        self.info = await self.bot.get_shared_api_tokens('info')
+        log.info('INFO: %s', self.info)
+
         self.embedset_command = self.bot.remove_command('embedset')
         self.forgetme_command = self.bot.remove_command('forgetme')
         self.info_command = self.bot.remove_command('info')
@@ -194,37 +203,55 @@ class Carlcog(commands.Cog):
         dpy_url = f'https://github.com/Rapptz/discord.py/tree/v{discord.__version__}'
         dpy_str = f'[{discord.__version__}]({dpy_url})'
 
+        red_url = f'https://github.com/Cog-Creators/Red-DiscordBot/tree/{version_info}'
+        red_str = f'[{version_info}]({red_url})'
+
         desc_txt = 'My name is Carl and I am a fully functional Discord Bot.'
-        web_txt = ('For more information, to add me to your server, '
-                   'or manage my settings, visit the website at '
-                   '**[carl.sapps.me](https://carl.sapps.me/)**.')
+        # web_txt = ('For more information, to add me to your server, '
+        #            'or manage my settings, visit the website at '
+        #            '**[carl.sapps.me](https://carl.sapps.me/)**.')
 
         _py = '[Python](https://www.python.org/)'
         _dpy = '[discord.py](https://github.com/Rapptz/discord.py)'
         _red = '[Red Discord Bot](https://github.com/Cog-Creators/Red-DiscordBot)'
-        _cc = '[github.com/smashedr/carl-cogs](https://github.com/smashedr/carl-cogs)'
-        source_txt = (f'I am written in {_py} and use the {_dpy} framework '
-                      f'ontop of the {_red} core. All commands are broken down '
-                      f'into modules called Cogs. The source code for all the '
-                      f'cogs/commands can be found at **{_cc}**')
+        _cc = f'[github.com/smashedr/carl-cogs]({self.carl_cogs})'
+        _cogs = '[Cogs](https://index.discord.red/)'
+        source_txt = (f'**{_cc}**\n\nI am written in {_py} using the {_dpy} framework ontop of the {_red} core. '
+                      f'All commands are broken down into modules called {_cogs}. '
+                      f'The source code for my cogs/commands can be found at [GitHub]({self.carl_cogs}).')
 
-        em = discord.Embed()
-        em.colour = discord.Colour(int('6F42C1', 16))
-        em.title = 'Carl Bot'
+        app_info = await self.bot.application_info()
+        owners_list: List[discord.User] = [app_info.owner]
+        if os.environ.get('CO_OWNER'):
+            for owner_id in os.environ.get('CO_OWNER').split(','):
+                owner: discord.User = ctx.bot.get_user(int(owner_id))
+                owners_list.append(owner)
+        owners = ', '.join([x.mention for x in owners_list])
+
+        em = discord.Embed(
+            title=self.carl_name,
+            url=self.carl_cogs,
+            description=desc_txt,
+            color=discord.Colour(int('6F42C1', 16)),
+            timestamp=ctx.message.created_at,
+        )
         em.set_thumbnail(url=self.bot.user.avatar.url)
         em.set_author(name=str(self.bot.user), url=inv_url)
-        em.description = desc_txt
-        em.add_field(name='Owner', value=ctx.author.mention)
-        em.add_field(name='Python3', value=py_str)
+
+        em.add_field(name='Python', value=py_str)
         em.add_field(name='Discord.py', value=dpy_str)
-        em.add_field(name='Visit Dashboard', value=web_txt, inline=False)
+        em.add_field(name='Red', value=red_str)
+        em.add_field(name='Owners', value=owners)
+        # em.add_field(name='Visit Dashboard', value=web_txt, inline=False)
         em.add_field(name='View Source', value=source_txt, inline=False)
+
         em.set_footer(text=f'Requested by {ctx.author.display_name}', icon_url=ctx.author.avatar.url)
-        em.timestamp = ctx.message.created_at
         buttons = {
             'Add to Server': inv_url,
-            'Open Dashboard': 'https://carl.sapps.me/',
+            # 'Open Dashboard': 'https://carl.sapps.me/',
         }
+        if 'status' in self.info:
+            buttons['Status'] = self.info['status']
         await ctx.send(embed=em, view=ButtonsURLView(buttons))
 
     @commands.command(name='uptime', aliases=['up', 'latency'])

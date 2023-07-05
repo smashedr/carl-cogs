@@ -6,7 +6,7 @@
   "install_msg": "Get started with `[p]zipline`",
   "end_user_data_statement": "Caveat Emptor.",
   "tags": ["wip", "api"],
-  "requirements": ["plotly", "pandas", "kaleido", "validators"],
+  "requirements": ["httpx", "plotly", "pandas", "kaleido", "validators"],
   "permissions" : [],
   "required_cogs": {},
   "min_bot_version": "3.4.0",
