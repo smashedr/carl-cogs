@@ -5,11 +5,11 @@ import io
 import logging
 import validators
 import plotly.graph_objects as go
+import plotly.express as px
 import plotly.io as pio
 from typing import Optional, Union, Dict, Any, List
 
 from redbot.core import app_commands, commands, Config
-from redbot.core.utils import can_user_send_messages_in
 
 log = logging.getLogger('red.zipline')
 
@@ -17,8 +17,8 @@ log = logging.getLogger('red.zipline')
 class Zipline(commands.Cog):
     """Carl's Zipline Cog"""
 
-    amount = 60
-    max_types = 8
+    amount = 90
+    max_types = 6
 
     type_icons = {
         'image/jpeg': '🖼️',
@@ -47,7 +47,6 @@ class Zipline(commands.Cog):
         'text/xml': '📋',
         'application/sql': '📋',
         'application/x-python': '🐍',
-        # sep
         'application/octet-stream': '⬇️',
     }
 
@@ -92,7 +91,7 @@ class Zipline(commands.Cog):
         log.debug('user_conf: %s', user_conf)
         if not user_conf['base_url'] or not user_conf['zip_token']:
             view = ModalView(self)
-            msg = ('You are missing Zipline details. '
+            msg = ('❌ You are missing Zipline details. '
                    'Click the button to set Zipline URL and Token.')
             return await interaction.response.send_message(msg, view=view, ephemeral=True, delete_after=300,
                                                            allowed_mentions=discord.AllowedMentions.none())
@@ -142,13 +141,13 @@ class Zipline(commands.Cog):
     @app_commands.describe(user='Optional User to get Zipline Stats for')
     async def zip_command(self, ctx: commands.Context, user: Optional[Union[discord.Member, discord.User]] = None):
         """Zipline Command: WIP"""
-        # date: Optional[commands.TimedeltaConverter] = datetime.timedelta(days=1))
+        await ctx.typing()
         user = user or ctx.author
         user_conf: Dict[str, Any] = await self.config.user(user).all()
         log.debug('user_conf: %s', user_conf)
         if not user_conf['base_url'] or not user_conf['zip_token']:
             view = ModalView(self)
-            msg = (f'{user.mention} is missing Zipline details. '
+            msg = (f'❌ {user.mention} is missing Zipline details. '
                    f'Click the button to set Zipline URL and Token.')
             return await ctx.send(msg, view=view, ephemeral=True, delete_after=300,
                                   allowed_mentions=discord.AllowedMentions.none())
@@ -174,29 +173,38 @@ class Zipline(commands.Cog):
             lines.append(f"**{count['count']}** `{count['mimetype']}` {icon}")
         file_types = '\n'.join(lines)
         embed.description = (
-            f"**Top {i-1} Types for {user.mention}**\n\n"
+            f"**Top {i-1} Types**\n\n"
             f"{file_types}\n\n**Overall Stats**"
         )
-        embed.set_author(name=user.display_name, icon_url=user.avatar.url, url=user_conf['base_url'])
-        embed.set_footer(text='Zipline Stats Last Update')
+        # embed.set_author(name=user.display_name, icon_url=user.avatar.url, url=user_conf['base_url'])
+        embed.set_footer(text=f"{user.display_name}'s Zipline Stats", icon_url=user.avatar.url)
 
-        fig = self.gen_fig(stats)
+        graph = self.gen_graph_fig(stats)
+        pie = self.gen_pie_fig(stats)
         if self.url:
-            html = fig.to_html(include_plotlyjs='cdn', config={'displaylogo': False})
-            log.debug('html:type: %s', type(html))
-            href = await self.post_data(html)
-            log.debug('href: %s', href)
-            if href:
-                embed.description += f'\n[View Interactive Graph...]({self.url}{href})'
+            graph_html = graph.to_html(include_plotlyjs='cdn', config={'displaylogo': False})
+            graph_href = await self.post_data(graph_html)
+            pie_html = pie.to_html(include_plotlyjs='cdn', config={'displaylogo': False})
+            pie_href = await self.post_data(pie_html)
+            log.debug('graph_href: %s', graph_href)
+            log.debug('pie_href: %s', pie_href)
+            if pie_href:
+                embed.description += f'\n[View Interactive Pie Chart...]({self.url}{pie_href})'
+            if graph_href:
+                embed.description += f'\n[View Interactive Graph...]({self.url}{graph_href})'
 
         ts = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-        file = io.BytesIO()
-        file.write(fig.to_image())
-        file.seek(0)
-        file = discord.File(file, f"{short_url}-{ts}.png")
+        files = []
+        for name, figure in [('graph', graph), ('pie', pie)]:
+            file = io.BytesIO()
+            file.write(figure.to_image())
+            file.seek(0)
+            files.append(discord.File(file, f"{short_url}-{name}-{ts}.png"))
 
-        embed.set_image(url=f"attachment://{short_url}-{ts}.png")
-        await ctx.send(file=file, embed=embed, allowed_mentions=discord.AllowedMentions.none())
+        embed.set_thumbnail(url=f"attachment://{short_url}-pie-{ts}.png")
+        embed.set_image(url=f"attachment://{short_url}-graph-{ts}.png")
+        content = 'New Zipline CLI ⭐ <https://github.com/cssnr/zipline-cli>'
+        await ctx.send(content=content, files=files, embed=embed, allowed_mentions=discord.AllowedMentions.none())
 
     async def get_stats(self, url, token: str) -> List[dict]:
         return await self._get_json(url + '/api/stats', token, amount=self.amount)
@@ -220,15 +228,30 @@ class Zipline(commands.Cog):
             return None
 
     @staticmethod
-    def gen_fig(stats):
+    def gen_pie_fig(stats: List[dict]) -> go.Figure:
+        # Gen Plotly Data
+        data: List[dict] = stats[0]['data']['types_count']
+        mimetype, count = [], []
+        for mime in data:
+            mimetype.append(mime['mimetype'])
+            count.append(mime['count'])
+
+        df = {'File Types': mimetype, 'Count': count}
+        pio.templates.default = 'plotly_dark'
+        title = f"{len(data)} Types in {stats[0]['data']['count']} Files at {stats[0]['data']['size']}"
+        fig = px.pie(df, values='Count', names='File Types', title=title)
+        return fig
+
+    @staticmethod
+    def gen_graph_fig(stats: List[dict]) -> go.Figure:
         dates, files, views = [], [], []
         for stat in reversed(stats):
             dates.append(stat['createdAt'])
             files.append(stat['data']['count'])
             views.append(stat['data']['views_count'])
+        lines = [('Files', files), ('Views', views)]
         pio.templates.default = "plotly_dark"
         fig = go.Figure()
-        lines = [('Files', files), ('Views', views)]
         for name, data in lines:
             fig.add_trace(go.Scatter(x=dates, y=data, name=name))
         fig.update_layout(xaxis_title='Date', yaxis_title='Count')
