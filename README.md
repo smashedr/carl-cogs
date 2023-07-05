@@ -108,4 +108,6 @@ DO NOT enter a password in the config unless you require one.
 
 ## API
 
-**Coming Soon.** New API will be posted soon.
+**Coming Soon**
+
+*   See: https://github.com/smashedr/red-api
