@@ -3,12 +3,13 @@ import discord
 import httpx
 import io
 import logging
+import validators
 import plotly.graph_objects as go
+import plotly.express as px
 import plotly.io as pio
 from typing import Optional, Union, Dict, Any, List
 
 from redbot.core import app_commands, commands, Config
-from redbot.core.utils import chat_formatting as cf
 
 log = logging.getLogger('red.zipline')
 
@@ -16,7 +17,8 @@ log = logging.getLogger('red.zipline')
 class Zipline(commands.Cog):
     """Carl's Zipline Cog"""
 
-    amount = 60
+    amount = 90
+    max_types = 6
 
     type_icons = {
         'image/jpeg': '🖼️',
@@ -45,7 +47,6 @@ class Zipline(commands.Cog):
         'text/xml': '📋',
         'application/sql': '📋',
         'application/x-python': '🐍',
-        # sep
         'application/octet-stream': '⬇️',
     }
 
@@ -64,6 +65,11 @@ class Zipline(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_user(**self.user_default)
         self.url: Optional[str] = None
+        self.upload_to_zipline = discord.app_commands.ContextMenu(
+            name="Upload to Zipline",
+            callback=self.upload_to_zipline_callback,
+            type=discord.AppCommandType.message,
+        )
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
@@ -76,20 +82,75 @@ class Zipline(commands.Cog):
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
 
+    async def upload_to_zipline_callback(self, interaction, message: discord.Message):
+        user: discord.User = interaction.user
+        # ctx = await self.bot.get_context(interaction)
+        # await ctx.defer(ephemeral=True, thinking=False)
+        await interaction.response.defer()
+        user_conf: Dict[str, Any] = await self.config.user(user).all()
+        log.debug('user_conf: %s', user_conf)
+        if not user_conf['base_url'] or not user_conf['zip_token']:
+            view = ModalView(self)
+            msg = ('❌ You are missing Zipline details. '
+                   'Click the button to set Zipline URL and Token.')
+            return await interaction.response.send_message(msg, view=view, ephemeral=True, delete_after=300,
+                                                           allowed_mentions=discord.AllowedMentions.none())
+
+        if message.attachments:
+            log.debug('FILE ATTACHMENT FOUND')
+            # files = []
+            # for attachment in message.attachments:
+            #     files.append(await attachment.to_file())
+            msg = 'File Attachment Found - WIP'
+            return await interaction.response.send_message(msg, ephemeral=True, delete_after=15,
+                                                           allowed_mentions=discord.AllowedMentions.none())
+
+        if message.embeds:
+            embeds: List[discord.Embed] = [e for e in message.embeds if e.type == 'rich']
+            images = []
+            if embeds:
+                for embed in embeds:
+                    if embed.image:
+                        images.append(embed.image)
+            if images:
+                log.debug('EMBED IMAGE FOUND')
+                msg = 'Embed Image Found - WIP'
+                return await interaction.response.send_message(msg, ephemeral=True, delete_after=15,
+                                                               allowed_mentions=discord.AllowedMentions.none())
+        if validators.url(message.content.strip('<>')):
+            # url = message.content.strip('<>')
+            log.debug('URL FOUND')
+            msg = 'URL Found - WIP'
+            return await interaction.response.send_message(msg, ephemeral=True, delete_after=15,
+                                                           allowed_mentions=discord.AllowedMentions.none())
+
+        if message.content:
+            log.debug('MESSAGE CONTENT FOUND')
+            # content = message.content.strip('`')
+            msg = 'Message Content Found - WIP'
+            return await interaction.response.send_message(msg, ephemeral=True, delete_after=15,
+                                                           allowed_mentions=discord.AllowedMentions.none())
+
+        log.debug('NOTHING FOUND')
+        msg = 'Nothing Found - WIP (or done)'
+        return await interaction.response.send_message(msg, ephemeral=True, delete_after=15,
+                                                       allowed_mentions=discord.AllowedMentions.none())
+
     @commands.hybrid_command(name='zipline', aliases=['zip'])
     @commands.guild_only()
     @app_commands.describe(user='Optional User to get Zipline Stats for')
     async def zip_command(self, ctx: commands.Context, user: Optional[Union[discord.Member, discord.User]] = None):
         """Zipline Command: WIP"""
-        # date: Optional[commands.TimedeltaConverter] = datetime.timedelta(days=1))
+        await ctx.typing()
         user = user or ctx.author
         user_conf: Dict[str, Any] = await self.config.user(user).all()
         log.debug('user_conf: %s', user_conf)
         if not user_conf['base_url'] or not user_conf['zip_token']:
             view = ModalView(self)
-            msg = (f'{user.mention} is missing Zipline details. '
+            msg = (f'❌ {user.mention} is missing Zipline details. '
                    f'Click the button to set Zipline URL and Token.')
-            return await ctx.send(msg, view=view, ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
+            return await ctx.send(msg, view=view, ephemeral=True, delete_after=300,
+                                  allowed_mentions=discord.AllowedMentions.none())
         stats: List[dict] = await self.get_stats(user_conf['base_url'], user_conf['zip_token'])
         data: Dict[str, Any] = stats[0]['data']
         log.debug('data: %s', data)
@@ -106,35 +167,44 @@ class Zipline(commands.Cog):
         lines = []
         i = 0
         for i, count in enumerate(data['types_count'], 1):
-            if i == 10:
+            if i > self.max_types:
                 break
             icon = self.type_icons.get(count['mimetype'], '❔')
             lines.append(f"**{count['count']}** `{count['mimetype']}` {icon}")
         file_types = '\n'.join(lines)
         embed.description = (
-            f"**Top {i} Types for {user.mention}**\n\n"
+            f"**Top {i-1} Types**\n\n"
             f"{file_types}\n\n**Overall Stats**"
         )
-        embed.set_author(name=user.display_name, icon_url=user.avatar.url, url=user_conf['base_url'])
-        embed.set_footer(text='Zipline')
+        # embed.set_author(name=user.display_name, icon_url=user.avatar.url, url=user_conf['base_url'])
+        embed.set_footer(text=f"{user.display_name}'s Zipline Stats", icon_url=user.avatar.url)
 
-        fig = self.gen_fig(stats)
+        graph = self.gen_graph_fig(stats)
+        pie = self.gen_pie_fig(stats)
         if self.url:
-            html = fig.to_html(include_plotlyjs='cdn', config={'displaylogo': False})
-            log.debug('html:type: %s', type(html))
-            href = await self.post_data(html)
-            log.debug('href: %s', href)
-            if href:
-                embed.description += f'\n[View Interactive Graph...]({self.url}{href})'
+            graph_html = graph.to_html(include_plotlyjs='cdn', config={'displaylogo': False})
+            graph_href = await self.post_data(graph_html)
+            pie_html = pie.to_html(include_plotlyjs='cdn', config={'displaylogo': False})
+            pie_href = await self.post_data(pie_html)
+            log.debug('graph_href: %s', graph_href)
+            log.debug('pie_href: %s', pie_href)
+            if pie_href:
+                embed.description += f'\n[View Interactive Pie Chart...]({self.url}{pie_href})'
+            if graph_href:
+                embed.description += f'\n[View Interactive Graph...]({self.url}{graph_href})'
 
         ts = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-        file = io.BytesIO()
-        file.write(fig.to_image())
-        file.seek(0)
-        file = discord.File(file, f"{short_url}-{ts}.png")
+        files = []
+        for name, figure in [('graph', graph), ('pie', pie)]:
+            file = io.BytesIO()
+            file.write(figure.to_image())
+            file.seek(0)
+            files.append(discord.File(file, f"{short_url}-{name}-{ts}.png"))
 
-        embed.set_image(url=f"attachment://{short_url}-{ts}.png")
-        await ctx.send(file=file, embed=embed, allowed_mentions=discord.AllowedMentions.none())
+        embed.set_thumbnail(url=f"attachment://{short_url}-pie-{ts}.png")
+        embed.set_image(url=f"attachment://{short_url}-graph-{ts}.png")
+        content = 'New Zipline CLI ⭐ <https://github.com/cssnr/zipline-cli>'
+        await ctx.send(content=content, files=files, embed=embed, allowed_mentions=discord.AllowedMentions.none())
 
     async def get_stats(self, url, token: str) -> List[dict]:
         return await self._get_json(url + '/api/stats', token, amount=self.amount)
@@ -158,15 +228,30 @@ class Zipline(commands.Cog):
             return None
 
     @staticmethod
-    def gen_fig(stats):
+    def gen_pie_fig(stats: List[dict]) -> go.Figure:
+        # Gen Plotly Data
+        data: List[dict] = stats[0]['data']['types_count']
+        mimetype, count = [], []
+        for mime in data:
+            mimetype.append(mime['mimetype'])
+            count.append(mime['count'])
+
+        df = {'File Types': mimetype, 'Count': count}
+        pio.templates.default = 'plotly_dark'
+        title = f"{len(data)} Types in {stats[0]['data']['count']} Files at {stats[0]['data']['size']}"
+        fig = px.pie(df, values='Count', names='File Types', title=title)
+        return fig
+
+    @staticmethod
+    def gen_graph_fig(stats: List[dict]) -> go.Figure:
         dates, files, views = [], [], []
         for stat in reversed(stats):
             dates.append(stat['createdAt'])
             files.append(stat['data']['count'])
             views.append(stat['data']['views_count'])
+        lines = [('Files', files), ('Views', views)]
         pio.templates.default = "plotly_dark"
         fig = go.Figure()
-        lines = [('Files', files), ('Views', views)]
         for name, data in lines:
             fig.add_trace(go.Scatter(x=dates, y=data, name=name))
         fig.update_layout(xaxis_title='Date', yaxis_title='Count')
