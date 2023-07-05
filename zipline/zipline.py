@@ -118,7 +118,7 @@ class Zipline(commands.Cog):
                 return await interaction.response.send_message(msg, ephemeral=True, delete_after=15,
                                                                allowed_mentions=discord.AllowedMentions.none())
         if validators.url(message.content.strip('<>')):
-            url = message.content.strip('<>')
+            # url = message.content.strip('<>')
             log.debug('URL FOUND')
             msg = 'URL Found - WIP'
             return await interaction.response.send_message(msg, ephemeral=True, delete_after=15,
@@ -126,7 +126,7 @@ class Zipline(commands.Cog):
 
         if message.content:
             log.debug('MESSAGE CONTENT FOUND')
-            content = message.content.strip('`')
+            # content = message.content.strip('`')
             msg = 'Message Content Found - WIP'
             return await interaction.response.send_message(msg, ephemeral=True, delete_after=15,
                                                            allowed_mentions=discord.AllowedMentions.none())
