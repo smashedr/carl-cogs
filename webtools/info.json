@@ -1,0 +1,17 @@
+{
+  "name": "Webtools",
+  "author": ["Shane#0816"],
+  "short": "Carl's Web Tools Module.",
+  "description": "Web Tools for Carl Bot that could end up in their own module.",
+  "install_msg": "Get started with `[p]help Webtools`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "tags": [],
+  "requirements": ["httpx", "ipaddress", "ping3", "pytest-playwright"],
+  "permissions" : [],
+  "required_cogs": {},
+  "min_bot_version": "3.5.0",
+  "min_python_version" : [3,8,0],
+  "disabled": false,
+  "hidden": true,
+  "type": "COG"
+}

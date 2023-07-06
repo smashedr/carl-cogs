@@ -6,7 +6,7 @@
   "install_msg": "Get started with `[p]help Consolecmds`",
   "end_user_data_statement": "Caveat Emptor.",
   "tags": ["wip"],
-  "requirements": ["ping3", "ipaddress", "httpx"],
+  "requirements": [],
   "permissions" : [],
   "required_cogs": {},
   "min_bot_version": "3.4.0",
