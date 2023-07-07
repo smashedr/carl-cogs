@@ -65,7 +65,7 @@ class OpenAI(commands.Cog):
 
     async def msg_chatgpt_callback(self, interaction, message: discord.Message):
         if not message.content:
-            return await interaction.response.send_message('Message has no content.', ephemeral=True, delete_after=60)
+            return await interaction.response.send_message('❌ Message has no content.', ephemeral=True, delete_after=60)
         # ctx = await self.bot.get_context(interaction)
         # await ctx.defer(ephemeral=True, thinking=False)
         await interaction.response.defer()
@@ -73,7 +73,7 @@ class OpenAI(commands.Cog):
 
     async def msg_spelling_callback(self, interaction, message: discord.Message):
         if not message.content:
-            return await interaction.response.send_message('Message has no content.', ephemeral=True, delete_after=60)
+            return await interaction.response.send_message('❌ Message has no content.', ephemeral=True, delete_after=60)
         # ctx = await self.bot.get_context(interaction)
         # await ctx.defer(ephemeral=True)
         await interaction.response.send_message('⌛', ephemeral=True, delete_after=1)
@@ -112,7 +112,7 @@ class OpenAI(commands.Cog):
             match = message
 
         if not match:
-            await channel.send('No messages from you out of the last 10...', delete_after=10)
+            await channel.send('❌ No messages from you out of the last 10...', delete_after=30)
             return
 
         data = await self.openai_edits(match.content)
@@ -143,7 +143,7 @@ class OpenAI(commands.Cog):
             match = message
 
         if not match:
-            await channel.send('No recent questions found...', delete_after=5)
+            await channel.send('❌ No recent questions found...', delete_after=30)
             return
 
         bm: discord.Message = await channel.send(
@@ -163,7 +163,7 @@ class OpenAI(commands.Cog):
 
         except Exception as error:
             log.exception(error)
-            await channel.send(f'Error performing lookup: `{error}`', delete_after=10)
+            await channel.send(f'⛔ Error performing lookup: `{error}`', delete_after=30)
 
         finally:
             await bm.delete()
@@ -184,7 +184,7 @@ class OpenAI(commands.Cog):
             break
 
         if not match:
-            await channel.send('No recent messages found???', delete_after=10)
+            await channel.send('❌ No recent messages found???', delete_after=30)
             return
 
         bm: discord.Message = await channel.send(
@@ -196,7 +196,7 @@ class OpenAI(commands.Cog):
             img_response = await self.openai_generations(match.content)
             log.debug(img_response)
             if not img_response['data']:
-                await channel.send('Error: No data returned from OpenAI!', delete_after=10)
+                await channel.send('⛔ Error: No data returned from OpenAI!', delete_after=30)
                 return
 
             await bm.edit(content='⌛ Downloading Image from OpenAI...')
@@ -206,7 +206,7 @@ class OpenAI(commands.Cog):
                 r = await client.get(url=url)
             if not r.is_success:
                 log.error('r.status_code: %s', r.status_code)
-                await channel.send('Error: Downloading image from OpenAI!', delete_after=10)
+                await channel.send('⛔ Error Downloading image from OpenAI!', delete_after=30)
                 r.raise_for_status()
 
             await bm.edit(content='⌛ Uploading Image to Discord...')
@@ -220,7 +220,7 @@ class OpenAI(commands.Cog):
 
         except Exception as error:
             log.exception(error)
-            await channel.send(f'Error performing lookup: `{error}`', delete_after=10)
+            await channel.send(f'⛔ Error performing lookup: `{error}`', delete_after=30)
         finally:
             await bm.delete()
 
@@ -265,7 +265,7 @@ class OpenAI(commands.Cog):
 
         except Exception as error:
             log.exception(error)
-            await ctx.send(f'Error performing lookup: `{error}`', delete_after=10)
+            await ctx.send(f'Error performing lookup: `{error}`', delete_after=30)
         finally:
             await bm.delete()
 

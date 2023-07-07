@@ -1,11 +1,13 @@
+import asyncio
+import concurrent.futures
 import datetime
 import discord
 import docker
 import logging
-from typing import Optional, Union, List
+from typing import Any, Dict, List, Optional, Union
 
-from redbot.core import app_commands, commands, Config
-from redbot.core.utils import chat_formatting as cf
+from redbot.core import commands
+from redbot.core.utils import AsyncIter
 
 log = logging.getLogger('red.dockerd')
 
@@ -13,22 +15,19 @@ log = logging.getLogger('red.dockerd')
 class Dockerd(commands.Cog):
     """Carl's Dockerd Cog"""
 
-    # guild_default = {
-    #     'enabled': False,
-    #     'channels': [],
-    # }
+    docker_url = 'unix://var/run/docker.sock'
 
     def __init__(self, bot):
         self.bot = bot
         self.color = 1294073
-        self.client = docker.DockerClient(base_url='unix://var/run/docker.sock')
+        self.client = docker.DockerClient(base_url=self.docker_url)
+        self.client_low = docker.APIClient(base_url=self.docker_url)
         self.settings: Optional[dict] = None
-        # self.config = Config.get_conf(self, 1337, True)
-        # self.config.register_guild(**self.guild_default)
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
         self.settings = await self.bot.get_shared_api_tokens('docker')
+        log.info('settings: %s', self.settings)
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
@@ -36,17 +35,21 @@ class Dockerd(commands.Cog):
 
     @commands.group(name='docker', aliases=['dock', 'dockerd'])
     @commands.guild_only()
-    @commands.admin()
+    @commands.is_owner()
+    @commands.max_concurrency(1, commands.BucketType.default)
     async def _docker(self, ctx: commands.Context):
         """Docker Commands Group."""
 
     @_docker.command(name='info', aliases=['i'])
     @commands.guild_only()
-    @commands.max_concurrency(1, commands.BucketType.guild)
+    @commands.is_owner()
+    @commands.max_concurrency(1, commands.BucketType.default)
     async def _docker_info(self, ctx: commands.Context):
         """Get Docker Info"""
+        await ctx.typing()
         info = self.client.info()
-        embed: discord.Embed = self.get_embed(info)
+        embed: discord.Embed = self.get_embed(ctx, info)
+        embed.set_author(name='info')
 
         embed.description = (
             f"```ini\n"
@@ -58,9 +61,6 @@ class Dockerd(commands.Cog):
             embed.add_field(name='Swarm', value='Yes')
             embed.add_field(name='Nodes', value=info['Swarm']['Nodes'])
             embed.add_field(name='Managers', value=info['Swarm']['Managers'])
-
-        # embed.set_author(name=info['ID'])
-        embed.set_author(name='info')
 
         embed.add_field(name='OS Version', value=info['OSVersion'])
         embed.add_field(name='OS Type', value=info['OSType'])
@@ -76,37 +76,105 @@ class Dockerd(commands.Cog):
         if info['ContainersStopped']:
             embed.add_field(name='Stopped', value=f"{info['ContainersStopped']}")
         # embed.add_field(name='Images', value=f"{info['Images']}")
-
-        embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
+
+    # @staticmethod
+    # async def container_stats(container):
+    #     return container.stats(stream=False)
+
+    @staticmethod
+    def calculate_cpu_percent(d, round_to=2):
+        cpu_count = d["cpu_stats"]["online_cpus"]
+        cpu_percent = 0.0
+        cpu_delta = float(d["cpu_stats"]["cpu_usage"]["total_usage"]) - float(d["precpu_stats"]["cpu_usage"]["total_usage"])
+        system_delta = float(d["cpu_stats"]["system_cpu_usage"]) - float(d["precpu_stats"]["system_cpu_usage"])
+        if system_delta > 0.0:
+            cpu_percent = cpu_delta / system_delta * 100.0 * cpu_count
+        return round(cpu_percent, round_to)
 
     @_docker.command(name='stats', aliases=['s'])
     @commands.guild_only()
-    @commands.max_concurrency(1, commands.BucketType.guild)
-    async def _docker_stats(self, ctx: commands.Context):
+    @commands.is_owner()
+    @commands.max_concurrency(1, commands.BucketType.default)
+    async def _docker_stats(self, ctx: commands.Context, limit: Optional[int] = 0,
+                            sort: Optional[str] = 'mem'):
         """Get Docker Stats"""
-        # info = self.client.info()
-        # containers = self.client.containers.list()
-        # embed: discord.Embed = self.get_embed(info)
+        log.debug('limit: %s', limit)
+        log.debug('sort: %s', sort)
+        await ctx.typing()
+        info = self.client.info()
+        containers = self.client.containers.list()
+        embed: discord.Embed = self.get_embed(ctx, info)
+        embed.set_author(name='stats')
 
-        # stats = []
-        # for container in containers:
-        #     stats.append(container.stats(stream=False))
+        # stats: List[Dict[str, Any]] = []
+        # async with ctx.typing():
+        #     async for container in AsyncIter(containers, 0.01):
+        #         # TODO: This Blocks too Long
+        #         # data = self.client_low.stats(container=container.name, stream=False)
+        #         data: Dict[str, Any] = container.stats(stream=False)
+        #         stats.append(data)
+
+        # async def fetch_container_stats(container) -> Dict[str, Any]:
+        #     data: Dict[str, Any] = await self.container_stats(container)
+        #     return data
+        # tasks = [fetch_container_stats(container) for container in containers]
+        # stats = await asyncio.gather(*tasks)
+
+        stats = []
+
+        def get_stats(container):
+            data = container.stats(stream=False)
+            return data
+
+        def process_stats():
+            with concurrent.futures.ThreadPoolExecutor(max_workers=60) as executor:
+                futures = [executor.submit(get_stats, container) for container in containers]
+                for future in concurrent.futures.as_completed(futures):
+                    data = future.result()
+                    stats.append(data)
+
+        process_stats()
+
+        if sort[:3] in ['nam', 'id']:
+            stats = sorted(stats, key=lambda x: x['name'])
+        elif sort[:3] == 'cpu':
+            stats = reversed(sorted(stats, key=lambda x: x['cpu_stats']['cpu_usage']['total_usage']))
+        else:
+            stats = reversed(sorted(stats, key=lambda x: x['memory_stats']['usage']))
+
+        lines = []
+        async with ctx.typing():
+            for i, stat in enumerate(stats, 1):
+                name = stat['name'].lstrip('/')[:26]
+                mem = self.convert_bytes(stat['memory_stats']['usage'])
+                mem_max = self.convert_bytes(stat['memory_stats']['limit'])
+                cpu = self.calculate_cpu_percent(stat)
+                lines.append(f"{mem}/{mem_max} `{cpu}%` - **{name}**")
+                if limit > 0 and limit == i:
+                    break
+
+        embed.description = '\n'.join(lines)
+        log.debug('embed.description: %s', embed.description)
+        await ctx.send(embed=embed)
 
     @_docker.group(name='container', aliases=['c', 'con', 'cont', 'contain'])
     @commands.guild_only()
-    @commands.max_concurrency(1, commands.BucketType.guild)
-    async def _d_container(self, ctx: commands.Context, limit: Optional[int]):
+    @commands.is_owner()
+    @commands.max_concurrency(1, commands.BucketType.default)
+    async def _d_container(self, ctx: commands.Context):
         """Get Docker Containers"""
 
     @_d_container.command(name='list', aliases=['l', 'li', 'lis'])
     @commands.guild_only()
-    @commands.max_concurrency(1, commands.BucketType.guild)
+    @commands.is_owner()
+    @commands.max_concurrency(1, commands.BucketType.default)
     async def _d_container_list(self, ctx: commands.Context, limit: Optional[int]):
         """Get Docker Containers"""
+        await ctx.typing()
         info = self.client.info()
         containers = self.client.containers.list()
-        embed: discord.Embed = self.get_embed(info)
+        embed: discord.Embed = self.get_embed(ctx, info)
         embed.set_author(name='container list')
 
         lines = ['```diff']
@@ -118,7 +186,6 @@ class Dockerd(commands.Cog):
         lines.append('```')
         embed.description = '\n'.join(lines)
 
-        embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
     # @_docker.group(name='stack', aliases=['s', 'st', 'stac'])
@@ -145,22 +212,21 @@ class Dockerd(commands.Cog):
     #     lines.append('```')
     #     embed.description = '\n'.join(lines)
     #
-    #     embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar.url)
     #     await ctx.send(embed=embed)
 
-
-    def get_embed(self, info: dict) -> discord.Embed:
+    def get_embed(self, ctx: commands.Context, info: dict) -> discord.Embed:
         embed = discord.Embed(
             title=info['Name'],
             color=discord.Colour(self.color),
             timestamp=datetime.datetime.strptime(info['SystemTime'][:26], '%Y-%m-%dT%H:%M:%S.%f'),
         )
+        embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar.url)
         if 'url' in self.settings:
             embed.url = self.settings['url']
         return embed
 
     @staticmethod
-    def convert_bytes(num_bytes: Union[str, int], decimal: Optional[int] = 1) -> str:
+    def convert_bytes(num_bytes: Union[str, int], decimal: Optional[int] = 0) -> str:
         """
         Converts total bytes to human-readable format.
         Args:
@@ -170,13 +236,13 @@ class Dockerd(commands.Cog):
             str: The human-readable string representation of the bytes.
         """
         num_bytes = int(num_bytes)
-        suffixes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-
+        suffixes = ['b', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb', 'Eb', 'Zb', 'Yb']
         if num_bytes == 0:
-            return '0 B'
+            return '0 b'
         i = 0
         while num_bytes >= 1024 and i < len(suffixes) - 1:
             num_bytes /= 1024
             i += 1
+        decimal = 1 if i > 2 and decimal == 0 else decimal
         return f'{num_bytes:.{decimal}f} {suffixes[i]}'
 
