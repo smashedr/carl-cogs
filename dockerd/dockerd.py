@@ -187,9 +187,9 @@ class Dockerd(commands.Cog):
         for cont in containers:
             name = cont.name.split('.')[0]
             if cont.status == 'running':
-                line = f'+ {cont.name}'
+                line = f'+ {name}'
             else:
-                line = f'- {cont.name}'
+                line = f'- {name}'
             if len('\n'.join(lines + [line])) > (4096 - len(overflow) - 10):
                 hidden = len(containers) - len(lines)
                 lines.append('\n```' + overflow.format(hidden))
