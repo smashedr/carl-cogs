@@ -7,11 +7,11 @@ from typing import Optional
 from redbot.core import commands
 from redbot.core.utils import chat_formatting as cf
 
-log = logging.getLogger('red.consolecmds')
+log = logging.getLogger('red.console')
 
 
-class Consolecmds(commands.Cog):
-    """Carl's Consolecmds Cog"""
+class Console(commands.Cog):
+    """Carl's Console Cog"""
 
     def __init__(self, bot):
         self.bot = bot

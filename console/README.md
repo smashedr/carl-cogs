@@ -1,4 +1,4 @@
-# Consolecmds
+# Console
 
 Random console commands converted to Python and Discord.
 

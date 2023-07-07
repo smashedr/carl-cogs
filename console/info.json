@@ -1,7 +1,7 @@
 {
-  "name": "Consolecmds",
+  "name": "Console",
   "author": ["Shane#0816"],
-  "short": "Carl's Consolecmds Module.",
+  "short": "Carl's Console Module.",
   "description": "Random console commands converted to Python and Discord.",
   "install_msg": "Get started with `[p]help Consolecmds`",
   "end_user_data_statement": "Caveat Emptor.",

@@ -5,7 +5,7 @@ import docker
 import io
 import json
 import logging
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 from zipline import Zipline
 
 from redbot.core import commands
@@ -33,7 +33,6 @@ class Dockerd(commands.Cog):
         log.info('settings: %s', self.settings)
         self.url = self.settings.get('url')
         endpoint = self.settings.get('endpoint', '1')
-        expire = self.settings.get('expire', '30d')
         if self.url:
             url = self.url.replace('/home', '').rstrip('!#/')
             self.url = url + f'/#!/{endpoint}/'
@@ -41,7 +40,7 @@ class Dockerd(commands.Cog):
             self.zipline = Zipline(
                 self.settings['zipline'],
                 authorization=self.settings['token'],
-                expires_at=expire,
+                expires_at=self.settings.get('expire', '30d'),
             )
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
@@ -121,6 +120,15 @@ class Dockerd(commands.Cog):
                 stats.append(data)
         return stats
 
+    @staticmethod
+    def get_color_icon(container) -> Tuple[discord.Color, str]:
+        if container.status == 'running':
+            return discord.Colour.green(), '🟢'
+        elif container.status == 'paused':
+            return discord.Colour.yellow(), '🟡'
+        else:
+            return discord.Colour.red(), '🔴'
+
     @_docker.command(name='stats', aliases=['s'])
     @commands.guild_only()
     @commands.is_owner()
@@ -178,32 +186,24 @@ class Dockerd(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.default)
     async def _d_container_info(self, ctx: commands.Context, name_or_id: str):
         """Docker Container Info"""
-        log.debug('name_or_id: %s', name_or_id)
         await ctx.typing()
+        log.debug('name_or_id: %s', name_or_id)
         info = self.client.info()
         container = self.client.containers.get(name_or_id)
         if not container:
-            return await ctx.send(f'Container not found: {name_or_id}')
+            return await ctx.send(f'⛔ Container not found: {name_or_id}')
 
         embed: discord.Embed = self.get_embed(ctx, info)
         embed.set_author(name='docker container info')
         stats = container.stats(stream=False)
-        if container.status == 'running':
-            embed._colour = discord.Colour.green()
-            icon = '🟢'  # green
-        elif container.status == 'paused':
-            embed._colour = discord.Colour.yellow()
-            icon = '🟡'  # yellow
-        else:
-            embed._colour = discord.Colour.red()
-            icon = '🔴'  # red
+        embed.colour, icon = self.get_color_icon(container)
 
         created = datetime.datetime.strptime(container.attrs['Created'][:26], '%Y-%m-%dT%H:%M:%S.%f')
         created_at = int(created.timestamp())
         started = datetime.datetime.strptime(container.attrs['State']['StartedAt'][:26], '%Y-%m-%dT%H:%M:%S.%f')
         started_at = int(started.timestamp())
         embed.description = (
-            f"{icon} **{container.name}** - `{container.short_id}`\n\n"
+            f"{icon}  **{container.name}**  (`{container.short_id}`)\n\n"
             f"**Created:** <t:{created_at}:R> on <t:{created_at}:D>\n"
             f"**Started:** <t:{started_at}:R> on <t:{started_at}:D>\n"
         )
