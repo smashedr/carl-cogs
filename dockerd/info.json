@@ -6,7 +6,7 @@
   "install_msg": "Manage this command with `[p]dockerd`",
   "end_user_data_statement": "Caveat Emptor.",
   "tags": ["wip"],
-  "requirements": ["docker"],
+  "requirements": ["docker", "zipline-cli"],
   "permissions" : [],
   "required_cogs": {},
   "min_bot_version": "3.4.0",

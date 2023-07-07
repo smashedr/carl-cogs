@@ -6,6 +6,7 @@ import io
 import json
 import logging
 from typing import List, Optional, Union
+from zipline import Zipline
 
 from redbot.core import commands
 
@@ -24,6 +25,7 @@ class Dockerd(commands.Cog):
         self.client_low = docker.APIClient(base_url=self.docker_url)
         self.settings: Optional[dict] = None
         self.url: Optional[str] = None
+        self.zipline: Optional[Zipline] = None
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
@@ -31,9 +33,16 @@ class Dockerd(commands.Cog):
         log.info('settings: %s', self.settings)
         self.url = self.settings.get('url')
         endpoint = self.settings.get('endpoint', '1')
+        expire = self.settings.get('expire', '30d')
         if self.url:
             url = self.url.replace('/home', '').rstrip('!#/')
             self.url = url + f'/#!/{endpoint}/'
+        if 'zipline' in self.settings and 'token' in self.settings:
+            self.zipline = Zipline(
+                self.settings['zipline'],
+                authorization=self.settings['token'],
+                expires_at=expire,
+            )
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
@@ -46,7 +55,7 @@ class Dockerd(commands.Cog):
     async def _docker(self, ctx: commands.Context):
         """Docker"""
 
-    @_docker.command(name='info', aliases=['i', 'in', 'inf'])
+    @_docker.command(name='info', aliases=['i'])
     @commands.guild_only()
     @commands.is_owner()
     @commands.max_concurrency(1, commands.BucketType.default)
@@ -104,7 +113,7 @@ class Dockerd(commands.Cog):
             cpu_percent = cpu_delta / system_delta * 100.0 * cpu_count
         return round(cpu_percent, round_to)
 
-    @_docker.command(name='stats', aliases=['s', 'st', 'sta', 'stat'])
+    @_docker.command(name='stats', aliases=['s'])
     @commands.guild_only()
     @commands.is_owner()
     @commands.max_concurrency(1, commands.BucketType.default)
@@ -175,18 +184,18 @@ class Dockerd(commands.Cog):
         log.debug('embed.description: %s', embed.description)
         await ctx.send(embed=embed)
 
-    @_docker.group(name='container', aliases=['c', 'co' 'con', 'cont', 'contain'])
+    @_docker.group(name='container', aliases=['c', 'cont', 'contain'])
     @commands.guild_only()
     @commands.is_owner()
     @commands.max_concurrency(1, commands.BucketType.default)
     async def _d_container(self, ctx: commands.Context):
         """Docker Container"""
 
-    @_d_container.command(name='info', aliases=['i', 'in', 'inf', 'ins', 'insp', 'inspect'])
+    @_d_container.command(name='info', aliases=['i', 'inspect'])
     @commands.guild_only()
     @commands.is_owner()
     @commands.max_concurrency(1, commands.BucketType.default)
-    async def _d_container_info(self, ctx: commands.Context, name_or_id: Optional[str]):
+    async def _d_container_info(self, ctx: commands.Context, name_or_id: str):
         """Docker Container Info"""
         log.debug('name_or_id: %s', name_or_id)
         await ctx.typing()
@@ -219,8 +228,10 @@ class Dockerd(commands.Cog):
         )
 
         ini = CodeINI()
+        ini.add('Platform', container.attrs['Platform'])
         ini.add('Image', container.attrs['Config']['Image'])
-        ini.add('RestartCount', container.attrs['RestartCount'])
+        ini.add('Path', container.attrs['Path'])
+        # ini.add('ExposedPorts', container.attrs['Config']['ExposedPorts'])
 
         embed.description += ini.out()
 
@@ -231,15 +242,28 @@ class Dockerd(commands.Cog):
         mem = self.convert_bytes(stats['memory_stats']['usage'])
         mem_max = self.convert_bytes(stats['memory_stats']['limit'])
         embed.add_field(name='Status', value=container.status)
-        embed.add_field(name='Memory', value=f'{mem}/ {mem_max}')
+        embed.add_field(name='Memory', value=f'{mem} / {mem_max}')
         embed.add_field(name='CPU', value=f'{self.calculate_cpu_percent(stats)}%')
 
         if 'Health' in container.attrs['State']:
-            embed.add_field(name='Status', value=container.attrs['State']['Health']['Status'])
+            embed.add_field(name='Health', value=container.attrs['State']['Health']['Status'])
             embed.add_field(name='FailStreak', value=container.attrs['State']['Health']['FailingStreak'])
+            embed.add_field(name='RestartCount', value=container.attrs['RestartCount'])
 
         if 'Env' in container.attrs['Config'] and 'TRAEFIK_HOST' in container.attrs['Config']['Env']:
             embed.add_field(name='Traefik Host', value=container.attrs['Config']['Env']['TRAEFIK_HOST'], inline=False)
+
+        if container.attrs['NetworkSettings']['Networks']:
+            networks = []
+            for network, data in container.attrs['NetworkSettings']['Networks'].items():
+                networks.append(f"`{network}`")
+            embed.add_field(name='Networks', value=', '.join(networks), inline=False)
+
+        if container.attrs['NetworkSettings']['Ports']:
+            ports = []
+            for port, data in container.attrs['NetworkSettings']['Ports'].items():
+                ports.append(f"`{port}`")
+            embed.add_field(name='Ports', value=', '.join(ports), inline=False)
 
         if container.attrs['HostConfig']['Binds']:
             binds = []
@@ -260,14 +284,20 @@ class Dockerd(commands.Cog):
             del container.attrs['Config']['Env']
         data = json.dumps(container.attrs, indent=4)
         bytesio = io.BytesIO(bytes(data, 'utf-8'))
-        file = discord.File(bytesio, f'{container.short_id}.json')
+
+        content, file = None, None
+        if self.zipline:
+            url = self.zipline.send_file(f'{container.short_id}.json', bytesio)
+            content = url
+        else:
+            file = discord.File(bytesio, f'{container.short_id}.json')
 
         if self.url:
             embed.url = self.url + f'docker/containers/{container.id}'
         embed.timestamp = datetime.datetime.strptime(container.attrs['Created'][:26], '%Y-%m-%dT%H:%M:%S.%f')
-        await ctx.send(embed=embed, file=file)
+        await ctx.send(content, embed=embed, file=file)
 
-    @_d_container.command(name='list', aliases=['l', 'ls', 'li', 'lis'])
+    @_d_container.command(name='list', aliases=['l', 'ls'])
     @commands.guild_only()
     @commands.is_owner()
     @commands.max_concurrency(1, commands.BucketType.default)
