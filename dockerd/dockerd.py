@@ -146,7 +146,7 @@ class Dockerd(commands.Cog):
         lines = []
         async with ctx.typing():
             for i, stat in enumerate(stats, 1):
-                name = stat['name'].lstrip('/').split('.')[0][:32]
+                name = stat['name'].lstrip('/').split('.')[0][:34]
                 mem = self.convert_bytes(stat['memory_stats']['usage'])
                 mem_max = self.convert_bytes(stat['memory_stats']['limit'])
                 cpu = self.calculate_cpu_percent(stat)
@@ -185,6 +185,7 @@ class Dockerd(commands.Cog):
         overflow = '\n_{} Containers Not Shown..._'
         lines = ['```diff']
         for cont in containers:
+            name = cont.name.split('.')[0]
             if cont.status == 'running':
                 line = f'+ {cont.name}'
             else:
