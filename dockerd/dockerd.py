@@ -5,7 +5,7 @@ import docker
 import io
 import json
 import logging
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 from zipline import Zipline
 
 from redbot.core import commands
@@ -70,6 +70,7 @@ class Dockerd(commands.Cog):
             f"```ini\n"
             f"[OS]:     {info['OperatingSystem']}\n"
             f"[Kernel]: {info['KernelVersion']}\n"
+            f"[Root]: {info['DockerRootDir']}\n"
             f"```"
         )
         if info['Swarm']:
@@ -90,7 +91,6 @@ class Dockerd(commands.Cog):
             embed.add_field(name='Paused', value=f"{info['ContainersPaused']}")
         if info['ContainersStopped']:
             embed.add_field(name='Stopped', value=f"{info['ContainersStopped']}")
-        # embed.add_field(name='Images', value=f"{info['Images']}")
 
         if info['Images']:
             embed.add_field(name='Images', value=f"{info['Images']}")
@@ -98,10 +98,6 @@ class Dockerd(commands.Cog):
             embed.add_field(name='Warnings', value=f"{info['Warnings']}")
 
         await ctx.send(embed=embed)
-
-    # @staticmethod
-    # async def container_stats(container):
-    #     return container.stats(stream=False)
 
     @staticmethod
     def calculate_cpu_percent(d, round_to=2):
@@ -113,6 +109,18 @@ class Dockerd(commands.Cog):
             cpu_percent = cpu_delta / system_delta * 100.0 * cpu_count
         return round(cpu_percent, round_to)
 
+    @staticmethod
+    def process_stats(containers, workers: Optional[int] = 60):
+        def get_stats(container):
+            return container.stats(stream=False)
+        stats = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = [executor.submit(get_stats, container) for container in containers]
+            for future in concurrent.futures.as_completed(futures):
+                data = future.result()
+                stats.append(data)
+        return stats
+
     @_docker.command(name='stats', aliases=['s'])
     @commands.guild_only()
     @commands.is_owner()
@@ -123,46 +131,19 @@ class Dockerd(commands.Cog):
         log.debug('limit: %s', limit)
         log.debug('sort: %s', sort)
         await ctx.typing()
-        info = self.client.info()
-        containers = self.client.containers.list()
+        info: Dict = self.client.info()
+        containers: List = self.client.containers.list()
         embed: discord.Embed = self.get_embed(ctx, info)
         embed.set_author(name='docker stats')
-
-        # stats: List[Dict[str, Any]] = []
-        # async with ctx.typing():
-        #     async for container in AsyncIter(containers, 0.01):
-        #         # TODO: This Blocks too Long
-        #         # data = self.client_low.stats(container=container.name, stream=False)
-        #         data: Dict[str, Any] = container.stats(stream=False)
-        #         stats.append(data)
-
-        # async def fetch_container_stats(container) -> Dict[str, Any]:
-        #     data: Dict[str, Any] = await self.container_stats(container)
-        #     return data
-        # tasks = [fetch_container_stats(container) for container in containers]
-        # stats = await asyncio.gather(*tasks)
-
-        stats = []
-
-        def get_stats(container):
-            data = container.stats(stream=False)
-            return data
-
-        def process_stats():
-            with concurrent.futures.ThreadPoolExecutor(max_workers=60) as executor:
-                futures = [executor.submit(get_stats, container) for container in containers]
-                for future in concurrent.futures.as_completed(futures):
-                    data = future.result()
-                    stats.append(data)
-
-        process_stats()
-
+        stats: List[Dict] = self.process_stats(containers)
         if sort[:3] in ['nam', 'id']:
             stats = sorted(stats, key=lambda x: x['name'])
         elif sort[:3] == 'cpu':
-            stats = reversed(sorted(stats, key=lambda x: x['cpu_stats']['cpu_usage']['total_usage']))
+            stats = sorted(stats, key=lambda x: x['cpu_stats']['cpu_usage']['total_usage'])
+            stats.reverse()
         else:
-            stats = reversed(sorted(stats, key=lambda x: x['memory_stats']['usage']))
+            stats = sorted(stats, key=lambda x: x['memory_stats']['usage'])
+            stats.reverse()
         overflow = '\n_{} Containers Not Shown..._'
         lines = []
         async with ctx.typing():
