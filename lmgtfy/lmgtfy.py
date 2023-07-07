@@ -14,7 +14,8 @@ class Lmgtfy(commands.Cog):
         self.bot = bot
 
     async def cog_load(self):
-        log.info('%s: Cog Load', self.__cog_name__)
+        log.info('%s: Cog Load Start', self.__cog_name__)
+        log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)

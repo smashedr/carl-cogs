@@ -189,7 +189,6 @@ class Webtools(commands.Cog):
             return None
 
     @commands.command(name='checksite', aliases=['cs', 'check'])
-    @commands.guild_only()
     @commands.cooldown(3, 20, commands.BucketType.user)
     @commands.max_concurrency(1, commands.BucketType.default)
     async def check_site(self, ctx: commands.Context, url: str,

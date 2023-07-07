@@ -1,13 +1,11 @@
-import asyncio
 import concurrent.futures
 import datetime
 import discord
 import docker
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Optional, Union
 
 from redbot.core import commands
-from redbot.core.utils import AsyncIter
 
 log = logging.getLogger('red.dockerd')
 

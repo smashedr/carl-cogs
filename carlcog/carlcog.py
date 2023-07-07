@@ -37,7 +37,6 @@ class Carlcog(commands.Cog):
         log.info('%s: Cog Load Start', self.__cog_name__)
         self.info = await self.bot.get_shared_api_tokens('info')
         log.info('INFO: %s', self.info)
-
         self.embedset_command = self.bot.remove_command('embedset')
         self.forgetme_command = self.bot.remove_command('forgetme')
         self.info_command = self.bot.remove_command('info')

@@ -3,7 +3,7 @@ import discord
 import json
 import logging
 import redis.asyncio as redis
-from typing import Optional, Union
+from typing import Optional
 
 from redbot.core import commands, Config
 from redbot.core.utils import AsyncIter
@@ -29,7 +29,7 @@ class Captcha(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(**self.guild_default)
         self.loop: Optional[asyncio.Task] = None
-        self.client: Optional[redis.Redis] = None
+        self.redis: Optional[redis.Redis] = None
         self.pubsub: Optional[redis.client.PubSub] = None
         self.url: Optional[str] = None
 
@@ -41,15 +41,15 @@ class Captcha(commands.Cog):
             self.url = captcha['url'].replace('/verify', '').strip('/')
         if not self.url:
             log.warning('CAPTCHA API URL NOT SET!!!')
-        data = await self.bot.get_shared_api_tokens('redis')
-        self.client = redis.Redis(
-            host=data['host'] if 'host' in data else 'redis',
-            port=int(data['port']) if 'port' in data else 6379,
-            db=int(data['db']) if 'db' in data else 0,
-            password=data['pass'] if 'pass' in data else None,
+        redis_data: dict = await self.bot.get_shared_api_tokens('redis')
+        self.redis = redis.Redis(
+            host=redis_data.get('host', 'redis'),
+            port=int(redis_data.get('port', 6379)),
+            db=int(redis_data.get('db', 0)),
+            password=redis_data.get('pass', None),
         )
-        await self.client.ping()
-        self.pubsub = self.client.pubsub(ignore_subscribe_messages=True)
+        await self.redis.ping()
+        self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
         self.loop = asyncio.create_task(self.captcha_loop())
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
@@ -94,7 +94,7 @@ class Captcha(commands.Cog):
             if 'verify' in data['requests']:
                 resp = await self.process_verification(guild, member, data)
             log.debug('resp: %s', resp)
-            pr = await self.client.publish(channel, json.dumps(resp, default=str))
+            pr = await self.redis.publish(channel, json.dumps(resp, default=str))
             log.debug('pr: %s', pr)
         except Exception as error:
             log.error('Exception processing message.')

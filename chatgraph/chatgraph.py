@@ -9,7 +9,7 @@ from typing import Optional, Dict, List, Any
 
 from redbot.core import commands, Config
 
-log = logging.getLogger('red.openai')
+log = logging.getLogger('red.chatgraph')
 
 
 class ChatGraph(commands.Cog):

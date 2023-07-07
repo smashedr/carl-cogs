@@ -28,12 +28,12 @@ class Planedb(commands.Cog):
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
-        data: dict = await self.bot.get_shared_api_tokens('redis')
+        redis_data: dict = await self.bot.get_shared_api_tokens('redis')
         self.redis = redis.Redis(
-            host=data['host'] if 'host' in data else 'redis',
-            port=int(data['port']) if 'port' in data else 6379,
-            db=int(data['db']) if 'db' in data else 0,
-            password=data['pass'] if 'pass' in data else None,
+            host=redis_data.get('host', 'redis'),
+            port=int(redis_data.get('port', 6379)),
+            db=int(redis_data.get('db', 0)),
+            password=redis_data.get('pass', None),
         )
         await self.redis.ping()
         log.info('%s: Cog Load Finish', self.__cog_name__)
