@@ -40,7 +40,7 @@ class Dockerd(commands.Cog):
     async def _docker(self, ctx: commands.Context):
         """Docker Commands Group."""
 
-    @_docker.command(name='info', aliases=['i'])
+    @_docker.command(name='info', aliases=['i', 'in', 'inf'])
     @commands.guild_only()
     @commands.is_owner()
     @commands.max_concurrency(1, commands.BucketType.default)
@@ -49,7 +49,7 @@ class Dockerd(commands.Cog):
         await ctx.typing()
         info = self.client.info()
         embed: discord.Embed = self.get_embed(ctx, info)
-        embed.set_author(name='info')
+        embed.set_author(name='docker info')
 
         embed.description = (
             f"```ini\n"
@@ -92,7 +92,7 @@ class Dockerd(commands.Cog):
             cpu_percent = cpu_delta / system_delta * 100.0 * cpu_count
         return round(cpu_percent, round_to)
 
-    @_docker.command(name='stats', aliases=['s'])
+    @_docker.command(name='stats', aliases=['s', 'st', 'sta', 'stat'])
     @commands.guild_only()
     @commands.is_owner()
     @commands.max_concurrency(1, commands.BucketType.default)
@@ -105,7 +105,7 @@ class Dockerd(commands.Cog):
         info = self.client.info()
         containers = self.client.containers.list()
         embed: discord.Embed = self.get_embed(ctx, info)
-        embed.set_author(name='stats')
+        embed.set_author(name='docker stats')
 
         # stats: List[Dict[str, Any]] = []
         # async with ctx.typing():
@@ -142,7 +142,7 @@ class Dockerd(commands.Cog):
             stats = reversed(sorted(stats, key=lambda x: x['cpu_stats']['cpu_usage']['total_usage']))
         else:
             stats = reversed(sorted(stats, key=lambda x: x['memory_stats']['usage']))
-
+        overflow = '\n_{} Containers Not Shown..._'
         lines = []
         async with ctx.typing():
             for i, stat in enumerate(stats, 1):
@@ -150,7 +150,12 @@ class Dockerd(commands.Cog):
                 mem = self.convert_bytes(stat['memory_stats']['usage'])
                 mem_max = self.convert_bytes(stat['memory_stats']['limit'])
                 cpu = self.calculate_cpu_percent(stat)
-                lines.append(f"{mem}/{mem_max} `{cpu}%` - **{name}**")
+                line = f"{mem}/{mem_max} `{cpu}%` - **{name}**"
+                if len('\n'.join(lines + [line])) > (4096 - len(overflow) - 10):
+                    hidden = len(containers) - len(lines)
+                    lines.append(overflow.format(hidden))
+                    break
+                lines.append(line)
                 if limit > 0 and limit == i:
                     break
 
@@ -158,14 +163,14 @@ class Dockerd(commands.Cog):
         log.debug('embed.description: %s', embed.description)
         await ctx.send(embed=embed)
 
-    @_docker.group(name='container', aliases=['c', 'con', 'cont', 'contain'])
+    @_docker.group(name='container', aliases=['c', 'co' 'con', 'cont', 'contain'])
     @commands.guild_only()
     @commands.is_owner()
     @commands.max_concurrency(1, commands.BucketType.default)
     async def _d_container(self, ctx: commands.Context):
         """Get Docker Containers"""
 
-    @_d_container.command(name='list', aliases=['l', 'li', 'lis'])
+    @_d_container.command(name='list', aliases=['l', 'ls', 'li', 'lis'])
     @commands.guild_only()
     @commands.is_owner()
     @commands.max_concurrency(1, commands.BucketType.default)
@@ -175,15 +180,23 @@ class Dockerd(commands.Cog):
         info = self.client.info()
         containers = self.client.containers.list()
         embed: discord.Embed = self.get_embed(ctx, info)
-        embed.set_author(name='container list')
+        embed.set_author(name='docker container list')
 
+        overflow = '\n_{} Containers Not Shown..._'
         lines = ['```diff']
         for cont in containers:
             if cont.status == 'running':
-                lines.append(f'+ {cont.name}')
+                line = f'+ {cont.name}'
             else:
-                lines.append(f'- {cont.name}')
-        lines.append('```')
+                line = f'- {cont.name}'
+            if len('\n'.join(lines + [line])) > (4096 - len(overflow) - 10):
+                hidden = len(containers) - len(lines)
+                lines.append('\n```' + overflow.format(hidden))
+                break
+            lines.append(line)
+        else:
+            lines.append('```')
+
         embed.description = '\n'.join(lines)
 
         await ctx.send(embed=embed)
