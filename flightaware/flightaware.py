@@ -8,7 +8,7 @@ import redis.asyncio as redis
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from html import unescape
-from typing import Dict, List, Optional, Union
+from typing import List, Optional, Union
 
 from redbot.core import commands, app_commands
 from redbot.core.bot import Red
@@ -284,7 +284,7 @@ class Flightaware(commands.Cog):
             msgs.append(f"\n[Location]:   {d['location']}")
         if d['phone']:
             msgs.append(f"\n[Phone]:      {d['phone']}")
-        msgs.append(f"```")
+        msgs.append("```")
         buttons = {}
         if d['url']:
             buttons.update({'Website': d['url']})
