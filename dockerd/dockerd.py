@@ -2,6 +2,8 @@ import concurrent.futures
 import datetime
 import discord
 import docker
+import io
+import json
 import logging
 from typing import List, Optional, Union
 
@@ -180,7 +182,7 @@ class Dockerd(commands.Cog):
     async def _d_container(self, ctx: commands.Context):
         """Docker Container"""
 
-    @_d_container.command(name='info', aliases=['i', 'in', 'inf'])
+    @_d_container.command(name='info', aliases=['i', 'in', 'inf', 'ins', 'insp', 'inspect'])
     @commands.guild_only()
     @commands.is_owner()
     @commands.max_concurrency(1, commands.BucketType.default)
@@ -211,10 +213,9 @@ class Dockerd(commands.Cog):
         started = datetime.datetime.strptime(container.attrs['State']['StartedAt'][:26], '%Y-%m-%dT%H:%M:%S.%f')
         started_at = int(started.timestamp())
         embed.description = (
-            f"{icon} **{container.name}** - `{container.short_id}`\n"
-            f"`{container.id}`\n\n"
-            f"**Created:** <t:{created_at}:R> on <t:{created_at}:D>"
-            f"**Started:** <t:{started_at}:R> on <t:{started_at}:D>"
+            f"{icon} **{container.name}** - `{container.short_id}`\n\n"
+            f"**Created:** <t:{created_at}:R> on <t:{created_at}:D>\n"
+            f"**Started:** <t:{started_at}:R> on <t:{started_at}:D>\n"
         )
 
         ini = CodeINI()
@@ -255,10 +256,16 @@ class Dockerd(commands.Cog):
         #                       f"`{mount['Source']}` -> `{mount['Destination']}`")
         #     embed.add_field(name='Mounts', value='\n'.join(mounts), inline=False)
 
+        if 'Env' in container.attrs['Config']:
+            del container.attrs['Config']['Env']
+        data = json.dumps(container.attrs, indent=4)
+        bytesio = io.BytesIO(bytes(data, 'utf-8'))
+        file = discord.File(bytesio, f'{container.short_id}.json')
+
         if self.url:
             embed.url = self.url + f'docker/containers/{container.id}'
         embed.timestamp = datetime.datetime.strptime(container.attrs['Created'][:26], '%Y-%m-%dT%H:%M:%S.%f')
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, file=file)
 
     @_d_container.command(name='list', aliases=['l', 'ls', 'li', 'lis'])
     @commands.guild_only()
@@ -291,7 +298,7 @@ class Dockerd(commands.Cog):
         embed.description = '\n'.join(lines)
 
         if self.url:
-            embed.url = self.url + f'docker/containers'
+            embed.url = self.url + 'docker/containers'
         await ctx.send(embed=embed)
 
     # @_docker.group(name='stack', aliases=['s', 'st', 'stac'])
