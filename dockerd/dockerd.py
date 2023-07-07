@@ -3,7 +3,7 @@ import datetime
 import discord
 import docker
 import logging
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from redbot.core import commands
 
@@ -21,11 +21,17 @@ class Dockerd(commands.Cog):
         self.client = docker.DockerClient(base_url=self.docker_url)
         self.client_low = docker.APIClient(base_url=self.docker_url)
         self.settings: Optional[dict] = None
+        self.url: Optional[str] = None
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
-        self.settings = await self.bot.get_shared_api_tokens('docker')
+        self.settings: dict = await self.bot.get_shared_api_tokens('docker')
         log.info('settings: %s', self.settings)
+        self.url = self.settings.get('url')
+        endpoint = self.settings.get('endpoint', '1')
+        if self.url:
+            url = self.url.replace('/home', '').rstrip('!#/')
+            self.url = url + f'/#!/{endpoint}/'
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
@@ -36,14 +42,14 @@ class Dockerd(commands.Cog):
     @commands.is_owner()
     @commands.max_concurrency(1, commands.BucketType.default)
     async def _docker(self, ctx: commands.Context):
-        """Docker Commands Group."""
+        """Docker"""
 
     @_docker.command(name='info', aliases=['i', 'in', 'inf'])
     @commands.guild_only()
     @commands.is_owner()
     @commands.max_concurrency(1, commands.BucketType.default)
     async def _docker_info(self, ctx: commands.Context):
-        """Get Docker Info"""
+        """Docker Info"""
         await ctx.typing()
         info = self.client.info()
         embed: discord.Embed = self.get_embed(ctx, info)
@@ -74,6 +80,12 @@ class Dockerd(commands.Cog):
         if info['ContainersStopped']:
             embed.add_field(name='Stopped', value=f"{info['ContainersStopped']}")
         # embed.add_field(name='Images', value=f"{info['Images']}")
+
+        if info['Images']:
+            embed.add_field(name='Images', value=f"{info['Images']}")
+        if info['Warnings']:
+            embed.add_field(name='Warnings', value=f"{info['Warnings']}")
+
         await ctx.send(embed=embed)
 
     # @staticmethod
@@ -96,7 +108,7 @@ class Dockerd(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.default)
     async def _docker_stats(self, ctx: commands.Context, limit: Optional[int] = 0,
                             sort: Optional[str] = 'mem'):
-        """Get Docker Stats"""
+        """Docker Stats"""
         log.debug('limit: %s', limit)
         log.debug('sort: %s', sort)
         await ctx.typing()
@@ -166,14 +178,94 @@ class Dockerd(commands.Cog):
     @commands.is_owner()
     @commands.max_concurrency(1, commands.BucketType.default)
     async def _d_container(self, ctx: commands.Context):
-        """Get Docker Containers"""
+        """Docker Container"""
+
+    @_d_container.command(name='info', aliases=['i', 'in', 'inf'])
+    @commands.guild_only()
+    @commands.is_owner()
+    @commands.max_concurrency(1, commands.BucketType.default)
+    async def _d_container_info(self, ctx: commands.Context, name_or_id: Optional[str]):
+        """Docker Container Info"""
+        log.debug('name_or_id: %s', name_or_id)
+        await ctx.typing()
+        info = self.client.info()
+        container = self.client.containers.get(name_or_id)
+        if not container:
+            return await ctx.send(f'Container not found: {name_or_id}')
+
+        embed: discord.Embed = self.get_embed(ctx, info)
+        embed.set_author(name='docker container info')
+        stats = container.stats(stream=False)
+        if container.status == 'running':
+            embed._colour = discord.Colour.green()
+            icon = '🟢'  # green
+        elif container.status == 'paused':
+            embed._colour = discord.Colour.yellow()
+            icon = '🟡'  # yellow
+        else:
+            embed._colour = discord.Colour.red()
+            icon = '🔴'  # red
+
+        created = datetime.datetime.strptime(container.attrs['Created'][:26], '%Y-%m-%dT%H:%M:%S.%f')
+        created_at = int(created.timestamp())
+        started = datetime.datetime.strptime(container.attrs['State']['StartedAt'][:26], '%Y-%m-%dT%H:%M:%S.%f')
+        started_at = int(started.timestamp())
+        embed.description = (
+            f"{icon} **{container.name}** - `{container.short_id}`\n"
+            f"`{container.id}`\n\n"
+            f"**Created:** <t:{created_at}:R> on <t:{created_at}:D>"
+            f"**Started:** <t:{started_at}:R> on <t:{started_at}:D>"
+        )
+
+        ini = CodeINI()
+        ini.add('Image', container.attrs['Config']['Image'])
+        ini.add('RestartCount', container.attrs['RestartCount'])
+
+        embed.description += ini.out()
+
+        if container.attrs['State']['Error']:
+            embed._colour = discord.Colour.red()
+            embed.description += f"\n🔴 **Error**\n{container.attrs['State']['Error']}"
+
+        mem = self.convert_bytes(stats['memory_stats']['usage'])
+        mem_max = self.convert_bytes(stats['memory_stats']['limit'])
+        embed.add_field(name='Status', value=container.status)
+        embed.add_field(name='Memory', value=f'{mem}/ {mem_max}')
+        embed.add_field(name='CPU', value=f'{self.calculate_cpu_percent(stats)}%')
+
+        if 'Health' in container.attrs['State']:
+            embed.add_field(name='Status', value=container.attrs['State']['Health']['Status'])
+            embed.add_field(name='FailStreak', value=container.attrs['State']['Health']['FailingStreak'])
+
+        if 'Env' in container.attrs['Config'] and 'TRAEFIK_HOST' in container.attrs['Config']['Env']:
+            embed.add_field(name='Traefik Host', value=container.attrs['Config']['Env']['TRAEFIK_HOST'], inline=False)
+
+        if container.attrs['HostConfig']['Binds']:
+            binds = []
+            for bind in container.attrs['HostConfig']['Binds']:
+                s = bind.split(':')
+                binds.append(f"`{s[0]}` -> `{s[1]}`")
+            embed.add_field(name='Bind Mounts', value='\n'.join(binds), inline=False)
+
+        # if container.attrs['Mounts']:
+        #     mounts = []
+        #     for mount in container.attrs['Mounts']:
+        #         rw = 'RW' if mount['RW'] else 'RO'
+        #         mounts.append(f"{rw} ({mount['Mode']}) - {mount['Type']} {mount.get('Name', '')}\n"
+        #                       f"`{mount['Source']}` -> `{mount['Destination']}`")
+        #     embed.add_field(name='Mounts', value='\n'.join(mounts), inline=False)
+
+        if self.url:
+            embed.url = self.url + f'docker/containers/{container.id}'
+        embed.timestamp = datetime.datetime.strptime(container.attrs['Created'][:26], '%Y-%m-%dT%H:%M:%S.%f')
+        await ctx.send(embed=embed)
 
     @_d_container.command(name='list', aliases=['l', 'ls', 'li', 'lis'])
     @commands.guild_only()
     @commands.is_owner()
     @commands.max_concurrency(1, commands.BucketType.default)
     async def _d_container_list(self, ctx: commands.Context, limit: Optional[int]):
-        """Get Docker Containers"""
+        """Docker Container List"""
         await ctx.typing()
         info = self.client.info()
         containers = self.client.containers.list()
@@ -198,6 +290,8 @@ class Dockerd(commands.Cog):
 
         embed.description = '\n'.join(lines)
 
+        if self.url:
+            embed.url = self.url + f'docker/containers'
         await ctx.send(embed=embed)
 
     # @_docker.group(name='stack', aliases=['s', 'st', 'stac'])
@@ -233,8 +327,7 @@ class Dockerd(commands.Cog):
             timestamp=datetime.datetime.strptime(info['SystemTime'][:26], '%Y-%m-%dT%H:%M:%S.%f'),
         )
         embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar.url)
-        if 'url' in self.settings:
-            embed.url = self.settings['url']
+        embed.url = self.url + 'docker/dashboard'
         return embed
 
     @staticmethod
@@ -258,3 +351,17 @@ class Dockerd(commands.Cog):
         decimal = 1 if i > 2 and decimal == 0 else decimal
         return f'{num_bytes:.{decimal}f} {suffixes[i]}'
 
+
+class CodeINI(object):
+    def __init__(self):
+        self.lines: List[str] = []
+
+    def __str__(self):
+        return self.out()
+
+    def add(self, key, value):
+        self.lines.append(f'[{key}]: {value}')
+
+    def out(self):
+        output = '\n'.join(self.lines)
+        return f'```ini\n{output}\n```'
