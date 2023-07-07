@@ -146,7 +146,7 @@ class Dockerd(commands.Cog):
         lines = []
         async with ctx.typing():
             for i, stat in enumerate(stats, 1):
-                name = stat['name'].lstrip('/')[:32]
+                name = stat['name'].lstrip('/').split('.')[0][:32]
                 mem = self.convert_bytes(stat['memory_stats']['usage'])
                 mem_max = self.convert_bytes(stat['memory_stats']['limit'])
                 cpu = self.calculate_cpu_percent(stat)
