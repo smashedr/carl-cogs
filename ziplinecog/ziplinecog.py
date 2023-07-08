@@ -277,22 +277,25 @@ class ModalView(discord.ui.View):
         self.cog = cog
         self.data: Dict[str, str] = data
 
-    @discord.ui.button(label='Set Zipline Details', style=discord.ButtonStyle.blurple, emoji='🖼️')
-    async def set_zipline(self, interaction, button):
+    @discord.ui.button(label='Set Zipline Details', emoji='🖼️', style=discord.ButtonStyle.blurple)
+    async def set_zipline(self, interaction: discord.interactions.Interaction, button: discord.Button):
         log.debug(interaction)
         log.debug(button)
-        modal = DataModal(view=self)
+        user = interaction.user
+        user_config: Dict[str, Any] = await self.cog.config.user(user).all()
+        modal = DataModal(view=self, data=user_config)
         await interaction.response.send_modal(modal)
 
 
 class DataModal(discord.ui.Modal):
-    def __init__(self, view: discord.ui.View):
+    def __init__(self, view: discord.ui.View, data: Dict[str, Any]):
         super().__init__(title='Set Zipline Details')
-        self.view = view
+        self.view: discord.ui.View = view
+        self.data: Dict[str, Any] = data
         self.base_url = discord.ui.TextInput(
             label='Zipline Base URL',
-            placeholder='https://example.com/dashboard',
-            default=self.view.data.get('base_url'),
+            placeholder='Ex: https://example.com/dashboard',
+            default=self.data.get('base_url'),
             style=discord.TextStyle.short,
             max_length=255,
             min_length=10,
@@ -300,8 +303,8 @@ class DataModal(discord.ui.Modal):
         self.add_item(self.base_url)
         self.zip_token = discord.ui.TextInput(
             label='Zipline Authorization Token',
-            placeholder='alRLdlKDFJ31FckdfjEndu5n.AL4nxkdkMjerLqMAPA',
-            default=self.view.data.get('zip_token'),
+            placeholder='Ex: alRLdlKDFJ31FckdfjEndu5n.AL4nxkdkMjerLqMAPA',
+            default=self.data.get('zip_token'),
             style=discord.TextStyle.short,
             max_length=43,
             min_length=43,
@@ -313,15 +316,12 @@ class DataModal(discord.ui.Modal):
         log.debug('ReplyModal - on_submit')
         # message: discord.Message = interaction.message
         user: discord.Member = interaction.user
-        # user_conf: Dict[str, str] = await self.view.cog.config.user(user).all()
-        # log.debug('self.base_url.value: %s', self.base_url.value)
-        # log.debug('self.zip_token.value: %s', self.zip_token.value)
         # TODO: Verify Settings Here
-        user_conf = {
+        user_config = {
             'base_url': self.base_url.value.rstrip('dashboard').strip('/ '),
             'zip_token': self.zip_token.value.strip(),
         }
-        await self.view.cog.config.user(user).set(user_conf)
-        log.debug(user_conf)
+        await self.view.cog.config.user(user).set(user_config)
+        log.debug(user_config)
         msg = "✅ Zipline Details Updated Successfully..."
         await interaction.response.send_message(msg, ephemeral=True)
