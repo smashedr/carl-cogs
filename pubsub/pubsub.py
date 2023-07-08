@@ -15,20 +15,20 @@ class Pubsub(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.loop: Optional[asyncio.Task] = None
-        self.client: Optional[redis.Redis] = None
+        self.redis: Optional[redis.Redis] = None
         self.pubsub: Optional[redis.client.PubSub] = None
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
-        data = await self.bot.get_shared_api_tokens('redis')
-        self.client = redis.Redis(
-            host=data['host'] if 'host' in data else 'redis',
-            port=int(data['port']) if 'port' in data else 6379,
-            db=int(data['db']) if 'db' in data else 0,
-            password=data['pass'] if 'pass' in data else None,
+        redis_data: dict = await self.bot.get_shared_api_tokens('redis')
+        self.redis = redis.Redis(
+            host=redis_data.get('host', 'redis'),
+            port=int(redis_data.get('port', 6379)),
+            db=int(redis_data.get('db', 0)),
+            password=redis_data.get('pass', None),
         )
-        await self.client.ping()
-        self.pubsub = self.client.pubsub(ignore_subscribe_messages=True)
+        await self.redis.ping()
+        self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
         self.loop = asyncio.create_task(self.pubsub_loop())
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
@@ -75,7 +75,7 @@ class Pubsub(commands.Cog):
                 resp['guild'] = self.process_guild(guild)
             log.debug('resp: %s', resp)
             response = json.dumps(resp, default=str)
-            pr = await self.client.publish(channel, response)
+            pr = await self.redis.publish(channel, response)
             log.debug('pr: %s', pr)
         except Exception as error:
             log.error('Exception processing message.')

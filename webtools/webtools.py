@@ -8,6 +8,7 @@ import re
 import shutil
 import socket
 import sys
+import whois
 from io import BytesIO, StringIO
 from playwright.async_api import async_playwright
 from typing import Any, Dict, List, Optional
@@ -56,8 +57,8 @@ class Webtools(commands.Cog):
         if not os.path.exists(self.playwright_path):
             log.info('Creating Playwright Path: %s', self.playwright_path)
             os.mkdir(self.playwright_path)
-        os.environ['PLAYWRIGHT_BROWSERS_PATH'] = self.playwright_path
-        log.info('PLAYWRIGHT_BROWSERS_PATH: %s', self.playwright_path)
+            os.environ['PLAYWRIGHT_BROWSERS_PATH'] = self.playwright_path
+            log.info('PLAYWRIGHT_BROWSERS_PATH: %s', self.playwright_path)
         script = f'{self.bot_data}/cogs/Downloader/lib/playwright/driver/playwright.sh'
         if os.path.isfile(script):
             os.system(f'{script} install')
@@ -67,6 +68,16 @@ class Webtools(commands.Cog):
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
+
+    @commands.command(name='whois', aliases=['who'])
+    async def whois_command(self, ctx: commands.Context, hostname: str):
+        await ctx.typing()
+        hostname = hostname.strip('`*')
+        log.debug('hostname: %s', hostname)
+        w = whois.whois(hostname)
+        url = f'https://mxtoolbox.com/SuperTool.aspx?action=whois%3a{hostname}'
+        content = f'<{url}>\n{cf.box(w)}'
+        await ctx.send(content)
 
     @commands.command(name='host', aliases=['nslookup'])
     async def host_command(self, ctx: commands.Context, hostname: str):
@@ -189,7 +200,6 @@ class Webtools(commands.Cog):
             return None
 
     @commands.command(name='checksite', aliases=['cs', 'check'])
-    @commands.guild_only()
     @commands.cooldown(3, 20, commands.BucketType.user)
     @commands.max_concurrency(1, commands.BucketType.default)
     async def check_site(self, ctx: commands.Context, url: str,

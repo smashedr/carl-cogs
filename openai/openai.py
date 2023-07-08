@@ -29,6 +29,7 @@ class OpenAI(commands.Cog):
         self.bot = bot
         self.redis: Optional[redis.Redis] = None
         self.key: Optional[str] = None
+        self.model: str = 'gpt-3.5-turbo'
         self.headers: Optional[Dict[str, str]] = None
         self.msg_chatgpt = discord.app_commands.ContextMenu(
             name="AI ChatGPT",
@@ -43,16 +44,17 @@ class OpenAI(commands.Cog):
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
-        data = await self.bot.get_shared_api_tokens('redis')
+        redis_data: dict = await self.bot.get_shared_api_tokens('redis')
         self.redis = redis.Redis(
-            host=data['host'] if 'host' in data else 'redis',
-            port=int(data['port']) if 'port' in data else 6379,
-            db=int(data['db']) if 'db' in data else 0,
-            password=data['pass'] if 'pass' in data else None,
+            host=redis_data.get('host', 'redis'),
+            port=int(redis_data.get('port', 6379)),
+            db=int(redis_data.get('db', 0)),
+            password=redis_data.get('pass', None),
         )
         await self.redis.ping()
-        openai = await self.bot.get_shared_api_tokens('openai')
-        self.key = openai['api_key']
+        data: Dict[str, str] = await self.bot.get_shared_api_tokens('openai')
+        self.key = data.get('api') or data.get('key') or data.get('token') or data['api_key']
+        self.model = data.get('model', self.model)
         self.headers = {'Authorization': f'Bearer {self.key}'}
         self.bot.tree.add_command(self.msg_chatgpt)
         self.bot.tree.add_command(self.msg_spelling)
@@ -457,7 +459,7 @@ class OpenAI(commands.Cog):
 
     async def openai_completions(self, messages: List):
         url = 'https://api.openai.com/v1/chat/completions'
-        data = {'model': 'gpt-3.5-turbo', 'messages': messages}
+        data = {'model': self.model, 'messages': messages}
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.post(url=url, headers=self.headers, json=data)
             log.error('r.status_code: %s', r.status_code)

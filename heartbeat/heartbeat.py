@@ -29,9 +29,9 @@ class Heartbeat(commands.Cog):
     async def cog_load(self):
         log.info('%s: Cog Load', self.__cog_name__)
         data = await self.bot.get_shared_api_tokens('heartbeat')
-        self.url = data['url'] if 'url' in data else self.sleep
+        self.url = data['url']
         log.info('url: %s', self.url)
-        self.sleep = int(data['sleep']) if 'sleep' in data else self.sleep
+        self.sleep = int(data.get('sleep', self.sleep))
         log.info('sleep: %s', self.sleep)
         self.loop = asyncio.create_task(self.main_loop())
 

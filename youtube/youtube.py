@@ -43,18 +43,15 @@ class YouTube(commands.Cog):
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
-        yt_data = await self.bot.get_shared_api_tokens('youtube')
-        if not yt_data['callback']:
-            log.warning('YouTube Callback URL Not Set! Use: [p]set api')
-        else:
-            self.callback_url = yt_data['callback']
+        data: dict = await self.bot.get_shared_api_tokens('youtube')
+        self.callback_url = data.get('callback')
         log.info('%s: Callback URL: %s', self.__cog_name__, self.callback_url)
-        r_data = await self.bot.get_shared_api_tokens('redis')
+        redis_data: dict = await self.bot.get_shared_api_tokens('redis')
         self.redis = redis.Redis(
-            host=r_data['host'] if 'host' in r_data else 'redis',
-            port=int(r_data['port']) if 'port' in r_data else 6379,
-            db=int(r_data['db']) if 'db' in r_data else 0,
-            password=r_data['pass'] if 'pass' in r_data else None,
+            host=redis_data.get('host', 'redis'),
+            port=int(redis_data.get('port', 6379)),
+            db=int(redis_data.get('db', 0)),
+            password=redis_data.get('pass', None),
         )
         await self.redis.ping()
         self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)

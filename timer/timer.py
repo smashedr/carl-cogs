@@ -11,13 +11,6 @@ log = logging.getLogger('red.timer')
 class Timer(commands.Cog):
     """Carl's Timer Cog"""
 
-    # guild_default = {
-    #     'enabled': True,
-    #     'channels': [],
-    # }
-    # channel_default = {
-    #     'timers': [],
-    # }
     user_default = {
         'timer': None,
         'channel': 0,
@@ -27,8 +20,6 @@ class Timer(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
-        # self.config.register_guild(**self.guild_default)
-        # self.config.register_channel(**self.channel_default)
         self.config.register_user(**self.user_default)
 
     async def cog_load(self):
@@ -37,20 +28,6 @@ class Timer(commands.Cog):
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
-
-    # @commands.Cog.listener(name='on_message_without_command')
-    # async def on_message_without_command(self, message: discord.Message):
-    #     """Listens for Messages"""
-    #     guild: discord.Guild = message.guild
-    #     if message.author.bot or not message.attachments or not guild:
-    #         return
-    #     enabled: bool = await self.config.guild(guild).enabled()
-    #     if not enabled:
-    #         return
-    #     channels: List[int] = await self.config.guild(guild).channels()
-    #     if message.channel.id in channels:
-    #         return
-    #     # run code here
 
     @staticmethod
     async def send_embed(ctx: Optional[commands.Context],

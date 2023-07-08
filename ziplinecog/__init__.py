@@ -1,4 +1,4 @@
-from .zipline import Zipline
+from .ziplinecog import Zipline
 
 
 async def setup(bot):
