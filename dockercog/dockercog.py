@@ -143,11 +143,11 @@ class Docker(commands.Cog):
         lines = []
         async with ctx.typing():
             for i, stat in enumerate(stats, 1):
-                name = stat['name'].lstrip('/').split('.')[0][:34]
+                name = stat['name'].lstrip('/').split('.')[0][:42]
                 mem = self.convert_bytes(stat['memory_stats']['usage'])
                 mem_max = self.convert_bytes(stat['memory_stats']['limit'])
                 cpu = self.calculate_cpu_percent(stat)
-                line = f"{mem}/{mem_max} `{cpu}%` - **{name}**"
+                line = f"{mem}/_{mem_max}_ `{cpu}%` **{name}**"
                 if len('\n'.join(lines + [line])) > (4096 - len(overflow) - 10):
                     hidden = len(containers) - len(lines)
                     lines.append(overflow.format(hidden))
@@ -167,6 +167,40 @@ class Docker(commands.Cog):
     async def _d_container(self, ctx: commands.Context):
         """Docker Container"""
 
+    @_d_container.command(name='list', aliases=['l', 'ls'])
+    @commands.guild_only()
+    @commands.is_owner()
+    @commands.max_concurrency(1, commands.BucketType.default)
+    async def _d_container_list(self, ctx: commands.Context, limit: Optional[int]):
+        """Docker Container List"""
+        await ctx.typing()
+        info = self.client.info()
+        containers = self.client.containers.list()
+        embed: discord.Embed = self.get_embed(ctx, info)
+        embed.set_author(name='docker container list')
+
+        overflow = '\n_{} Containers Not Shown..._'
+        lines = ['```diff']
+        for cont in containers:
+            name = cont.name.split('.')[0]
+            if cont.status == 'running':
+                line = f'+ {name}'
+            else:
+                line = f'- {name}'
+            if len('\n'.join(lines + [line])) > (4096 - len(overflow) - 10):
+                hidden = len(containers) - len(lines)
+                lines.append('\n```' + overflow.format(hidden))
+                break
+            lines.append(line)
+        else:
+            lines.append('```')
+
+        embed.description = '\n'.join(lines)
+
+        if self.portainer_url:
+            embed.url = self.portainer_url + '/docker/containers'
+        await ctx.send(embed=embed)
+
     @_d_container.command(name='info', aliases=['i', 'inspect'])
     @commands.guild_only()
     @commands.is_owner()
@@ -176,9 +210,10 @@ class Docker(commands.Cog):
         await ctx.typing()
         log.debug('name_or_id: %s', name_or_id)
         info = self.client.info()
-        container = self.client.containers.get(name_or_id)
-        if not container:
-            return await ctx.send(f'⛔ Container not found: {name_or_id}')
+        short_id = self.get_id(name_or_id)
+        if not short_id:
+            return await ctx.send(f'⛔ Container Name/ID Not Found: `{name_or_id}`')
+        container = self.client.containers.get(short_id)
 
         embed: discord.Embed = self.get_embed(ctx, info)
         embed.set_author(name='docker container info')
@@ -262,42 +297,8 @@ class Docker(commands.Cog):
 
         if self.portainer_url:
             embed.url = self.portainer_url + f'/docker/containers/{container.id}'
-        embed.timestamp = datetime.datetime.strptime(container.attrs['Created'][:26], '%Y-%m-%dT%H:%M:%S.%f')
+        embed.timestamp = datetime.datetime.strptime(info['SystemTime'][:26], '%Y-%m-%dT%H:%M:%S.%f')
         await ctx.send(content, embed=embed, file=file)
-
-    @_d_container.command(name='list', aliases=['l', 'ls'])
-    @commands.guild_only()
-    @commands.is_owner()
-    @commands.max_concurrency(1, commands.BucketType.default)
-    async def _d_container_list(self, ctx: commands.Context, limit: Optional[int]):
-        """Docker Container List"""
-        await ctx.typing()
-        info = self.client.info()
-        containers = self.client.containers.list()
-        embed: discord.Embed = self.get_embed(ctx, info)
-        embed.set_author(name='docker container list')
-
-        overflow = '\n_{} Containers Not Shown..._'
-        lines = ['```diff']
-        for cont in containers:
-            name = cont.name.split('.')[0]
-            if cont.status == 'running':
-                line = f'+ {name}'
-            else:
-                line = f'- {name}'
-            if len('\n'.join(lines + [line])) > (4096 - len(overflow) - 10):
-                hidden = len(containers) - len(lines)
-                lines.append('\n```' + overflow.format(hidden))
-                break
-            lines.append(line)
-        else:
-            lines.append('```')
-
-        embed.description = '\n'.join(lines)
-
-        if self.portainer_url:
-            embed.url = self.portainer_url + '/docker/containers'
-        await ctx.send(embed=embed)
 
     # @_docker.group(name='stack', aliases=['s', 'st', 'stac'])
     # @commands.guild_only()
@@ -335,6 +336,17 @@ class Docker(commands.Cog):
         if self.portainer_url:
             embed.url = self.portainer_url + '/docker/dashboard'
         return embed
+
+    def get_id(self, name, short=True) -> Optional[str]:
+        containers = self.client.containers.list()
+        for container in containers:
+            # TODO: Improve This and Add Search
+            if name in container.name + container.id:
+                if short:
+                    return container.short_id
+                else:
+                    return container.id
+        return None
 
     @staticmethod
     def calculate_cpu_percent(d, round_to=2):
