@@ -5,7 +5,9 @@ import docker
 import io
 import json
 import logging
+import os
 from typing import Any, Dict, List, Optional, Tuple, Union
+
 from zipline import Zipline
 
 from redbot.core import commands, Config
@@ -67,7 +69,8 @@ class Docker(commands.Cog):
     async def _docker_settings(self, ctx: commands.Context):
         """Docker Settings"""
         data: Dict[str, Any] = await self.config.all()
-        view = ModalView(self, data)
+        owner_ids: List[int] = await self.get_owners(self.bot, ids=True)
+        view = ModalView(self, owner_ids, data)
         msg = 'Press Button. Set Details. Reload Cog. Buy Yacht...'
         return await ctx.send(msg, view=view, ephemeral=True, delete_after=300,
                               allowed_mentions=discord.AllowedMentions.none())
@@ -226,7 +229,7 @@ class Docker(commands.Cog):
         started_at = int(started.timestamp())
         embed.description = (
             f"{icon} **{container.name.split('.', 1)[0]}** `{container.short_id}`\n\n"
-            f"_{container.name}_\n"
+            f"{container.name}\n"
             f"`{container.id}`\n\n"
             f"**Created:** <t:{created_at}:R> on <t:{created_at}:D>\n"
             f"**Started:** <t:{started_at}:R> on <t:{started_at}:D>\n"
@@ -329,6 +332,17 @@ class Docker(commands.Cog):
     #
     #     await ctx.send(embed=embed)
 
+    @staticmethod
+    async def get_owners(bot, ids=False) -> List[Union[discord.User, int]]:
+        app_info = await bot.application_info()
+        owners: List[discord.User] = [app_info.owner.id]
+        if os.environ.get('CO_OWNER'):
+            for owner_id in os.environ.get('CO_OWNER').split(','):
+                owners.append(bot.get_user(int(owner_id)))
+        if ids:
+            return [x.id for x in owners]
+        return owners
+
     def get_embed(self, ctx: commands.Context, info: dict) -> discord.Embed:
         embed = discord.Embed(
             title=info['Name'],
@@ -420,10 +434,19 @@ class CodeINI(object):
 
 
 class ModalView(discord.ui.View):
-    def __init__(self, cog: commands.Cog, data: Dict[str, str]):
+    def __init__(self, cog: commands.Cog, owner_ids: List[int], data: Dict[str, str]):
         super().__init__(timeout=None)
         self.cog = cog
-        self.data = data
+        self.owner_ids: List[int] = owner_ids
+        self.data: Dict[str, str] = data
+        self.delete_after = 30
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id in self.owner_ids:
+            return True
+        msg = f"⛔ Sorry, this is restricted to bot owners."
+        await interaction.response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
+        return False
 
     @discord.ui.button(label='Set Docker Details', style=discord.ButtonStyle.blurple, emoji='🐳')
     async def set_docker(self, interaction, button):

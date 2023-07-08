@@ -5,7 +5,7 @@ import fuckit
 import logging
 import platform
 import traceback
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from redbot.core import Config, commands, version_info
 from redbot.core.utils import chat_formatting as cf
@@ -219,12 +219,7 @@ class Carlcog(commands.Cog):
                       f'All commands are broken down into modules called {_cogs}. '
                       f'The source code for my cogs/commands can be found at [GitHub]({self.carl_cogs}).')
 
-        app_info = await self.bot.application_info()
-        owners_list: List[discord.User] = [app_info.owner]
-        if os.environ.get('CO_OWNER'):
-            for owner_id in os.environ.get('CO_OWNER').split(','):
-                owner: discord.User = ctx.bot.get_user(int(owner_id))
-                owners_list.append(owner)
+        owners_list: List[discord.User] = await self.get_owners(self.bot)
         owners = ', '.join([x.mention for x in owners_list])
 
         em = discord.Embed(
@@ -282,6 +277,17 @@ class Carlcog(commands.Cog):
         )
         em.timestamp = datetime.datetime.now(datetime.timezone.utc)
         await ctx.send(embed=em)
+
+    @staticmethod
+    async def get_owners(bot, ids=False) -> List[Union[discord.User, int]]:
+        app_info = await bot.application_info()
+        owners: List[discord.User] = [app_info.owner.id]
+        if os.environ.get('CO_OWNER'):
+            for owner_id in os.environ.get('CO_OWNER').split(','):
+                owners.append(bot.get_user(int(owner_id)))
+        if ids:
+            return [x.id for x in owners]
+        return owners
 
     @staticmethod
     def format_timedelta(delta: datetime.timedelta):
