@@ -7,11 +7,13 @@ import validators
 import plotly.graph_objects as go
 import plotly.express as px
 import plotly.io as pio
-from typing import Optional, Union, Dict, Any, List
+from typing import Optional, Union, Dict, Any, List, Literal, TypeAlias
 
 from redbot.core import app_commands, commands, Config
 
 log = logging.getLogger('red.zipline')
+
+SettingsString: TypeAlias = Literal['set', 'setup', 'settings', 'details', 'config', 'configure']
 
 
 class Zipline(commands.Cog):
@@ -90,7 +92,7 @@ class Zipline(commands.Cog):
         user_conf: Dict[str, Any] = await self.config.user(user).all()
         log.debug('user_conf: %s', user_conf)
         if not user_conf['base_url'] or not user_conf['zip_token']:
-            view = ModalView(self)
+            view = ModalView(self, user_conf)
             msg = ('❌ You are missing Zipline details. '
                    'Click the button to set Zipline URL and Token.')
             return await interaction.response.send_message(msg, view=view, ephemeral=True, delete_after=300,
@@ -139,14 +141,17 @@ class Zipline(commands.Cog):
     @commands.hybrid_command(name='zipline', aliases=['zip'])
     @commands.guild_only()
     @app_commands.describe(user='Optional User to get Zipline Stats for')
-    async def zip_command(self, ctx: commands.Context, user: Optional[Union[discord.Member, discord.User]] = None):
+    async def zip_command(self, ctx: commands.Context,
+                          user: Optional[Union[discord.Member, discord.User]] = None,
+                          options: Optional[SettingsString] = None):
         """Zipline Command: WIP"""
+        log.debug('options: %s', options)
         await ctx.typing()
         user = user or ctx.author
         user_conf: Dict[str, Any] = await self.config.user(user).all()
         log.debug('user_conf: %s', user_conf)
-        if not user_conf['base_url'] or not user_conf['zip_token']:
-            view = ModalView(self)
+        if options or not user_conf['base_url'] or not user_conf['zip_token']:
+            view = ModalView(self, user_conf)
             msg = (f'❌ {user.mention} is missing Zipline details. '
                    f'Click the button to set Zipline URL and Token.')
             return await ctx.send(msg, view=view, ephemeral=True, delete_after=300,
@@ -207,9 +212,9 @@ class Zipline(commands.Cog):
         await ctx.send(content=content, files=files, embed=embed, allowed_mentions=discord.AllowedMentions.none())
 
     async def get_stats(self, url, token: str) -> List[dict]:
-        return await self._get_json(url + '/api/stats', token, amount=self.amount)
+        return await self.get_json(url + '/api/stats', token, amount=self.amount)
 
-    async def _get_json(self, url: str, token: str, **kwargs) -> Any:
+    async def get_json(self, url: str, token: str, **kwargs) -> Any:
         async with httpx.AsyncClient(**self.http_options) as client:
             headers = {'Authorization': token}
             r = await client.get(url, headers=headers, params=kwargs)
@@ -267,12 +272,13 @@ class Zipline(commands.Cog):
 
 
 class ModalView(discord.ui.View):
-    def __init__(self, cog: commands.Cog):
+    def __init__(self, cog: commands.Cog, data: Dict[str, str]):
         super().__init__(timeout=None)
         self.cog = cog
+        self.data: Dict[str, str] = data
 
     @discord.ui.button(label='Set Zipline Details', style=discord.ButtonStyle.blurple, emoji='🖼️')
-    async def set_grafana(self, interaction, button):
+    async def set_zipline(self, interaction, button):
         log.debug(interaction)
         log.debug(button)
         modal = DataModal(view=self)
@@ -285,7 +291,8 @@ class DataModal(discord.ui.Modal):
         self.view = view
         self.base_url = discord.ui.TextInput(
             label='Zipline Base URL',
-            placeholder='https://i.cssnr.com/',
+            placeholder='https://example.com/dashboard',
+            default=self.view.data.get('base_url'),
             style=discord.TextStyle.short,
             max_length=255,
             min_length=10,
@@ -294,6 +301,7 @@ class DataModal(discord.ui.Modal):
         self.zip_token = discord.ui.TextInput(
             label='Zipline Authorization Token',
             placeholder='alRLdlKDFJ31FckdfjEndu5n.AL4nxkdkMjerLqMAPA',
+            default=self.view.data.get('zip_token'),
             style=discord.TextStyle.short,
             max_length=43,
             min_length=43,
@@ -310,7 +318,7 @@ class DataModal(discord.ui.Modal):
         # log.debug('self.zip_token.value: %s', self.zip_token.value)
         # TODO: Verify Settings Here
         user_conf = {
-            'base_url': self.base_url.value.strip('/ '),
+            'base_url': self.base_url.value.rstrip('dashboard').strip('/ '),
             'zip_token': self.zip_token.value.strip(),
         }
         await self.view.cog.config.user(user).set(user_conf)
