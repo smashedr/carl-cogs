@@ -57,8 +57,8 @@ class Webtools(commands.Cog):
         if not os.path.exists(self.playwright_path):
             log.info('Creating Playwright Path: %s', self.playwright_path)
             os.mkdir(self.playwright_path)
-            os.environ['PLAYWRIGHT_BROWSERS_PATH'] = self.playwright_path
-            log.info('PLAYWRIGHT_BROWSERS_PATH: %s', self.playwright_path)
+        os.environ['PLAYWRIGHT_BROWSERS_PATH'] = self.playwright_path
+        log.info('PLAYWRIGHT_BROWSERS_PATH: %s', self.playwright_path)
         script = f'{self.bot_data}/cogs/Downloader/lib/playwright/driver/playwright.sh'
         if os.path.isfile(script):
             os.system(f'{script} install')
