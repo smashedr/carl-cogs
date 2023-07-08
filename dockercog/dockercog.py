@@ -5,42 +5,48 @@ import docker
 import io
 import json
 import logging
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from zipline import Zipline
 
-from redbot.core import commands
+from redbot.core import commands, Config
 
-log = logging.getLogger('red.dockerd')
+log = logging.getLogger('red.docker')
 
 
-class Dockerd(commands.Cog):
-    """Carl's Dockerd Cog"""
+class Docker(commands.Cog):
+    """Carl's Docker Cog"""
 
-    docker_url = 'unix://var/run/docker.sock'
+    global_default = {
+        'docker_url': 'unix://var/run/docker.sock',
+        'portainer_url': None,
+        'zipline_url': None,
+        'zipline_token': None,
+        'zipline_expire': '30d',
+    }
 
     def __init__(self, bot):
         self.bot = bot
-        self.color = 1294073
-        self.client = docker.DockerClient(base_url=self.docker_url)
-        self.client_low = docker.APIClient(base_url=self.docker_url)
-        self.settings: Optional[dict] = None
-        self.url: Optional[str] = None
+        self.config = Config.get_conf(self, 1337, True)
+        self.config.register_global(**self.global_default)
+        self.client: Optional[docker.DockerClient] = None
+        self.client_low: Optional[docker.APIClient] = None
         self.zipline: Optional[Zipline] = None
+        self.portainer_url: Optional[str] = None
+        self.color = 1294073
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
-        self.settings: dict = await self.bot.get_shared_api_tokens('docker')
-        log.info('settings: %s', self.settings)
-        self.url = self.settings.get('url')
-        endpoint = self.settings.get('endpoint', '1')
-        if self.url:
-            url = self.url.replace('/home', '').rstrip('!#/')
-            self.url = url + f'/#!/{endpoint}/'
-        if 'zipline' in self.settings and 'token' in self.settings:
+        data: Dict[str, str] = await self.config.all()
+        log.debug('data: %s', data)
+        self.client = docker.DockerClient(base_url=data['docker_url'])
+        self.client_low = docker.APIClient(base_url=data['docker_url'])
+        if data['portainer_url']:
+            self.portainer_url = data['portainer_url']
+        if data['zipline_url'] and data['zipline_token']:
             self.zipline = Zipline(
-                self.settings['zipline'],
-                authorization=self.settings['token'],
-                expires_at=self.settings.get('expire', '30d'),
+                data['zipline_url'],
+                authorization=data['zipline_token'],
+                expires_at=data['zipline_expire'],
             )
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
@@ -53,6 +59,18 @@ class Dockerd(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.default)
     async def _docker(self, ctx: commands.Context):
         """Docker"""
+
+    @_docker.command(name='settings', aliases=['set', 'setup'])
+    @commands.guild_only()
+    @commands.is_owner()
+    @commands.max_concurrency(1, commands.BucketType.default)
+    async def _docker_settings(self, ctx: commands.Context):
+        """Docker Settings"""
+        data: Dict[str, Any] = await self.config.all()
+        view = ModalView(self, data)
+        msg = 'Press Button. Set Details. Reload Cog. Buy Yacht...'
+        return await ctx.send(msg, view=view, ephemeral=True, delete_after=300,
+                              allowed_mentions=discord.AllowedMentions.none())
 
     @_docker.command(name='info', aliases=['i'])
     @commands.guild_only()
@@ -97,37 +115,6 @@ class Dockerd(commands.Cog):
             embed.add_field(name='Warnings', value=f"{info['Warnings']}")
 
         await ctx.send(embed=embed)
-
-    @staticmethod
-    def calculate_cpu_percent(d, round_to=2):
-        cpu_count = d["cpu_stats"]["online_cpus"]
-        cpu_percent = 0.0
-        cpu_delta = float(d["cpu_stats"]["cpu_usage"]["total_usage"]) - float(d["precpu_stats"]["cpu_usage"]["total_usage"])
-        system_delta = float(d["cpu_stats"]["system_cpu_usage"]) - float(d["precpu_stats"]["system_cpu_usage"])
-        if system_delta > 0.0:
-            cpu_percent = cpu_delta / system_delta * 100.0 * cpu_count
-        return round(cpu_percent, round_to)
-
-    @staticmethod
-    def process_stats(containers, workers: Optional[int] = 60):
-        def get_stats(container):
-            return container.stats(stream=False)
-        stats = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-            futures = [executor.submit(get_stats, container) for container in containers]
-            for future in concurrent.futures.as_completed(futures):
-                data = future.result()
-                stats.append(data)
-        return stats
-
-    @staticmethod
-    def get_color_icon(container) -> Tuple[discord.Color, str]:
-        if container.status == 'running':
-            return discord.Colour.green(), '🟢'
-        elif container.status == 'paused':
-            return discord.Colour.yellow(), '🟡'
-        else:
-            return discord.Colour.red(), '🔴'
 
     @_docker.command(name='stats', aliases=['s'])
     @commands.guild_only()
@@ -264,17 +251,17 @@ class Dockerd(commands.Cog):
         if 'Env' in container.attrs['Config']:
             del container.attrs['Config']['Env']
         data = json.dumps(container.attrs, indent=4)
-        bytesio = io.BytesIO(bytes(data, 'utf-8'))
+        bytes_io = io.BytesIO(bytes(data, 'utf-8'))
 
         content, file = None, None
         if self.zipline:
-            url = self.zipline.send_file(f'{container.short_id}.json', bytesio)
-            content = url
+            url = self.zipline.send_file(f'{container.short_id}.json', bytes_io)
+            content = url.url
         else:
-            file = discord.File(bytesio, f'{container.short_id}.json')
+            file = discord.File(bytes_io, f'{container.short_id}.json')
 
-        if self.url:
-            embed.url = self.url + f'docker/containers/{container.id}'
+        if self.portainer_url:
+            embed.url = self.portainer_url + f'docker/containers/{container.id}'
         embed.timestamp = datetime.datetime.strptime(container.attrs['Created'][:26], '%Y-%m-%dT%H:%M:%S.%f')
         await ctx.send(content, embed=embed, file=file)
 
@@ -308,8 +295,8 @@ class Dockerd(commands.Cog):
 
         embed.description = '\n'.join(lines)
 
-        if self.url:
-            embed.url = self.url + 'docker/containers'
+        if self.portainer_url:
+            embed.url = self.portainer_url + 'docker/containers'
         await ctx.send(embed=embed)
 
     # @_docker.group(name='stack', aliases=['s', 'st', 'stac'])
@@ -345,8 +332,40 @@ class Dockerd(commands.Cog):
             timestamp=datetime.datetime.strptime(info['SystemTime'][:26], '%Y-%m-%dT%H:%M:%S.%f'),
         )
         embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar.url)
-        embed.url = self.url + 'docker/dashboard'
+        if self.portainer_url:
+            embed.url = self.portainer_url + 'docker/dashboard'
         return embed
+
+    @staticmethod
+    def calculate_cpu_percent(d, round_to=2):
+        cpu_count = d["cpu_stats"]["online_cpus"]
+        cpu_percent = 0.0
+        cpu_delta = float(d["cpu_stats"]["cpu_usage"]["total_usage"]) - float(d["precpu_stats"]["cpu_usage"]["total_usage"])
+        system_delta = float(d["cpu_stats"]["system_cpu_usage"]) - float(d["precpu_stats"]["system_cpu_usage"])
+        if system_delta > 0.0:
+            cpu_percent = cpu_delta / system_delta * 100.0 * cpu_count
+        return round(cpu_percent, round_to)
+
+    @staticmethod
+    def process_stats(containers, workers: Optional[int] = 60):
+        def get_stats(container):
+            return container.stats(stream=False)
+        stats = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = [executor.submit(get_stats, container) for container in containers]
+            for future in concurrent.futures.as_completed(futures):
+                data = future.result()
+                stats.append(data)
+        return stats
+
+    @staticmethod
+    def get_color_icon(container) -> Tuple[discord.Color, str]:
+        if container.status == 'running':
+            return discord.Colour.green(), '🟢'
+        elif container.status == 'paused':
+            return discord.Colour.yellow(), '🟡'
+        else:
+            return discord.Colour.red(), '🔴'
 
     @staticmethod
     def convert_bytes(num_bytes: Union[str, int], decimal: Optional[int] = 0) -> str:
@@ -383,3 +402,108 @@ class CodeINI(object):
     def out(self):
         output = '\n'.join(self.lines)
         return f'```ini\n{output}\n```'
+
+
+class ModalView(discord.ui.View):
+    def __init__(self, cog: commands.Cog, data: Dict[str, str]):
+        super().__init__(timeout=None)
+        self.cog = cog
+        self.data = data
+
+    @discord.ui.button(label='Set Docker Details', style=discord.ButtonStyle.blurple, emoji='🐳')
+    async def set_docker(self, interaction, button):
+        log.debug(interaction)
+        log.debug(button)
+        modal = DataModal(view=self)
+        await interaction.response.send_modal(modal)
+
+
+class DataModal(discord.ui.Modal):
+    def __init__(self, view: discord.ui.View):
+        super().__init__(title='Set Docker Details')
+        self.view = view
+        self.docker_url = discord.ui.TextInput(
+            label='Docker URL',
+            # placeholder=self.view.data['docker_url'],
+            default=self.view.data['docker_url'],
+            style=discord.TextStyle.short,
+            max_length=255,
+            min_length=10,
+            required=False,
+        )
+        self.add_item(self.docker_url)
+
+        self.portainer_url = discord.ui.TextInput(
+            label='Portainer Full Dashboard URL',
+            # placeholder=self.view.data['portainer_url'],
+            default=self.view.data['portainer_url'],
+            style=discord.TextStyle.short,
+            max_length=255,
+            min_length=10,
+            required=False,
+        )
+        self.add_item(self.portainer_url)
+
+        # self.portainer_endpoint = discord.ui.TextInput(
+        #     label='Portainer Endpoint Number',
+        #     # placeholder=self.view.data['portainer_endpoint'],
+        #     default=self.view.data['portainer_endpoint'],
+        #     style=discord.TextStyle.short,
+        #     max_length=4,
+        #     min_length=1,
+        #     required=False,
+        # )
+        # self.add_item(self.portainer_endpoint)
+
+        self.zipline_url = discord.ui.TextInput(
+            label='Zipline Base URL',
+            # placeholder=self.view.data['zipline_url'],
+            default=self.view.data['zipline_url'],
+            style=discord.TextStyle.short,
+            max_length=255,
+            min_length=10,
+            required=False,
+        )
+        self.add_item(self.zipline_url)
+
+        self.zipline_token = discord.ui.TextInput(
+            label='Zipline Authorization Token',
+            # placeholder=self.view.data['zipline_token'],
+            default=self.view.data['zipline_token'],
+            style=discord.TextStyle.short,
+            max_length=43,
+            min_length=43,
+            required=False,
+        )
+        self.add_item(self.zipline_token)
+
+        self.zipline_expire = discord.ui.TextInput(
+            label='Zipline Expire At',
+            # placeholder=self.view.data['zipline_expire'],
+            default=self.view.data['zipline_expire'],
+            style=discord.TextStyle.short,
+            max_length=32,
+            min_length=2,
+            required=False,
+        )
+        self.add_item(self.zipline_expire)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        log.debug('DataModal - on_submit')
+        # message: discord.Message = interaction.message
+        # user: discord.Member = interaction.user
+        portainer_url = self.portainer_url.value.replace('docker/dashboard', '').strip().rstrip('/')
+        zipline_url = self.zipline_url.value.replace('dashboard', '').strip().rstrip('/')
+        data = {
+            'docker_url': self.docker_url.value.strip(),
+            'portainer_url': portainer_url,
+            # 'portainer_endpoint': self.portainer_endpoint.value.strip(),
+            'zipline_url': zipline_url,
+            'zipline_token': self.zipline_token.value.strip(),
+            'zipline_expire': self.zipline_expire.value.strip(),
+        }
+        await self.view.cog.config.set(data)
+        log.debug(data)
+        msg = "✅ Docker Details Updated Successfully..."
+        await interaction.response.send_message(msg, ephemeral=True)
+
