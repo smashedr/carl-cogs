@@ -261,7 +261,7 @@ class Docker(commands.Cog):
             file = discord.File(bytes_io, f'{container.short_id}.json')
 
         if self.portainer_url:
-            embed.url = self.portainer_url + f'docker/containers/{container.id}'
+            embed.url = self.portainer_url + f'/docker/containers/{container.id}'
         embed.timestamp = datetime.datetime.strptime(container.attrs['Created'][:26], '%Y-%m-%dT%H:%M:%S.%f')
         await ctx.send(content, embed=embed, file=file)
 
@@ -296,7 +296,7 @@ class Docker(commands.Cog):
         embed.description = '\n'.join(lines)
 
         if self.portainer_url:
-            embed.url = self.portainer_url + 'docker/containers'
+            embed.url = self.portainer_url + '/docker/containers'
         await ctx.send(embed=embed)
 
     # @_docker.group(name='stack', aliases=['s', 'st', 'stac'])
@@ -333,7 +333,7 @@ class Docker(commands.Cog):
         )
         embed.set_footer(text=ctx.author.display_name, icon_url=ctx.author.avatar.url)
         if self.portainer_url:
-            embed.url = self.portainer_url + 'docker/dashboard'
+            embed.url = self.portainer_url + '/docker/dashboard'
         return embed
 
     @staticmethod
