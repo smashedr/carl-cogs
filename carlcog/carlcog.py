@@ -281,7 +281,7 @@ class Carlcog(commands.Cog):
     @staticmethod
     async def get_owners(bot, ids=False) -> List[Union[discord.User, int]]:
         app_info = await bot.application_info()
-        owners: List[discord.User] = [app_info.owner.id]
+        owners: List[discord.User] = [app_info.owner]
         if os.environ.get('CO_OWNER'):
             for owner_id in os.environ.get('CO_OWNER').split(','):
                 owners.append(bot.get_user(int(owner_id)))
