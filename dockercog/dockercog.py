@@ -225,15 +225,18 @@ class Docker(commands.Cog):
         started = datetime.datetime.strptime(container.attrs['State']['StartedAt'][:26], '%Y-%m-%dT%H:%M:%S.%f')
         started_at = int(started.timestamp())
         embed.description = (
-            f"{icon}  **{container.name}**  (`{container.short_id}`)\n\n"
+            f"{icon} **{container.name.split('.', 1)[0]}** `{container.short_id}`\n\n"
+            f"_{container.name}_\n"
+            f"`{container.id}`\n\n"
             f"**Created:** <t:{created_at}:R> on <t:{created_at}:D>\n"
             f"**Started:** <t:{started_at}:R> on <t:{started_at}:D>\n"
         )
 
         ini = CodeINI()
         ini.add('Platform', container.attrs['Platform'])
-        ini.add('Image', container.attrs['Config']['Image'])
+        ini.add('Image', container.attrs['Config']['Image'].split('@', 1)[0])
         ini.add('Path', container.attrs['Path'])
+        ini.add('Args', ' '.join(container.attrs['Args']))
         # ini.add('ExposedPorts', container.attrs['Config']['ExposedPorts'])
 
         embed.description += ini.out()
