@@ -243,7 +243,7 @@ class YouTube(commands.Cog):
         for chan in chan_data:
             cid = list(chan.keys())[0]
             if cid not in all_channels:
-                # r = await self.sub_to_channel(cid)
+                await self.sub_to_channel(cid)
                 # if not r.is_success:
                 #     continue  # TODO: Process Error
                 all_channels: list = await self.config.channels()
@@ -316,31 +316,34 @@ class YouTube(commands.Cog):
     #     log.debug(str(datetime.datetime.now()))
     #     await ctx.send(str(datetime.datetime.now()))
 
-    async def sub_to_channel(self, channel_id: str, mode: str = 'subscribe') -> httpx.Response:
+    async def sub_to_channel(self, channel_id: str, mode: str = 'subscribe') -> None:
         log.debug('sub_to_channel: %s', channel_id)
-        if not self.callback_url:
-            raise ValueError('self.callback_url Not Defined')
-        topic_url = f'https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}'
+
+        # update config, this is apparently important
         all_videos = await self.config.videos()
         if channel_id not in all_videos:
             video_list = await self.get_feed_videos(channel_id)
             all_videos[channel_id] = video_list
             await self.config.videos.set(all_videos)
-        data = {
-            'hub.callback': self.callback_url,
-            'hub.topic': topic_url,
-            'hub.verify': 'async',
-            'hub.mode': mode,
-            'hub.verify_token': '',
-            'hub.secret': '',
-            'hub.lease_numbers': '',
-        }
-        url = 'https://pubsubhubbub.appspot.com/subscribe'
-        async with httpx.AsyncClient(**self.http_options) as client:
-            r = await client.post(url, data=data)
-            r.raise_for_status()
-        # log.debug('r.status_code: %s', r.status_code)
-        return r
+
+        # if not self.callback_url:
+        #     raise ValueError('self.callback_url Not Defined')
+        # topic_url = f'https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}'
+        # data = {
+        #     'hub.callback': self.callback_url,
+        #     'hub.topic': topic_url,
+        #     'hub.verify': 'async',
+        #     'hub.mode': mode,
+        #     'hub.verify_token': '',
+        #     'hub.secret': '',
+        #     'hub.lease_numbers': '',
+        # }
+        # url = 'https://pubsubhubbub.appspot.com/subscribe'
+        # async with httpx.AsyncClient(**self.http_options) as client:
+        #     r = await client.post(url, data=data)
+        #     r.raise_for_status()
+        # # log.debug('r.status_code: %s', r.status_code)
+        # return r
 
     async def get_feed_videos(self, channel_id, as_dict=False) -> Union[list, dict]:
         topic_url = f'https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}'

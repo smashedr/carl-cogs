@@ -6,8 +6,8 @@ import io
 import json
 import logging
 import os
+import re
 from typing import Any, Dict, List, Optional, Tuple, Union
-
 from zipline import Zipline
 
 from redbot.core import commands, Config
@@ -162,6 +162,46 @@ class Docker(commands.Cog):
         embed.description = '\n'.join(lines)
         log.debug('embed.description: %s', embed.description)
         await ctx.send(embed=embed)
+
+    @_docker.command(name='top', aliases=['t'])
+    @commands.guild_only()
+    @commands.is_owner()
+    @commands.max_concurrency(1, commands.BucketType.default)
+    async def _docker_top(self, ctx: commands.Context):
+        """Docker Top"""
+        await ctx.typing()
+        info = self.client.info()
+        embed: discord.Embed = self.get_embed(ctx, info)
+        embed.set_author(name='docker top')
+        containers = self.client.containers.list()
+        top = self.process_top(containers)
+        top = re.sub(r'[a-zA-Z0-9_\.]{22,}', 'XXXXXX', top)
+        bytes_io = io.BytesIO(bytes(top, 'utf-8'))
+        stamp = datetime.datetime.now().strftime('%y%m%d%H%M%S')
+        name = f'{stamp}.txt'
+        if self.zipline:
+            url = self.zipline.send_file(name, bytes_io)
+            await ctx.send(f'Top: {url.url}')
+        else:
+            file = discord.File(bytes_io, name)
+            await ctx.send(f'Top:', file=file)
+
+    @staticmethod
+    def process_top(containers: List) -> str:
+        # Format Headers
+        titles = ['PID', 'CMD']
+        rows = ["{:<8s} | {:s}".format(*titles)]
+        for container in containers:
+            rows.append(f'---> {container.name} <---')
+            data = container.top()
+            pid = data['Titles'].index('PID')
+            cmd = data['Titles'].index('CMD')
+            for proc in data['Processes']:
+                row = "{:<8s} | {:s}".format(
+                    proc[pid], proc[cmd])
+                rows.append(row)
+        output = "\n".join(rows)
+        return output
 
     @_docker.group(name='container', aliases=['c', 'cont', 'contain'])
     @commands.guild_only()
