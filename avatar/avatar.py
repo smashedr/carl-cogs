@@ -153,7 +153,7 @@ class Avatar(commands.Cog):
         """Rotate to a New Avatar."""
         data: Dict[str, Any] = await self.config.guild(ctx.guild).all()
         if len(data['avatars']) < 2:
-            return await ctx.send(f'⛔ You need to add at least 2 Avatars for this to work.')
+            return await ctx.send('⛔ You need to add at least 2 Avatars for this to work.')
         current = datetime.datetime.now()
         if data['last']:
             log.debug('last: %s', data['last'])
@@ -256,7 +256,7 @@ class Avatar(commands.Cog):
     async def _avatar_status(self, ctx: commands.Context):
         """Get Avatar status."""
         data: Dict[str, Any] = await self.config.guild(ctx.guild).all()
-        enabled = f'✅ ENABLED' if data['enabled'] else '⛔ DISABLED'
+        enabled = '✅ ENABLED' if data['enabled'] else '⛔ DISABLED'
         content = (
             f"{self.__cog_name__} Settings:\n```ini\n"
             f"[Status]:    {enabled}\n"

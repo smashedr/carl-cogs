@@ -1,12 +1,10 @@
 import datetime
 import discord
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 from uptime_kuma_api import UptimeKumaApi
 
-from discord.ext import tasks
 from redbot.core import app_commands, commands, Config
-from redbot.core.utils import AsyncIter
 from redbot.core.utils import chat_formatting as cf
 
 log = logging.getLogger('red.uptimekuma')
@@ -105,7 +103,7 @@ class Uptimekuma(commands.Cog):
         kumas: Dict[str, Any] = await self.config.user(ctx.author).kumas()
         if not kumas:
             view = ModalView(self)
-            content = f'⛔ No Kumas Found. Click the Button to add a Kuma'
+            content = '⛔ No Kumas Found. Click the Button to add a Kuma'
             return await view.send_initial_message(ctx, content)
         elif len(kumas) == 1:
             kuma = list(kumas.values())[0]
