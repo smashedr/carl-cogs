@@ -22,20 +22,21 @@ class Zipline(commands.Cog):
     amount = 90
     max_types = 6
 
+    type_simple = {
+        'image': '🖼️',
+        'audio': '🎵',
+        'video': '🎥',
+        'text': '📄',
+    }
+
     type_icons = {
-        'image/jpeg': '🖼️',
-        'image/png': '🖼️',
-        'image/gif': '🖼️',
+        'text/html': '🌐',
+        'text/css': '🌐',
+        'text/js': '🌐',
         'application/pdf': '📄',
         'application/msword': '📄',
         'application/vnd.ms-powerpoint': '📄',
         'application/vnd.ms-excel': '📄',
-        'text/plain': '📄',
-        'audio/mpeg': '🎵',
-        'audio/wav': '🎵',
-        'audio/ogg': '🎵',
-        'video/mp4': '🎥',
-        'video/mpeg': '🎥',
         'application/zip': '📦',
         'application/x-rar-compressed': '📦',
         'application/x-tar': '📦',
@@ -43,10 +44,6 @@ class Zipline(commands.Cog):
         'application/json': '📋',
         'application/xml': '📋',
         'application/javascript': '📋',
-        'text/html': '📋',
-        'text/css': '📋',
-        'text/csv': '📋',
-        'text/xml': '📋',
         'application/sql': '📋',
         'application/x-python': '🐍',
         'application/octet-stream': '⬇️',
@@ -119,6 +116,7 @@ class Zipline(commands.Cog):
                 msg = 'Embed Image Found - WIP'
                 return await interaction.response.send_message(msg, ephemeral=True, delete_after=15,
                                                                allowed_mentions=discord.AllowedMentions.none())
+
         if validators.url(message.content.strip('<>')):
             # url = message.content.strip('<>')
             log.debug('URL FOUND')
@@ -174,7 +172,14 @@ class Zipline(commands.Cog):
         for i, count in enumerate(data['types_count'], 1):
             if i > self.max_types:
                 break
-            icon = self.type_icons.get(count['mimetype'], '❔')
+            # icon = self.type_icons.get(count['mimetype'], '❔')
+            icon = self.type_icons.get(count['mimetype'], None)
+            if not icon:
+                _type = count['mimetype'].split('/')[0]
+                if _type in self.type_simple:
+                    icon = self.type_simple[_type]
+                else:
+                    icon = '❔'
             lines.append(f"**{count['count']}** `{count['mimetype']}` {icon}")
         file_types = '\n'.join(lines)
         embed.description = (

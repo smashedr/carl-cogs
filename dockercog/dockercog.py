@@ -175,7 +175,7 @@ class Docker(commands.Cog):
         embed.set_author(name='docker top')
         containers = self.client.containers.list()
         top = self.process_top(containers)
-        top = re.sub(r'[a-zA-Z0-9_\.]{22,}', 'XXXXXX', top)
+        top = re.sub(r'[a-zA-Z0-9]{28,}', 'xxxxxx', top)
         bytes_io = io.BytesIO(bytes(top, 'utf-8'))
         stamp = datetime.datetime.now().strftime('%y%m%d%H%M%S')
         name = f'{stamp}.txt'
