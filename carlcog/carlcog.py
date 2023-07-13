@@ -276,7 +276,12 @@ class Carlcog(commands.Cog):
             inline=False,
         )
         em.timestamp = datetime.datetime.now(datetime.timezone.utc)
-        await ctx.send(embed=em)
+        if 'status' in self.info:
+            buttons = {'Status': self.info['status']}
+            view = ButtonsURLView(buttons)
+        else:
+            view = None
+        await ctx.send(embed=em, view=view)
 
     @staticmethod
     async def get_owners(bot, ids=False) -> List[Union[discord.User, int]]:

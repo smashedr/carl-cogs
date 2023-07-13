@@ -114,7 +114,7 @@ class Uptimekuma(commands.Cog):
             available = cf.humanize_list(list(kumas.keys()))
             return await ctx.send(f'⛔ Kuma `{name}` not found. Kumas: {available}')
         log.debug('kuma: %s', kuma)
-        with UptimeKumaApi(kuma['url']) as api:
+        with UptimeKumaApi(kuma['url'], wait_events=0.6) as api:
             api.login(kuma['user'], kuma['pass'])
             monitors = api.get_monitors()
             heartbeats = api.get_heartbeats()
@@ -132,7 +132,8 @@ class Uptimekuma(commands.Cog):
             log.debug('_type: %s', _type)
             if _type == 'group':
                 continue
-            st = self.statuses[int(lst['status'])]
+            log.debug('status: %s', lst['status'].value)
+            st = self.statuses[lst['status'].value]
             msg = f"{lst['msg']}" if lst['msg'] else f"is {st['name']}"
             ms = round(lst['ping'], 1) if lst['ping'] and lst['ping'] % 1 != 0 else lst['ping']
             lines.append(
