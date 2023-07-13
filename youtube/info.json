@@ -6,7 +6,7 @@
   "install_msg": "Get started with `/youtube add`",
   "end_user_data_statement": "Caveat Emptor.",
   "tags": ["wip"],
-  "requirements": ["xmltodict", "bs4"],
+  "requirements": ["bs4", "httpx", "xmltodict"],
   "permissions" : [],
   "required_cogs": {},
   "min_bot_version": "3.5.0",

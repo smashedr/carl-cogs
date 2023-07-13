@@ -1,10 +1,10 @@
 import asyncio
 import discord
 import httpx
-import json
+# import json
 import logging
 import xmltodict
-import redis.asyncio as redis
+# import redis.asyncio as redis
 from bs4 import BeautifulSoup
 from typing import Optional, Union, Dict
 
@@ -36,26 +36,26 @@ class YouTube(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_global(**self.global_default)
         self.config.register_channel(**self.channel_default)
-        self.loop: Optional[asyncio.Task] = None
-        self.redis: Optional[redis.Redis] = None
-        self.pubsub: Optional[redis.client.PubSub] = None
-        self.callback_url: Optional[str] = None
+        # self.loop: Optional[asyncio.Task] = None
+        # self.redis: Optional[redis.Redis] = None
+        # self.pubsub: Optional[redis.client.PubSub] = None
+        # self.callback_url: Optional[str] = None
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
-        data: dict = await self.bot.get_shared_api_tokens('youtube')
-        self.callback_url = data.get('callback')
-        log.info('%s: Callback URL: %s', self.__cog_name__, self.callback_url)
-        redis_data: dict = await self.bot.get_shared_api_tokens('redis')
-        self.redis = redis.Redis(
-            host=redis_data.get('host', 'redis'),
-            port=int(redis_data.get('port', 6379)),
-            db=int(redis_data.get('db', 0)),
-            password=redis_data.get('pass', None),
-        )
-        await self.redis.ping()
-        self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
-        self.loop = asyncio.create_task(self.main_loop())
+        # data: dict = await self.bot.get_shared_api_tokens('youtube')
+        # self.callback_url = data.get('callback')
+        # log.info('%s: Callback URL: %s', self.__cog_name__, self.callback_url)
+        # redis_data: dict = await self.bot.get_shared_api_tokens('redis')
+        # self.redis = redis.Redis(
+        #     host=redis_data.get('host', 'redis'),
+        #     port=int(redis_data.get('port', 6379)),
+        #     db=int(redis_data.get('db', 0)),
+        #     password=redis_data.get('pass', None),
+        # )
+        # await self.redis.ping()
+        # self.pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
+        # self.loop = asyncio.create_task(self.main_loop())
         # self.sub_bub_task.start()
         self.poll_new_videos.start()
         log.info('%s: Cog Load Finish', self.__cog_name__)
@@ -64,78 +64,78 @@ class YouTube(commands.Cog):
         log.info('%s: Cog Unload', self.__cog_name__)
         # self.sub_bub_task.cancel()
         self.poll_new_videos.cancel()
-        if self.loop and not self.loop.cancelled():
-            self.loop.cancel()
-        if self.pubsub:
-            await self.pubsub.close()
+        # if self.loop and not self.loop.cancelled():
+        #     self.loop.cancel()
+        # if self.pubsub:
+        #     await self.pubsub.close()
 
-    async def main_loop(self):
-        await self.bot.wait_until_ready()
-        log.info('%s: Start Main Loop', self.__cog_name__)
-        log.info('Listening on PubSub Channel: %s', self.channel)
-        await self.pubsub.subscribe(self.channel)
-        while self is self.bot.get_cog('YouTube'):
-            message = await self.pubsub.get_message(timeout=None)
-            # log.debug('message: %s', message)
-            if message:
-                await self.process_message(message)
-            await asyncio.sleep(0.01)
+    # async def main_loop(self):
+    #     await self.bot.wait_until_ready()
+    #     log.info('%s: Start Main Loop', self.__cog_name__)
+    #     log.info('Listening on PubSub Channel: %s', self.channel)
+    #     await self.pubsub.subscribe(self.channel)
+    #     while self is self.bot.get_cog('YouTube'):
+    #         message = await self.pubsub.get_message(timeout=None)
+    #         # log.debug('message: %s', message)
+    #         if message:
+    #             await self.process_message(message)
+    #         await asyncio.sleep(0.01)
 
-    async def process_message(self, message: dict) -> None:
-        try:
-            data = json.loads(message['data'].decode('utf-8'))
-            if 'new' in data['requests']:
-                asyncio.create_task(self.process_new(data))
-            resp = {'success': True, 'message': '202'}
-            pr = await self.redis.publish(data['channel'], json.dumps(resp, default=str))
-            log.debug('pr: %s', pr)
+    # async def process_message(self, message: dict) -> None:
+    #     try:
+    #         data = json.loads(message['data'].decode('utf-8'))
+    #         if 'new' in data['requests']:
+    #             asyncio.create_task(self.process_new(data))
+    #         resp = {'success': True, 'message': '202'}
+    #         pr = await self.redis.publish(data['channel'], json.dumps(resp, default=str))
+    #         log.debug('pr: %s', pr)
+    #
+    #     except Exception as error:
+    #         log.error('Exception Processing Message')
+    #         log.exception(error)
 
-        except Exception as error:
-            log.error('Exception Processing Message')
-            log.exception(error)
-
-    async def process_new(self, raw_data):
-        log.debug('Start: process_new')
-        if isinstance(raw_data['feed']['entry'], dict):
-            entries = [raw_data['feed']['entry']]
-        else:
-            entries = raw_data['feed']['entry']
-
-        channels = await self.config.channels()
-        all_channels = await self.config.all_channels()
-        for entry in reversed(entries):
-            log.debug('-'*40)
-            yt_video_id = entry['yt:videoId']
-            # log.debug('yt_video_id: %s', yt_video_id)
-            yt_channel_id = entry['yt:channelId']
-            # log.debug('yt_channel_id: %s', yt_channel_id)
-            if yt_channel_id not in channels:
-                log.warning('----- CHANNEL NOT CONFIGURED -----')
-                continue
-            all_videos = await self.config.videos()
-            if yt_video_id in all_videos[yt_channel_id]:
-                log.warning('----- VIDEO ALREADY PROCESSED -----')
-                continue
-            all_videos[yt_channel_id].append(yt_video_id)
-            all_videos[yt_channel_id] = all_videos[yt_channel_id][-30:]
-            # log.debug(all_videos)
-            await self.config.videos.set(all_videos)
-            log.debug('----- PROCESS NEW -----')
-            name = entry['author']['name'] if 'name' in entry['author'] else 'Unknown'
-            log.debug('name: %s', name)
-            url = entry['link']['@href']
-            log.debug('url: %s', url)
-            message = f'**{name}** {url}'
-            for chan_id, yt_channels in await AsyncIter(all_channels.items(), delay=2, steps=10):
-                if yt_channel_id in yt_channels['channels']:
-                    channel: discord.TextChannel = self.bot.get_channel(chan_id)
-                    if not channel:
-                        log.warning('404: Deleting Channel Config: %s: %s', chan_id, yt_channels)
-                        await self.config.channel_from_id(int(chan_id)).clear()
-                        continue
-                    await channel.send(message)
-            log.debug('-'*40)
-        log.debug('Finish: process_new')
+    # async def process_new(self, raw_data):
+    #     log.debug('Start: process_new')
+    #     if isinstance(raw_data['feed']['entry'], dict):
+    #         entries = [raw_data['feed']['entry']]
+    #     else:
+    #         entries = raw_data['feed']['entry']
+    #
+    #     channels = await self.config.channels()
+    #     all_channels = await self.config.all_channels()
+    #     for entry in reversed(entries):
+    #         log.debug('-'*40)
+    #         yt_video_id = entry['yt:videoId']
+    #         # log.debug('yt_video_id: %s', yt_video_id)
+    #         yt_channel_id = entry['yt:channelId']
+    #         # log.debug('yt_channel_id: %s', yt_channel_id)
+    #         if yt_channel_id not in channels:
+    #             log.warning('----- CHANNEL NOT CONFIGURED -----')
+    #             continue
+    #         all_videos = await self.config.videos()
+    #         if yt_video_id in all_videos[yt_channel_id]:
+    #             log.warning('----- VIDEO ALREADY PROCESSED -----')
+    #             continue
+    #         all_videos[yt_channel_id].append(yt_video_id)
+    #         all_videos[yt_channel_id] = all_videos[yt_channel_id][-30:]
+    #         # log.debug(all_videos)
+    #         await self.config.videos.set(all_videos)
+    #         log.debug('----- PROCESS NEW -----')
+    #         name = entry['author']['name'] if 'name' in entry['author'] else 'Unknown'
+    #         log.debug('name: %s', name)
+    #         url = entry['link']['@href']
+    #         log.debug('url: %s', url)
+    #         message = f'**{name}** {url}'
+    #         for chan_id, yt_channels in await AsyncIter(all_channels.items(), delay=2, steps=10):
+    #             if yt_channel_id in yt_channels['channels']:
+    #                 channel: discord.TextChannel = self.bot.get_channel(chan_id)
+    #                 if not channel:
+    #                     log.warning('404: Deleting Channel Config: %s: %s', chan_id, yt_channels)
+    #                     await self.config.channel_from_id(int(chan_id)).clear()
+    #                     continue
+    #                 await channel.send(message)
+    #         log.debug('-'*40)
+    #     log.debug('Finish: process_new')
 
     # @tasks.loop(time=datetime.time(hour=18, minute=0, tzinfo=datetime.timezone.utc))
     # async def sub_bub_task(self):
