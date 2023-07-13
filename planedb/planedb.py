@@ -46,6 +46,23 @@ class Planedb(commands.Cog):
     async def _planedb(self, ctx: commands.Context):
         """Planedb Command"""
 
+    @_planedb.command(name='list', aliases=['l', 'all'], description='List All Planes')
+    @commands.guild_only()
+    async def _planedb_list(self, ctx: commands.Context):
+        """Search Plane by Name"""
+        await ctx.typing()
+        planes: List[Dict[str, str]] = await self.config.planes()
+        embed = discord.Embed(
+            title='PlaneDB Plane List',
+            timestamp=datetime.datetime.now(),
+            color=discord.Color.dark_green(),
+        )
+        lines = []
+        for plane in planes:
+            lines.append(f"`{plane['registration']}` - {plane['name']}")
+        embed.description = '\n'.join(lines)
+        await ctx.send(embed=embed)
+
     @_planedb.command(name='search', aliases=['s', 'find', 'lookup'],
                       description='Search Plane by Name')
     @app_commands.describe(name='Name of the Resource')

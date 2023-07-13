@@ -266,6 +266,7 @@ class Webtools(commands.Cog):
                        f'URL: <{r.url}>\nReason: <{mdn_url}/{r.status_code}>')
         else:
             content = f'HTTPX Response: ✅ **{r.status_code}**\nURL: <{r.url}>'
+        content += f'\nWPT: <https://www.webpagetest.org/?url={r.url}>'
         await msg.edit(content=content)
 
         shot_type = 'Screenshot' if not video else 'Video'
