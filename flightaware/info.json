@@ -3,7 +3,7 @@
   "author": ["Shane#0816"],
   "short": "Carl's FlightAware Module.",
   "description": "FlightAware Flights, Operators, Registration.",
-  "install_msg": "Get started with `[p]help Flightaware`",
+  "install_msg": "Add Aero API Token with: `[p]set api`\n**SERVICE:** `flightaware`\n**KEYS AND TOKENS:**\n```\ntoken aero-api-token```",
   "end_user_data_statement": "Caveat Emptor.",
   "tags": ["redis"],
   "requirements": ["bs4", "httpx", "redis"],
