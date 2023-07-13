@@ -160,11 +160,24 @@ class Avherald(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
     @commands.admin()
-    async def _avherald_channel(self, ctx: commands.Context):
+    async def _avherald_channel(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
         """Set Channel for Auto Posting Aviation Herald Entries"""
-        view = ChannelView(self, ctx.author)
-        msg = 'Select a channel to Auto Post **Avation Herald** Updates:'
-        await view.send_initial_message(ctx, msg, True)
+        # view = ChannelView(self, ctx.author)
+        # msg = 'Select a channel to Auto Post **Avation Herald** Updates:'
+        # await view.send_initial_message(ctx, msg, True)
+        channel: discord.TextChannel
+        if not channel:
+            await self.config.guild(ctx.guild).channel.set(0)
+            return await ctx.send('🟢 Disabled. Specify a channel to Enable.', ephemeral=True)
+
+        log.debug('channel: %s', channel)
+        log.debug('channel.type: %s', channel.type)
+        if not str(channel.type) == 'text':
+            return await ctx.send('🔴 Channel must be a Text Channel.', ephemeral=True)
+
+        await self.config.guild(ctx.guild).channel.set(channel.id)
+        msg = f'🟢 Will post AVHerald updates to channel: {channel.name}'
+        await ctx.send(msg, ephemeral=True)
 
     async def gen_embed(self, data):
         log.debug('--- BEGIN entry/data  ---')
@@ -408,43 +421,43 @@ class ListView(discord.ui.View):
         await interaction.response.send_message('✅ Your wish is my command!', ephemeral=True, delete_after=10)
 
 
-class ChannelView(discord.ui.View):
-    def __init__(self, cog, author: Union[discord.Member, discord.User, int],
-                 timeout: int = 60 * 3):
-        self.cog = cog
-        self.user_id: int = author.id if hasattr(author, 'id') else int(author)
-        self.ephemeral: bool = False
-        self.message: Optional[discord.Message] = None
-        super().__init__(timeout=timeout)
-
-    async def send_initial_message(self, ctx, message: Optional[str] = None,
-                                   ephemeral: bool = False, **kwargs) -> discord.Message:
-        self.ephemeral = ephemeral
-        self.message = await ctx.send(content=message, view=self, ephemeral=self.ephemeral, **kwargs)
-        return self.message
-
-    async def on_timeout(self):
-        await self.message.delete()
-        self.stop()
-
-    async def interaction_check(self, interaction: discord.Interaction):
-        if interaction.user.id == self.user_id:
-            return True
-        msg = "⛔ Looks like you did not create this response."
-        await interaction.response.send_message(msg, ephemeral=True, delete_after=60)
-        return False
-
-    @discord.ui.select(cls=discord.ui.ChannelSelect, channel_types=[discord.ChannelType.text],
-                       min_values=0, max_values=1)
-    async def select_channels(self, interaction: discord.Interaction, select: discord.ui.ChannelSelect):
-        response = interaction.response
-        channels: List = []
-        for value in select.values:
-            channels.append(value)
-        if not channels:
-            await self.cog.config.guild(interaction.guild).channel.set(0)
-            msg = "No Channel Selected. Auto Posts Disabled."
-            return await response.send_message(msg, ephemeral=True, delete_after=60)
-        await self.cog.config.guild(interaction.guild).channel.set(channels[0].id)
-        msg = f"Now Auto Posting to Channel {channels[0].mention}"
-        return await response.send_message(msg, ephemeral=True, delete_after=60)
+# class ChannelView(discord.ui.View):
+#     def __init__(self, cog, author: Union[discord.Member, discord.User, int],
+#                  timeout: int = 60 * 3):
+#         self.cog = cog
+#         self.user_id: int = author.id if hasattr(author, 'id') else int(author)
+#         self.ephemeral: bool = False
+#         self.message: Optional[discord.Message] = None
+#         super().__init__(timeout=timeout)
+#
+#     async def send_initial_message(self, ctx, message: Optional[str] = None,
+#                                    ephemeral: bool = False, **kwargs) -> discord.Message:
+#         self.ephemeral = ephemeral
+#         self.message = await ctx.send(content=message, view=self, ephemeral=self.ephemeral, **kwargs)
+#         return self.message
+#
+#     async def on_timeout(self):
+#         await self.message.delete()
+#         self.stop()
+#
+#     async def interaction_check(self, interaction: discord.Interaction):
+#         if interaction.user.id == self.user_id:
+#             return True
+#         msg = "⛔ Looks like you did not create this response."
+#         await interaction.response.send_message(msg, ephemeral=True, delete_after=60)
+#         return False
+#
+#     @discord.ui.select(cls=discord.ui.ChannelSelect, channel_types=[discord.ChannelType.text],
+#                        min_values=0, max_values=1)
+#     async def select_channels(self, interaction: discord.Interaction, select: discord.ui.ChannelSelect):
+#         response = interaction.response
+#         channels: List = []
+#         for value in select.values:
+#             channels.append(value)
+#         if not channels:
+#             await self.cog.config.guild(interaction.guild).channel.set(0)
+#             msg = "No Channel Selected. Auto Posts Disabled."
+#             return await response.send_message(msg, ephemeral=True, delete_after=60)
+#         await self.cog.config.guild(interaction.guild).channel.set(channels[0].id)
+#         msg = f"Now Auto Posting to Channel {channels[0].mention}"
+#         return await response.send_message(msg, ephemeral=True, delete_after=60)

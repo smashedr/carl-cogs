@@ -24,7 +24,7 @@ class Carlcog(commands.Cog):
     info_command = None
     licenseinfo_command = None
     mydata_command = None
-    ping_command = None
+    # ping_command = None
     uptime_command = None
 
     def __init__(self, bot):
@@ -42,7 +42,7 @@ class Carlcog(commands.Cog):
         self.info_command = self.bot.remove_command('info')
         self.licenseinfo_command = self.bot.remove_command('licenseinfo')
         self.mydata_command = self.bot.remove_command('mydata')
-        self.ping_command = self.bot.remove_command('ping')
+        # self.ping_command = self.bot.remove_command('ping')
         self.uptime_command = self.bot.remove_command('uptime')
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
@@ -54,14 +54,14 @@ class Carlcog(commands.Cog):
             self.bot.remove_command('info')
             self.bot.remove_command('licenseinfo')
             self.bot.remove_command('mydata')
-            self.bot.remove_command('ping')
+            # self.bot.remove_command('ping')
             self.bot.remove_command('uptime')
         self.bot.add_command(self.embedset_command)
         self.bot.add_command(self.forgetme_command)
         self.bot.add_command(self.info_command)
         self.bot.add_command(self.licenseinfo_command)
         self.bot.add_command(self.mydata_command)
-        self.bot.add_command(self.ping_command)
+        # self.bot.add_command(self.ping_command)
         self.bot.add_command(self.uptime_command)
 
     @commands.Cog.listener()

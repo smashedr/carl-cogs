@@ -150,6 +150,7 @@ class YouTube(commands.Cog):
 
     @tasks.loop(minutes=30.0)
     async def poll_new_videos(self):
+        await self.bot.wait_until_ready()
         await self.update_channels_list()
         log.debug('-'*40)
         log.info('%s: Poll Videos Task - Start', self.__cog_name__)

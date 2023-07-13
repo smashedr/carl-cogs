@@ -60,6 +60,7 @@ class DayInHistory(commands.Cog):
 
     @tasks.loop(minutes=60.0)
     async def main_loop(self):
+        await self.bot.wait_until_ready()
         log.info('%s: Run Loop: main_loop', self.__cog_name__)
         now = datetime.now()
         current_time = now.time()
