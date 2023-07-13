@@ -57,6 +57,7 @@ class Avatar(commands.Cog):
 
     @tasks.loop(minutes=60.0)
     async def update_avatar(self):
+        await self.bot.wait_until_ready()
         log.info('%s: Update Avatar Task', self.__cog_name__)
         current = datetime.datetime.now()
         log.info('Day: %s Hour: %s', current.isoweekday(), current.hour)

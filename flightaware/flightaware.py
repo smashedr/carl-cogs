@@ -31,7 +31,9 @@ class Flightaware(commands.Cog):
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
         data = await self.bot.get_shared_api_tokens('flightaware')
-        self.api_key = data['api_key']
+        self.api_key = data.get('api_key') or data.get('token')
+        if not self.api_key:
+            raise ValueError('Missing flightaware token. Use the "set api" command.')
         redis_data: dict = await self.bot.get_shared_api_tokens('redis')
         self.redis = redis.Redis(
             host=redis_data.get('host', 'redis'),

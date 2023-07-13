@@ -6,7 +6,7 @@
   "install_msg": "Get started with `[p]help Webtools`",
   "end_user_data_statement": "Caveat Emptor.",
   "tags": [],
-  "requirements": ["httpx", "ipaddress", "ping3", "pytest-playwright", "python-whois"],
+  "requirements": ["fuckit","httpx", "ipaddress", "ping3", "pytest-playwright", "python-whois"],
   "permissions" : [],
   "required_cogs": {},
   "min_bot_version": "3.5.0",

@@ -51,6 +51,7 @@ class ColorMe(commands.Cog):
 
     @tasks.loop(minutes=30.0)
     async def cleanup_roles(self):
+        await self.bot.wait_until_ready()
         log.info('%s: Cleanup Roles Task Run', self.__cog_name__)
         all_guilds: Dict[int, dict] = await self.config.all_guilds()
         async for guild_id, data in AsyncIter(all_guilds.items(), delay=2, steps=20):

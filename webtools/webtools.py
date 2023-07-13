@@ -1,4 +1,5 @@
 import discord
+import fuckit
 import httpx
 import ipaddress
 import logging
@@ -43,12 +44,15 @@ class Webtools(commands.Cog):
                     'AppleWebKit/537.36 (KHTML, like Gecko) '
                     'Chrome/113.0.0.0 Safari/537.36')
 
+    ping_command = None
+
     def __init__(self, bot):
         self.bot = bot
         self.cog_dir = pathlib.Path(__file__).parent.resolve()
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
+        self.ping_command = self.bot.remove_command('ping')
         log.info('Recursively Removing Videos Path: %s', self.videos_path)
         shutil.rmtree(self.videos_path)
         if not os.path.exists(self.videos_path):
@@ -68,6 +72,9 @@ class Webtools(commands.Cog):
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
+        with fuckit:
+            self.bot.remove_command('ping')
+        self.bot.add_command(self.ping_command)
 
     @commands.command(name='whois', aliases=['who'])
     async def whois_command(self, ctx: commands.Context, hostname: str):
@@ -125,14 +132,14 @@ class Webtools(commands.Cog):
             color = discord.Color.green()
             status = f'✅ {r.status_code}'
             try:
-                text = cf.box(r.json()[:2020], lang='json')
+                text = cf.box(r.json()[:2000], lang='json')
             except Exception as error:
                 log.debug(error)
-                text = cf.box(r.text[:2020], lang='plain')
+                text = cf.box(r.text[:2000], lang='plain')
         else:
             color = discord.Color.red()
             status = f'⛔ {r.status_code}'
-            text = cf.box(r.text[:2020], lang='plain')
+            text = cf.box(r.text[:2000], lang='plain')
         embed = discord.Embed(
             title=url,
             url=url,
