@@ -87,22 +87,31 @@ You will most likely need to look under the hood to set up these Cogs.
 | **[warcraftlogs](warcraftlogs)** | **Deprecated** - Split Warcraft Logs into multiple channels with filters.         |
 | **[weather](weather)**           | **WIP** - Get Weather for Location.                                               |
 
-## Additional Setup Information
+## Tags
 
-### Redis
+| Tag        | Description                                                                           |
+|------------|---------------------------------------------------------------------------------------|
+| deprecated | Cog is DEPRECATED and may not function as expected or receive updates.                |
+| wip        | Cog is an active Work in Progress and my be frequently updated with breaking changes. |
+| redis      | Cog requires Redis. [Read More Here...](README.md#redis)                              |
+| api        | Cog **may** require Web API. [Read More Here...](README.md#web-api)                   |
+
+# Additional Setup Information
+
+## Redis
 
 Many Cogs use Redis for data caching and setting expiry keys.
 Redis has a small footprint and is very fast.
 Running the docker Redis container will work with these cogs out of the box.
 To configure specific Redis settings, use the `set api` command.
 
-#### Running Redis
+### Running Redis
 
 ```text
 docker run --name redis -p 6379:6379 -d redis:alpine
 ```
 
-#### Setup Redis
+### Setup Redis
 
 ```text
 [p]set api
@@ -119,7 +128,7 @@ pass    onlyifrequired
 Above information are the defaults. Password defaults to `None`.
 **DO NOT** enter a password in the config unless you require one.
 
-### Web API
+## Web API
 
 It is a Django app in a Docker container:
 
