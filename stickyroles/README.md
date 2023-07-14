@@ -2,6 +2,8 @@
 
 Remembers users roles and adds them on rejoin.
 
+**DEPRECATED:** This Cog is no longer updated and may not work as expected!
+
 ## Install
 
 ```text

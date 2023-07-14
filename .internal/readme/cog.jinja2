@@ -1,6 +1,9 @@
 # {{ data['name'] }}
 
-{{ data['description'] }}{% if 'wip' in data['tags'] %}
+{{ data['description'] }}{% if 'deprecated' in data['tags'] %}
+
+**DEPRECATED:** This Cog is no longer updated and may not work as expected!
+{%- endif %}{% if 'wip' in data['tags'] %}
 
 **WIP:** This is a Work in Progress and may not work as expected.
 {%- endif %}{% if 'api' in data['tags'] %}

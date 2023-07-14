@@ -52,12 +52,12 @@ These Cogs should be suitable for public use with little to no extra setup.
 | **[qrscanner](qrscanner)**           | **WIP** - Scans messages for attachments to parse and post QR Data.       |
 | **[reactpost](reactpost)**           | Set channels to add Emoji->Channel mappings to post to channel.           |
 | **[saveforlater](saveforlater)**     | **WIP** - Save any message to later by having the bot send it to you.     |
-| **[stickyroles](stickyroles)**       | Remembers users roles and adds them on rejoin.                            |
+| **[stickyroles](stickyroles)**       | **Deprecated** - Remembers users roles and adds them on rejoin.           |
 | **[sunsetrise](sunsetrise)**         | Get Sun Set and Sun Rise for Location.                                    |
 | **[timer](timer)**                   | **WIP** - Start and Stop Timers in Discord.                               |
 | **[tiorun](tiorun)**                 | **WIP** - Runs code on tio.run and returns the results.                   |
 | **[userchannels](userchannels)**     | Creates custom user rooms on the fly and cleans up when done.             |
-| **[warcraftlogs](warcraftlogs)**     | **WIP** - Split Warcraft Logs into multiple channels with filters.        |
+| **[warcraftlogs](warcraftlogs)**     | **Deprecated** - Split Warcraft Logs into multiple channels with filters. |
 | **[weather](weather)**               | Get Weather for Location.                                                 |
 | **[welcome](welcome)**               | Welcomes new users to your servers on join.                               |
 | **[wolfram](wolfram)**               | **WIP** - Query Wolfram Alpha for Results.                                |

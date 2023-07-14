@@ -2,6 +2,8 @@
 
 Create Reaction Role sets to let users get roles from reactions.
 
+**DEPRECATED:** This Cog is no longer updated and may not work as expected!
+
 ## Install
 
 ```text
