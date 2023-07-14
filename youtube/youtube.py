@@ -94,48 +94,48 @@ class YouTube(commands.Cog):
     #         log.error('Exception Processing Message')
     #         log.exception(error)
 
-    # async def process_new(self, raw_data):
-    #     log.debug('Start: process_new')
-    #     if isinstance(raw_data['feed']['entry'], dict):
-    #         entries = [raw_data['feed']['entry']]
-    #     else:
-    #         entries = raw_data['feed']['entry']
-    #
-    #     channels = await self.config.channels()
-    #     all_channels = await self.config.all_channels()
-    #     for entry in reversed(entries):
-    #         log.debug('-'*40)
-    #         yt_video_id = entry['yt:videoId']
-    #         # log.debug('yt_video_id: %s', yt_video_id)
-    #         yt_channel_id = entry['yt:channelId']
-    #         # log.debug('yt_channel_id: %s', yt_channel_id)
-    #         if yt_channel_id not in channels:
-    #             log.warning('----- CHANNEL NOT CONFIGURED -----')
-    #             continue
-    #         all_videos = await self.config.videos()
-    #         if yt_video_id in all_videos[yt_channel_id]:
-    #             log.warning('----- VIDEO ALREADY PROCESSED -----')
-    #             continue
-    #         all_videos[yt_channel_id].append(yt_video_id)
-    #         all_videos[yt_channel_id] = all_videos[yt_channel_id][-30:]
-    #         # log.debug(all_videos)
-    #         await self.config.videos.set(all_videos)
-    #         log.debug('----- PROCESS NEW -----')
-    #         name = entry['author']['name'] if 'name' in entry['author'] else 'Unknown'
-    #         log.debug('name: %s', name)
-    #         url = entry['link']['@href']
-    #         log.debug('url: %s', url)
-    #         message = f'**{name}** {url}'
-    #         for chan_id, yt_channels in await AsyncIter(all_channels.items(), delay=2, steps=10):
-    #             if yt_channel_id in yt_channels['channels']:
-    #                 channel: discord.TextChannel = self.bot.get_channel(chan_id)
-    #                 if not channel:
-    #                     log.warning('404: Deleting Channel Config: %s: %s', chan_id, yt_channels)
-    #                     await self.config.channel_from_id(int(chan_id)).clear()
-    #                     continue
-    #                 await channel.send(message)
-    #         log.debug('-'*40)
-    #     log.debug('Finish: process_new')
+    async def process_new(self, raw_data):
+        log.debug('Start: process_new')
+        if isinstance(raw_data['feed']['entry'], dict):
+            entries = [raw_data['feed']['entry']]
+        else:
+            entries = raw_data['feed']['entry']
+
+        channels = await self.config.channels()
+        all_channels = await self.config.all_channels()
+        for entry in reversed(entries):
+            log.debug('-'*40)
+            yt_video_id = entry['yt:videoId']
+            # log.debug('yt_video_id: %s', yt_video_id)
+            yt_channel_id = entry['yt:channelId']
+            # log.debug('yt_channel_id: %s', yt_channel_id)
+            if yt_channel_id not in channels:
+                log.warning('----- CHANNEL NOT CONFIGURED -----')
+                continue
+            all_videos = await self.config.videos()
+            if yt_video_id in all_videos[yt_channel_id]:
+                log.warning('----- VIDEO ALREADY PROCESSED -----')
+                continue
+            all_videos[yt_channel_id].append(yt_video_id)
+            all_videos[yt_channel_id] = all_videos[yt_channel_id][-30:]
+            # log.debug(all_videos)
+            await self.config.videos.set(all_videos)
+            log.debug('----- PROCESS NEW -----')
+            name = entry['author']['name'] if 'name' in entry['author'] else 'Unknown'
+            log.debug('name: %s', name)
+            url = entry['link']['@href']
+            log.debug('url: %s', url)
+            message = f'**{name}** {url}'
+            for chan_id, yt_channels in await AsyncIter(all_channels.items(), delay=2, steps=10):
+                if yt_channel_id in yt_channels['channels']:
+                    channel: discord.TextChannel = self.bot.get_channel(chan_id)
+                    if not channel:
+                        log.warning('404: Deleting Channel Config: %s: %s', chan_id, yt_channels)
+                        await self.config.channel_from_id(int(chan_id)).clear()
+                        continue
+                    await channel.send(message)
+            log.debug('-'*40)
+        log.debug('Finish: process_new')
 
     # @tasks.loop(time=datetime.time(hour=18, minute=0, tzinfo=datetime.timezone.utc))
     # async def sub_bub_task(self):
