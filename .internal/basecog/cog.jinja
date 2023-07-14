@@ -119,7 +119,7 @@ class ChannelView(discord.ui.View):
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id == self.user_id:
             return True
-        msg = f"\U0001F534 Looks like you did not create this response."
+        msg = '\U0001F534 Looks like you did not create this response.'
         await interaction.response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
         return False
 

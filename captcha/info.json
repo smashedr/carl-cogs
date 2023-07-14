@@ -5,7 +5,7 @@
   "description": "Protect server with CAPTCHA.",
   "install_msg": "**Requires API.** Get started with `[p]captcha`",
   "end_user_data_statement": "Caveat Emptor.",
-  "tags": ["api", "redis"],
+  "tags": ["api", "redis", "wip"],
   "requirements": ["redis"],
   "permissions" : [],
   "required_cogs": {},

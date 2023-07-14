@@ -1,3 +1,4 @@
+[![Redis](https://img.shields.io/badge/tag-Redis-yellow?logo=git&logoColor=white)](../README.md#redis)
 # FlightAware
 
 FlightAware Flights, Operators, Registration.
@@ -7,9 +8,12 @@ FlightAware Flights, Operators, Registration.
 ## Install
 
 ```text
-[p]cog list carl-cogs
 [p]cog install carl-cogs flightaware
 [p]load flightaware
 
 [p]help FlightAware
 ```
+
+---
+[Open an Issue](https://github.com/smashedr/carl-cogs/issues/new?title=FlightAware) |
+[Back to All Cogs](../README.md#public-cogs)

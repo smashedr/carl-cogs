@@ -1,3 +1,4 @@
+[![WIP](https://img.shields.io/badge/tag-WIP-orange?logo=git&logoColor=white)](../README.md#tags)
 # Ocrimage
 
 Converts images to text via Flowery OCR API.
@@ -7,9 +8,12 @@ Converts images to text via Flowery OCR API.
 ## Install
 
 ```text
-[p]cog list carl-cogs
 [p]cog install carl-cogs ocrimage
 [p]load ocrimage
 
 [p]help Ocrimage
 ```
+
+---
+[Open an Issue](https://github.com/smashedr/carl-cogs/issues/new?title=Ocrimage) |
+[Back to All Cogs](../README.md#public-cogs)

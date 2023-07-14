@@ -5,7 +5,7 @@
   "description": "Runs code on tio.run and returns the results.",
   "install_msg": "Get started with `[p]run language code`",
   "end_user_data_statement": "Caveat Emptor.",
-  "tags": ["wip"],
+  "tags": [],
   "requirements": ["httpx", "thefuzz"],
   "permissions" : [],
   "required_cogs": {},

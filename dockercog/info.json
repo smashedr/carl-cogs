@@ -5,7 +5,7 @@
   "description": "Docker Daemon API.",
   "install_msg": "Manage this command with `[p]dockerd`",
   "end_user_data_statement": "Caveat Emptor.",
-  "tags": ["wip"],
+  "tags": ["docker", "wip"],
   "requirements": ["docker", "zipline-cli"],
   "permissions" : [],
   "required_cogs": {},

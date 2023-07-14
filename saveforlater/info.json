@@ -5,7 +5,7 @@
   "description": "Save any message to later by having the bot send it to you.",
   "install_msg": "Get started by right clicking a message. You may need to reload Ctrl+R.",
   "end_user_data_statement": "Caveat Emptor.",
-  "tags": ["wip"],
+  "tags": [],
   "requirements": [],
   "permissions" : [],
   "required_cogs": {},

@@ -2,14 +2,15 @@
 
 Save any message to later by having the bot send it to you.
 
-**WIP:** This is a Work in Progress and may not work as expected.
-
 ## Install
 
 ```text
-[p]cog list carl-cogs
 [p]cog install carl-cogs saveforlater
 [p]load saveforlater
 
 [p]help Saveforlater
 ```
+
+---
+[Open an Issue](https://github.com/smashedr/carl-cogs/issues/new?title=Saveforlater) |
+[Back to All Cogs](../README.md#public-cogs)

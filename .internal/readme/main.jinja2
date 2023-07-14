@@ -2,13 +2,22 @@
 [![Codacy](https://img.shields.io/codacy/grade/439cde1e5a5b4c649beca9b27ec108aa?style=plastic&label=Codacy&logo=codacy)](https://app.codacy.com/gh/smashedr/carl-cogs/dashboard)
 [![Issues](https://img.shields.io/github/issues-raw/smashedr/carl-cogs?style=plastic&label=Issues&logo=github&logoColor=white)](https://github.com/smashedr/carl-cogs/issues)
 [![Status](https://uptime-nj.hosted-domains.com/api/badge/26/status?upColor=4fc523&style=plastic)](https://uptime-nj.hosted-domains.com/status/carl)
-[![](https://repository-images.githubusercontent.com/422749366/a8e0e86a-fcdf-42f4-a5f8-63946c0cd272)](https://discord.com/oauth2/authorize?client_id=204384099136176128&scope=bot+applications.commands&permissions=8)
+[![](https://repository-images.githubusercontent.com/422749366/a8e0e86a-fcdf-42f4-a5f8-63946c0cd272)](https://discord.com/oauth2/authorize?client_id=204384021352808450&scope=bot+applications.commands&permissions=8)
 # Carl-Cogs
 
 Cogs for Carl Bot and Red Discord Bot.
 
-[Click Here](https://discord.com/oauth2/authorize?client_id=204384099136176128&scope=bot+applications.commands&permissions=8)
+**[Click Here](https://discord.com/oauth2/authorize?client_id=204384021352808450&scope=bot+applications.commands&permissions=8)**
 to add Carl Bot to your Discord Server.
+
+## Table of Contents
+
+*   [Installing](#installing)
+*   [Public Cogs](#public-cogs)
+*   [Internal Cogs](#internal-cogs)
+*   [Tags](#tags)
+*   [Redis](#redis)
+*   [Web API](#web-api)
 
 ## Installing
 
@@ -17,6 +26,7 @@ If you run a bot compatible with Red Cogs:
 ```text
 [p]repo add carl-cogs https://github.com/smashedr/carl-cogs
 [p]cog list carl-cogs
+
 [p]cog install carl-cogs name
 [p]load name
 ```
@@ -24,6 +34,8 @@ If you run a bot compatible with Red Cogs:
 ## Public Cogs
 
 These Cogs should be suitable for public use with little to no extra setup.
+
+**{{ stats['public'] }}**/{{ stats['total'] }}
 
 | Cog | Description |
 | --- | --- |
@@ -39,10 +51,12 @@ These Cogs should be suitable for public use with little to no extra setup.
 {%- endif %} {{ data['description'] }} |
 {% endif -%}
 {% endfor %}
-## Internal/Hidden Cogs
+## Internal Cogs
 
-These Cogs are either not designed for other bots, or not ready for the Public yet.
+These Cogs are either not designed for other bots or not ready for the Public yet.
 You will most likely need to look under the hood to set up these Cogs.
+
+**{{ stats['hidden'] }}**/{{ stats['total'] }}
 
 | Cog | Description |
 | --- | --- |
@@ -58,7 +72,16 @@ You will most likely need to look under the hood to set up these Cogs.
 {%- endif %} {{ data['description'] }} |
 {% endif -%}
 {% endfor %}
-# Additional Setup Information
+## Tags
+
+Information on Cog Tags.
+
+| Tag | Count | Description |
+|---|---|---|
+| redis | **{{ stats['tags']['redis'] }}** | Cog requires **Redis**. [Read More Here...](#redis) |
+| api | **{{ stats['tags']['api'] }}** | Cog **may** require Web API. [Read More Here...](#web-api) |
+| wip | **{{ stats['tags']['wip'] }}** | Cog is an active **Work in Progress** and my be frequently updated with breaking changes. |
+| deprecated | **{{ stats['tags']['deprecated'] }}** | Cog is **DEPRECATED** and may not function as expected or receive updates. |
 
 ## Redis
 
@@ -95,3 +118,4 @@ Above information are the defaults. Password defaults to `None`.
 It is a Django app in a Docker container:
 
 *   https://github.com/smashedr/red-api
+

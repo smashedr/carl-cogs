@@ -1,3 +1,4 @@
+[![WIP](https://img.shields.io/badge/tag-WIP-orange?logo=git&logoColor=white)](../README.md#tags)
 # Wolfram
 
 Query Wolfram Alpha for Results.
@@ -7,9 +8,12 @@ Query Wolfram Alpha for Results.
 ## Install
 
 ```text
-[p]cog list carl-cogs
 [p]cog install carl-cogs wolfram
 [p]load wolfram
 
 [p]help Wolfram
 ```
+
+---
+[Open an Issue](https://github.com/smashedr/carl-cogs/issues/new?title=Wolfram) |
+[Back to All Cogs](../README.md#public-cogs)

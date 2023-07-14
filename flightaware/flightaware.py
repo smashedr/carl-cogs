@@ -221,7 +221,7 @@ class Flightaware(commands.Cog):
                 msgs.append(f"\n[Route]:      {d['route']}")
             if d['codeshares']:
                 msgs.append(f"\n[Codeshares]: {cf.humanize_list(d['codeshares'])}")
-            msgs.append(f"```")
+            msgs.append("```")
             value = ''
             if d['registration']:
                 value += f"[{d['registration']}]({fa.fa_registration_url}{d['registration']}) " \

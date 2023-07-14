@@ -1,3 +1,4 @@
+[![WIP](https://img.shields.io/badge/tag-WIP-orange?logo=git&logoColor=white)](../README.md#tags)
 # Grafana
 
 Grafana Graphs in Discord.
@@ -7,9 +8,12 @@ Grafana Graphs in Discord.
 ## Install
 
 ```text
-[p]cog list carl-cogs
 [p]cog install carl-cogs grafana
 [p]load grafana
 
 [p]help Grafana
 ```
+
+---
+[Open an Issue](https://github.com/smashedr/carl-cogs/issues/new?title=Grafana) |
+[Back to All Cogs](../README.md#public-cogs)

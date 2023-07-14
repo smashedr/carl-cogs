@@ -1,3 +1,4 @@
+[![Redis](https://img.shields.io/badge/tag-Redis-yellow?logo=git&logoColor=white)](../README.md#redis)
 # DayInHistory
 
 Gets and Posts Today in History.
@@ -7,9 +8,12 @@ Gets and Posts Today in History.
 ## Install
 
 ```text
-[p]cog list carl-cogs
 [p]cog install carl-cogs dayinhistory
 [p]load dayinhistory
 
 [p]help DayInHistory
 ```
+
+---
+[Open an Issue](https://github.com/smashedr/carl-cogs/issues/new?title=DayInHistory) |
+[Back to All Cogs](../README.md#public-cogs)

@@ -1,3 +1,4 @@
+[![WIP](https://img.shields.io/badge/tag-WIP-orange?logo=git&logoColor=white)](../README.md#tags)
 # Dockerd
 
 Docker Daemon API.
@@ -7,9 +8,12 @@ Docker Daemon API.
 ## Install
 
 ```text
-[p]cog list carl-cogs
 [p]cog install carl-cogs dockercog
 [p]load dockercog
 
 [p]help Dockerd
 ```
+
+---
+[Open an Issue](https://github.com/smashedr/carl-cogs/issues/new?title=Dockerd) |
+[Back to All Cogs](../README.md#public-cogs)

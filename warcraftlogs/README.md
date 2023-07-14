@@ -1,3 +1,5 @@
+[![DEPRECATED](https://img.shields.io/badge/tag-DEPRECATED-red?logo=git&logoColor=white)](../README.md#tags)
+[![WIP](https://img.shields.io/badge/tag-WIP-orange?logo=git&logoColor=white)](../README.md#tags)
 # Warcraftlogs
 
 Split Warcraft Logs into multiple channels with filters.
@@ -9,9 +11,12 @@ Split Warcraft Logs into multiple channels with filters.
 ## Install
 
 ```text
-[p]cog list carl-cogs
 [p]cog install carl-cogs warcraftlogs
 [p]load warcraftlogs
 
 [p]help Warcraftlogs
 ```
+
+---
+[Open an Issue](https://github.com/smashedr/carl-cogs/issues/new?title=Warcraftlogs) |
+[Back to All Cogs](../README.md#public-cogs)

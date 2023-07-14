@@ -1,3 +1,4 @@
+[![Web API](https://img.shields.io/badge/tag-Web_API-yellow?logo=git&logoColor=white)](../README.md#web-api)
 # ChatGraph
 
 Generate Pie Graph of Messages in Current or Specified Channel.
@@ -7,9 +8,12 @@ Generate Pie Graph of Messages in Current or Specified Channel.
 ## Install
 
 ```text
-[p]cog list carl-cogs
 [p]cog install carl-cogs chatgraph
 [p]load chatgraph
 
 [p]help ChatGraph
 ```
+
+---
+[Open an Issue](https://github.com/smashedr/carl-cogs/issues/new?title=ChatGraph) |
+[Back to All Cogs](../README.md#public-cogs)

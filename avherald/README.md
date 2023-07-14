@@ -1,3 +1,4 @@
+[![Redis](https://img.shields.io/badge/tag-Redis-yellow?logo=git&logoColor=white)](../README.md#redis)
 # Avherald
 
 Get and post Aviation Herald data to Discord.
@@ -7,9 +8,12 @@ Get and post Aviation Herald data to Discord.
 ## Install
 
 ```text
-[p]cog list carl-cogs
 [p]cog install carl-cogs avherald
 [p]load avherald
 
 [p]help Avherald
 ```
+
+---
+[Open an Issue](https://github.com/smashedr/carl-cogs/issues/new?title=Avherald) |
+[Back to All Cogs](../README.md#public-cogs)

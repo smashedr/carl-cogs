@@ -1,3 +1,4 @@
+[![Redis](https://img.shields.io/badge/tag-Redis-yellow?logo=git&logoColor=white)](../README.md#redis)
 # ActiveRole
 
 Adds a role to active chatters.
@@ -7,9 +8,12 @@ Adds a role to active chatters.
 ## Install
 
 ```text
-[p]cog list carl-cogs
 [p]cog install carl-cogs activerole
 [p]load activerole
 
 [p]help ActiveRole
 ```
+
+---
+[Open an Issue](https://github.com/smashedr/carl-cogs/issues/new?title=ActiveRole) |
+[Back to All Cogs](../README.md#public-cogs)
