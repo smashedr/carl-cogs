@@ -92,7 +92,7 @@ class Wolfram(commands.Cog):
             return await ctx.send(self.app_msg, ephemeral=True, delete_after=30)
 
         await ctx.typing()
-        url = f'http://api.wolframalpha.com/v1/simple'
+        url = 'http://api.wolframalpha.com/v1/simple'
         params = {
             'appid':  self.app_id,
             'i':  query,
@@ -121,7 +121,7 @@ class Wolfram(commands.Cog):
             return await ctx.send(self.app_msg, ephemeral=True, delete_after=30)
 
         await ctx.typing()
-        url = f'http://api.wolframalpha.com/v2/query'
+        url = 'http://api.wolframalpha.com/v2/query'
         params = {
             'appid': self.app_id,
             'input': query,
@@ -198,7 +198,7 @@ class ModalView(discord.ui.View):
             return True
         if interaction.user.id in self.user_ids:
             return True
-        msg = f'⛔ Sorry, you are not authorized to use this interaction.'
+        msg = '⛔ Sorry, you are not authorized to use this interaction.'
         await interaction.response.send_message(msg, ephemeral=True,
                                                 delete_after=self.delete_after)
         return False
