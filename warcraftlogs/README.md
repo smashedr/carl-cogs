@@ -1,5 +1,5 @@
-![DEPRECATED](https://img.shields.io/badge/tag-DEPRECATED-red?logo=git&logoColor=white)
-![WIP](https://img.shields.io/badge/tag-WIP-orange?logo=git&logoColor=white)
+[![DEPRECATED](https://img.shields.io/badge/tag-DEPRECATED-red?logo=git&logoColor=white)](../README.md#tags)
+[![WIP](https://img.shields.io/badge/tag-WIP-orange?logo=git&logoColor=white)](../README.md#tags)
 # Warcraftlogs
 
 Split Warcraft Logs into multiple channels with filters.

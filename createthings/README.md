@@ -1,5 +1,5 @@
-![DEPRECATED](https://img.shields.io/badge/tag-DEPRECATED-red?logo=git&logoColor=white)
-![WIP](https://img.shields.io/badge/tag-WIP-orange?logo=git&logoColor=white)
+[![DEPRECATED](https://img.shields.io/badge/tag-DEPRECATED-red?logo=git&logoColor=white)](../README.md#tags)
+[![WIP](https://img.shields.io/badge/tag-WIP-orange?logo=git&logoColor=white)](../README.md#tags)
 # Createthings
 
 Create pre-defined or user-defined role/emoji sets.

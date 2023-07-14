@@ -1,4 +1,4 @@
-![DEPRECATED](https://img.shields.io/badge/tag-DEPRECATED-red?logo=git&logoColor=white)
+[![DEPRECATED](https://img.shields.io/badge/tag-DEPRECATED-red?logo=git&logoColor=white)](../README.md#tags)
 # Reactroles
 
 Create Reaction Role sets to let users get roles from reactions.

@@ -1,5 +1,5 @@
-{%- if 'deprecated' in data['tags'] %}![DEPRECATED](https://img.shields.io/badge/tag-DEPRECATED-red?logo=git&logoColor=white)
-{% endif %}{%- if 'wip' in data['tags'] %}![WIP](https://img.shields.io/badge/tag-WIP-orange?logo=git&logoColor=white)
+{%- if 'deprecated' in data['tags'] %}[![DEPRECATED](https://img.shields.io/badge/tag-DEPRECATED-red?logo=git&logoColor=white)](../README.md#tags)
+{% endif %}{%- if 'wip' in data['tags'] %}[![WIP](https://img.shields.io/badge/tag-WIP-orange?logo=git&logoColor=white)](../README.md#tags)
 {% endif %}{%- if 'redis' in data['tags'] %}[![Redis](https://img.shields.io/badge/tag-Redis-yellow?logo=git&logoColor=white)](../README.md#redis)
 {% endif %}{%- if 'api' in data['tags'] %}[![Web API](https://img.shields.io/badge/tag-Web_API-yellow?logo=git&logoColor=white)](../README.md#web-api)
 {% endif %}# {{ data['name'] }}

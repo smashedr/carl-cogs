@@ -1,4 +1,4 @@
-![WIP](https://img.shields.io/badge/tag-WIP-orange?logo=git&logoColor=white)
+[![WIP](https://img.shields.io/badge/tag-WIP-orange?logo=git&logoColor=white)](../README.md#tags)
 [![Redis](https://img.shields.io/badge/tag-Redis-yellow?logo=git&logoColor=white)](../README.md#redis)
 # OpenAI
 
