@@ -48,14 +48,6 @@ class Basecog(commands.Cog):
     async def _basecog(self, ctx: commands.Context):
         """Options for managing Basecog."""
 
-    @_basecog.command(name='channel', aliases=['c', 'chan', 'chann', 'channels'])
-    @commands.max_concurrency(1, commands.BucketType.guild)
-    async def _basecog_channel(self, ctx: commands.Context):
-        """Set Channels for Basecog"""
-        view = ChannelView(self, ctx.author)
-        msg = 'Select channels for **Basecog**:'
-        await view.send_initial_message(ctx, msg, True)
-
     @_basecog.command(name='toggle', aliases=['enable', 'disable', 'on', 'off'])
     @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
@@ -69,6 +61,37 @@ class Basecog(commands.Cog):
         await self.config.guild(ctx.guild).enabled.set(True)
         await ctx.send(f'✅ {self.__cog_name__} Enabled.')
 
+    @_basecog.command(name='channel', aliases=['c', 'chan', 'chann'])
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def _basecog_channel(self, ctx: commands.Context,
+                               channel: Optional[discord.TextChannel],
+                               silent: Optional[bool]):
+        """Set Channel(s) for Basecog"""
+        channel: discord.TextChannel
+        if not channel:
+            await self.config.guild(ctx.guild).channel.set(0)
+            return await ctx.send('🟢 Disabled. Specify a channel to Enable.', ephemeral=True)
+
+        log.debug('channel: %s', channel)
+        log.debug('channel.type: %s', channel.type)
+        if not str(channel.type) == 'text':
+            return await ctx.send('🔴 Channel must be a Text Channel.', ephemeral=True)
+
+        guild_data = {'channel': channel.id, 'silent': silent}
+        await self.config.guild(ctx.guild).set(guild_data)
+        msg = f'🟢 Will post ASN updates to channel: {channel.name}'
+        if silent:
+            msg += '\nMessages will post Silently as to not send notifications.'
+        await ctx.send(msg, ephemeral=True)
+
+    @_basecog.command(name='channels')
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def _basecog_channels(self, ctx: commands.Context):
+        """Set Channels for Basecog"""
+        view = ChannelView(self, ctx.author)
+        msg = 'Select channels for **Basecog**:'
+        await view.send_initial_message(ctx, msg, True)
+
 
 class ChannelView(discord.ui.View):
     def __init__(self, cog, author: Union[discord.Member, discord.User, int],
@@ -80,12 +103,6 @@ class ChannelView(discord.ui.View):
         self.message: Optional[discord.Message] = None
         super().__init__(timeout=timeout)
 
-    async def send_initial_message(self, ctx, message: Optional[str] = None,
-                                   ephemeral: bool = False, **kwargs) -> discord.Message:
-        self.ephemeral = ephemeral
-        self.message = await ctx.send(content=message, view=self, ephemeral=self.ephemeral, **kwargs)
-        return self.message
-
     async def on_timeout(self):
         await self.message.delete()
         self.stop()
@@ -96,6 +113,12 @@ class ChannelView(discord.ui.View):
         msg = f"⛔ Looks like you did not create this response."
         await interaction.response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
         return False
+
+    async def send_initial_message(self, ctx, message: Optional[str] = None,
+                                   ephemeral: bool = False, **kwargs) -> discord.Message:
+        self.ephemeral = ephemeral
+        self.message = await ctx.send(content=message, view=self, ephemeral=self.ephemeral, **kwargs)
+        return self.message
 
     @discord.ui.select(cls=discord.ui.ChannelSelect, channel_types=[discord.ChannelType.text],
                        min_values=0, max_values=25)
