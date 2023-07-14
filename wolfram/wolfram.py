@@ -240,7 +240,7 @@ class DataModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         log.debug('ReplyModal - on_submit')
         # message: discord.Message = interaction.message
-        user: discord.Member = interaction.user
+        # user: discord.Member = interaction.user
         # TODO: Verify Settings Here
         data = {
             'app_id': self.app_id.value.strip(),
