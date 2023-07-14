@@ -199,10 +199,10 @@ class Carlcog(commands.Cog):
         py_url = f'https://www.python.org/downloads/release/python-{py_ver}/'
         py_str = f'[{platform.python_version()}]({py_url})'
 
-        dpy_url = f'https://github.com/Rapptz/discord.py/tree/v{discord.__version__}'
+        dpy_url = f'https://github.com/Rapptz/discord.py/releases/tag/v{discord.__version__}'
         dpy_str = f'[{discord.__version__}]({dpy_url})'
 
-        red_url = f'https://github.com/Cog-Creators/Red-DiscordBot/tree/{version_info}'
+        red_url = f'https://github.com/Cog-Creators/Red-DiscordBot/releases/tag/{version_info}'
         red_str = f'[{version_info}]({red_url})'
 
         desc_txt = 'My name is Carl and I am a fully functional Discord Bot.'

@@ -25,7 +25,7 @@ If you run a bot compatible with Red Cogs:
 
 These Cogs should be suitable for public use with little to no extra setup.
 
-| Cog                                  |  Description                                                              |
+| Cog                                  | Description                                                               |
 |--------------------------------------|---------------------------------------------------------------------------|
 | **[activerole](activerole)**         | **Redis** - Adds a role to active chatters.                               |
 | **[asn](asn)**                       | **Redis** - Aviation Safety Network data in discord.                      |
@@ -102,7 +102,7 @@ To configure specific Redis settings, use the `set api` command.
 docker run --name redis -p 6379:6379 -d redis:alpine
 ```
 
-### Redis
+### Setup Redis
 
 ```text
 [p]set api
