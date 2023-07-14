@@ -62,7 +62,6 @@ These Cogs should be suitable for public use with little to no extra setup.
 | **[welcome](welcome)**               | Welcomes new users to your servers on join.                               |
 | **[wolfram](wolfram)**               | **WIP** - Query Wolfram Alpha for Results.                                |
 
-
 ## Internal/Hidden Cogs
 
 These Cogs are either not designed for other bots, or not ready for the Public yet.
