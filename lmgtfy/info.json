@@ -5,7 +5,7 @@
   "description": "LMGTFY chat replies.",
   "install_msg": "After someone ask a question, type `lmgtfy`",
   "end_user_data_statement": "Caveat Emptor.",
-  "tags": [],
+  "tags": ["wip"],
   "requirements": ["httpx"],
   "permissions" : [],
   "required_cogs": {},

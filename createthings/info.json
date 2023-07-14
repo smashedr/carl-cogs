@@ -5,7 +5,7 @@
   "description": "Create pre-defined or user-defined role/emoji sets.",
   "install_msg": "Get started with `[p]help Createthings`",
   "end_user_data_statement": "Caveat Emptor.",
-  "tags": ["wip"],
+  "tags": ["deprecated", "wip"],
   "requirements": ["httpx"],
   "permissions" : [],
   "required_cogs": {},

@@ -5,7 +5,7 @@
   "description": "Custom Redis pubsub module for Red and Carl Bot.",
   "install_msg": "**Requires Redis and API...** Only use if you know what you are doing.",
   "end_user_data_statement": "Caveat Emptor.",
-  "tags": ["redis", "api"],
+  "tags": ["api", "redis"],
   "requirements": ["redis"],
   "permissions" : [],
   "required_cogs": {},

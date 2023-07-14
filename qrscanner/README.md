@@ -15,6 +15,5 @@ Scans messages for attachments to parse and post QR Data.
 ```
 
 ---
-[Back to All Cogs](../README.md#public-cogs) |
-[Install Carl Cogs](../README.md#installing) |
-[Add Carl Bot to Discord](https://discord.com/oauth2/authorize?client_id=204384021352808450&scope=bot+applications.commands&permissions=8)
+[Open an Issue](https://github.com/smashedr/carl-cogs/issues/new?title=Autoarchive) |
+[Back to All Cogs](../README.md#public-cogs)

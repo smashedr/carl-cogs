@@ -5,7 +5,7 @@
   "description": "Start and Stop Timers in Discord.",
   "install_msg": "Start a Timer with `[p]timer start`",
   "end_user_data_statement": "Caveat Emptor.",
-  "tags": ["wip"],
+  "tags": [],
   "requirements": [],
   "permissions" : [],
   "required_cogs": {},
