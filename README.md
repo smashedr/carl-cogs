@@ -14,7 +14,7 @@ to add Carl Bot to your Discord Server.
 
 *   [Installing](#installing)
 *   [Public Cogs](#public-cogs)
-*   [Internal/Hidden Cogs](#internal-hidden-cogs)
+*   [Internal Cogs](#internal-cogs)
 *   [Tags](#tags)
 *   [Redis](#redis)
 *   [Web API](#web-api)
@@ -72,9 +72,9 @@ These Cogs should be suitable for public use with little to no extra setup.
 | **[youtube](youtube)** | **WIP** - Auto post YouTube videos to specified channels. |
 | **[ziplinecog](ziplinecog)** | **WIP** - Zipline Stats in Discord. |
 
-## Internal/Hidden Cogs
+## Internal Cogs
 
-These Cogs are either not designed for other bots, or not ready for the Public yet.
+These Cogs are either not designed for other bots or not ready for the Public yet.
 You will most likely need to look under the hood to set up these Cogs.
 
 | Cog | Description |
@@ -98,12 +98,12 @@ You will most likely need to look under the hood to set up these Cogs.
 
 ## Tags
 
-| Tag        | Description                                                                           |
-|------------|---------------------------------------------------------------------------------------|
-| deprecated | Cog is DEPRECATED and may not function as expected or receive updates.                |
-| wip        | Cog is an active Work in Progress and my be frequently updated with breaking changes. |
-| redis      | Cog requires Redis. [Read More Here...](#redis)                              |
-| api        | Cog **may** require Web API. [Read More Here...](#web-api)                   |
+| Tag | Description |
+|---|---|
+| deprecated | Cog is DEPRECATED and may not function as expected or receive updates. |
+| wip | Cog is an active Work in Progress and my be frequently updated with breaking changes. |
+| redis | Cog requires Redis. [Read More Here...](#redis) |
+| api | Cog **may** require Web API. [Read More Here...](#web-api) |
 
 ## Redis
 
