@@ -32,9 +32,11 @@ class Carlcog(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_global(alert_channel=None)
         self.info: Optional[dict] = None
+        self.app_info = None
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
+        self.app_info = await self.bot.application_info()
         self.info = await self.bot.get_shared_api_tokens('info')
         log.info('INFO: %s', self.info)
         self.embedset_command = self.bot.remove_command('embedset')
@@ -191,9 +193,10 @@ class Carlcog(commands.Cog):
     @commands.command(name='info', aliases=['about'])
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def cc_info(self, ctx: commands.Context):
-        """Bot uptime command."""
+        """Bot info command."""
+
         scopes = ('bot', 'applications.commands')
-        inv_url = discord.utils.oauth_url(self.bot.user.id, permissions=discord.Permissions(8), scopes=scopes)
+        inv_url = discord.utils.oauth_url(self.app_info.id, permissions=discord.Permissions(8), scopes=scopes)
 
         py_ver = platform.python_version().replace('.', '')
         py_url = f'https://www.python.org/downloads/release/python-{py_ver}/'
@@ -283,10 +286,8 @@ class Carlcog(commands.Cog):
             view = None
         await ctx.send(embed=em, view=view)
 
-    @staticmethod
-    async def get_owners(bot, ids=False) -> List[Union[discord.User, int]]:
-        app_info = await bot.application_info()
-        owners: List[discord.User] = [app_info.owner]
+    async def get_owners(self, bot, ids=False) -> List[Union[discord.User, int]]:
+        owners: List[discord.User] = [self.app_info.owner]
         if os.environ.get('CO_OWNER'):
             for owner_id in os.environ.get('CO_OWNER').split(','):
                 owners.append(bot.get_user(int(owner_id)))
