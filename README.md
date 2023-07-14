@@ -102,12 +102,14 @@ You will most likely need to look under the hood to set up these Cogs.
 
 ## Tags
 
+Information on Cog Tags.
+
 | Tag | Count | Description |
 |---|---|---|
-| deprecated | **4** | Cog is **DEPRECATED** and may not function as expected or receive updates. |
-| wip | **21** | Cog is an active **Work in Progress** and my be frequently updated with breaking changes. |
 | redis | **8** | Cog requires **Redis**. [Read More Here...](#redis) |
 | api | **4** | Cog **may** require Web API. [Read More Here...](#web-api) |
+| wip | **21** | Cog is an active **Work in Progress** and my be frequently updated with breaking changes. |
+| deprecated | **4** | Cog is **DEPRECATED** and may not function as expected or receive updates. |
 
 ## Redis
 
