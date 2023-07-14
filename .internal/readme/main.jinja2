@@ -2,12 +2,12 @@
 [![Codacy](https://img.shields.io/codacy/grade/439cde1e5a5b4c649beca9b27ec108aa?style=plastic&label=Codacy&logo=codacy)](https://app.codacy.com/gh/smashedr/carl-cogs/dashboard)
 [![Issues](https://img.shields.io/github/issues-raw/smashedr/carl-cogs?style=plastic&label=Issues&logo=github&logoColor=white)](https://github.com/smashedr/carl-cogs/issues)
 [![Status](https://uptime-nj.hosted-domains.com/api/badge/26/status?upColor=4fc523&style=plastic)](https://uptime-nj.hosted-domains.com/status/carl)
-[![](https://repository-images.githubusercontent.com/422749366/a8e0e86a-fcdf-42f4-a5f8-63946c0cd272)](https://discord.com/oauth2/authorize?client_id=204384099136176128&scope=bot+applications.commands&permissions=8)
+[![](https://repository-images.githubusercontent.com/422749366/a8e0e86a-fcdf-42f4-a5f8-63946c0cd272)](https://discord.com/oauth2/authorize?client_id=204384021352808450&scope=bot+applications.commands&permissions=8)
 # Carl-Cogs
 
 Cogs for Carl Bot and Red Discord Bot.
 
-[Click Here](https://discord.com/oauth2/authorize?client_id=204384099136176128&scope=bot+applications.commands&permissions=8)
+**[Click Here](https://discord.com/oauth2/authorize?client_id=204384021352808450&scope=bot+applications.commands&permissions=8)**
 to add Carl Bot to your Discord Server.
 
 ## Installing
@@ -17,6 +17,7 @@ If you run a bot compatible with Red Cogs:
 ```text
 [p]repo add carl-cogs https://github.com/smashedr/carl-cogs
 [p]cog list carl-cogs
+
 [p]cog install carl-cogs name
 [p]load name
 ```
@@ -58,22 +59,22 @@ You will most likely need to look under the hood to set up these Cogs.
 {%- endif %} {{ data['description'] }} |
 {% endif -%}
 {% endfor %}
-# Additional Setup Information
+## Additional Setup Information
 
-## Redis
+### Redis
 
 Many Cogs use Redis for data caching and setting expiry keys.
 Redis has a small footprint and is very fast.
 Running the docker Redis container will work with these cogs out of the box.
 To configure specific Redis settings, use the `set api` command.
 
-### Running Redis
+#### Running Redis
 
 ```text
 docker run --name redis -p 6379:6379 -d redis:alpine
 ```
 
-### Setup Redis
+#### Setup Redis
 
 ```text
 [p]set api
@@ -90,7 +91,7 @@ pass    onlyifrequired
 Above information are the defaults. Password defaults to `None`.
 **DO NOT** enter a password in the config unless you require one.
 
-## Web API
+### Web API
 
 It is a Django app in a Docker container:
 

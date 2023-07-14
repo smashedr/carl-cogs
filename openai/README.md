@@ -1,3 +1,4 @@
+[![Redis](https://img.shields.io/badge/tag-Redis-yellow?logo=git&logoColor=white)](../README.md#redis)
 # OpenAI
 
 OpenAI and ChatGPT Commands.
@@ -7,9 +8,13 @@ OpenAI and ChatGPT Commands.
 ## Install
 
 ```text
-[p]cog list carl-cogs
 [p]cog install carl-cogs openai
 [p]load openai
 
 [p]help OpenAI
 ```
+
+---
+[Back to All Cogs](../README.md#public-cogs) |
+[Install Carl Cogs](../README.md#installing) |
+[Add Carl Bot to Discord](https://discord.com/oauth2/authorize?client_id=204384021352808450&scope=bot+applications.commands&permissions=8)

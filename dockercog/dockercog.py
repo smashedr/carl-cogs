@@ -184,7 +184,7 @@ class Docker(commands.Cog):
             await ctx.send(f'Top: {url.url}')
         else:
             file = discord.File(bytes_io, name)
-            await ctx.send(f'Top:', file=file)
+            await ctx.send('Top:', file=file)
 
     @staticmethod
     def process_top(containers: List) -> str:
@@ -484,7 +484,7 @@ class ModalView(discord.ui.View):
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id in self.owner_ids:
             return True
-        msg = f"⛔ Sorry, this is restricted to bot owners."
+        msg = '⛔ Sorry, this is restricted to bot owners.'
         await interaction.response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
         return False
 

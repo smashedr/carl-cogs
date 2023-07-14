@@ -44,7 +44,7 @@ class Webtools(commands.Cog):
                     'AppleWebKit/537.36 (KHTML, like Gecko) '
                     'Chrome/113.0.0.0 Safari/537.36')
 
-    ping_command = None
+    ping_cmd = None
 
     def __init__(self, bot):
         self.bot = bot
@@ -52,7 +52,7 @@ class Webtools(commands.Cog):
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
-        self.ping_command = self.bot.remove_command('ping')
+        self.ping_cmd = self.bot.remove_command('ping')
         log.info('Recursively Removing Videos Path: %s', self.videos_path)
         shutil.rmtree(self.videos_path)
         if not os.path.exists(self.videos_path):
@@ -74,7 +74,7 @@ class Webtools(commands.Cog):
         log.info('%s: Cog Unload', self.__cog_name__)
         with fuckit:
             self.bot.remove_command('ping')
-        self.bot.add_command(self.ping_command)
+        self.bot.add_command(self.ping_cmd)
 
     @commands.command(name='whois', aliases=['who'])
     async def whois_command(self, ctx: commands.Context, hostname: str):
@@ -314,7 +314,6 @@ class Webtools(commands.Cog):
                                 files.append(f)
                         except Exception as error:
                             log.exception(error)
-                            pass
 
             await ss.edit(content='⌛ Uploading to Discord.')
             await ctx.typing()
