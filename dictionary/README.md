@@ -8,4 +8,6 @@ Dictionary and Urban Dictionary lookups.
 [p]cog list carl-cogs
 [p]cog install carl-cogs dictionary
 [p]load dictionary
+
+[p]help Dictionary
 ```

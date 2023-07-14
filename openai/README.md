@@ -2,7 +2,7 @@
 
 OpenAI and ChatGPT Commands.
 
-**Requires Redis:** See Below for More Details...
+**Requires Redis:** Cog requires Redis to function. [Redis Setup...](../README.md#redis)
 
 ## Install
 
@@ -10,27 +10,6 @@ OpenAI and ChatGPT Commands.
 [p]cog list carl-cogs
 [p]cog install carl-cogs openai
 [p]load openai
-```
 
-## Configure Redis
-
-Use the set api command to configure redis credentials.
-This is not necessary if all values are default.
-Make sure to **NOT** set a password unless you need one.
-
-```text
-[p]set api
-```
-
-Name `redis` with data:
-```text
-host    redis
-port    6379
-db      0
-pass    onlyifrequired
-```
-
-To start a Redis instance with all defaults run:
-```text
-docker run --name redis -p 6379:6379 -d redis:alpine
+[p]help OpenAI
 ```

@@ -175,7 +175,7 @@ class ReactPost(commands.Cog):
             return await ctx.send(msg, ephemeral=True, delete_after=15)
         channels.remove(channel.id)
         log.debug('channels: %s', channels)
-        await self.config.guild(ctx.guild).enabled.set(True)
+        await self.config.guild(ctx.guild).channels.set(channels)
         await ctx.send(f'✅ Disabled Channel {channel.mention}', ephemeral=True, delete_after=60)
 
     @_rp.command(name='status', aliases=['s', 'maps', 'mapping', 'list'])

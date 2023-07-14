@@ -8,4 +8,6 @@ Generate a Random Cool Birb from coolbirbs.com.
 [p]cog list carl-cogs
 [p]cog install carl-cogs coolbirbs
 [p]load coolbirbs
+
+[p]help Coolbirbs
 ```

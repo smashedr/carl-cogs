@@ -2,7 +2,9 @@
 
 Protect server with CAPTCHA.
 
-**API Required:** This cog _might_ require the Web API...
+**Web API:** Cog _may_ require the Web API for additional functionality. [API Setup...](../README.md#web-api)
+
+**Requires Redis:** Cog requires Redis to function. [Redis Setup...](../README.md#redis)
 
 ## Install
 
@@ -10,8 +12,6 @@ Protect server with CAPTCHA.
 [p]cog list carl-cogs
 [p]cog install carl-cogs captcha
 [p]load captcha
+
+[p]help Captcha
 ```
-
-## Configure API
-
-API Docs Coming Soon...

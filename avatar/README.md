@@ -8,6 +8,8 @@ Server Avatar Auto Updates.
 
 ```text
 [p]cog list carl-cogs
-[p]cog install carl-cogs grafana
-[p]load grafana
+[p]cog install carl-cogs avatar
+[p]load avatar
+
+[p]help Avatar
 ```

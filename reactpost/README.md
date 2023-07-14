@@ -8,4 +8,6 @@ Set channels to add Emoji->Channel mappings to post to channel.
 [p]cog list carl-cogs
 [p]cog install carl-cogs reactpost
 [p]load reactpost
+
+[p]help ReactPost
 ```

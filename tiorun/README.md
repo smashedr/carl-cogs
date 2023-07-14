@@ -10,4 +10,6 @@ Runs code on tio.run and returns the results.
 [p]cog list carl-cogs
 [p]cog install carl-cogs tiorun
 [p]load tiorun
+
+[p]help Tiorun
 ```

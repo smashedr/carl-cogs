@@ -1,6 +1,6 @@
-# Timer
+# Wolfram
 
-Start and Stop Timers in Discord.
+Query Wolfram Alpha for Results.
 
 **WIP:** This is a Work in Progress and may not work as expected.
 
@@ -8,8 +8,8 @@ Start and Stop Timers in Discord.
 
 ```text
 [p]cog list carl-cogs
-[p]cog install carl-cogs timer
-[p]load timer
+[p]cog install carl-cogs wolfram
+[p]load wolfram
 
-[p]help Timer
+[p]help Wolfram
 ```

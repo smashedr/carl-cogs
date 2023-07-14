@@ -151,7 +151,7 @@ class Docker(commands.Cog):
                 mem_max = self.convert_bytes(stat['memory_stats']['limit'])
                 cpu = self.calculate_cpu_percent(stat)
                 line = f"{mem}/_{mem_max}_ `{cpu}%` **{name}**"
-                if len('\n'.join(lines + [line])) > (4096 - len(overflow) - 10):
+                if len('\n'.join(lines + [line])) > (4000 - len(overflow)):
                     hidden = len(containers) - len(lines)
                     lines.append(overflow.format(hidden))
                     break

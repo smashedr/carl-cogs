@@ -69,9 +69,10 @@ class Avatar(commands.Cog):
 
             if data['last']:
                 last = datetime.datetime.fromtimestamp(data['last'])
-                seconds: float = (current - last).seconds
+                seconds: int = (current - last).seconds
             else:
-                seconds: float = 0
+                seconds: int = 1 + 60*60*24
+                log.warning('Guild %s NO LAST FOUND, setting to: %s', guild_id, seconds)
 
             if data['frequency'] == 'hourly':
                 if seconds > (60*30):
@@ -91,7 +92,9 @@ class Avatar(commands.Cog):
                 continue
 
             if data['frequency'] == 'weekly':
-                if data['day'] != current.isoweekday():
+                if data['hour'] != current.hour:
+                    log.debug('Guild %s wrong HOUR: %s', guild_id, data['hour'])
+                elif data['day'] != current.isoweekday():
                     log.debug('Guild %s wrong DAY: %s', guild_id, data['day'])
                 else:
                     if seconds > (60*60*24):
@@ -152,6 +155,7 @@ class Avatar(commands.Cog):
     @commands.admin_or_permissions(manage_guild=True)
     async def _avatar_rotate(self, ctx: commands.Context):
         """Rotate to a New Avatar."""
+        await ctx.typing()
         data: Dict[str, Any] = await self.config.guild(ctx.guild).all()
         if len(data['avatars']) < 2:
             return await ctx.send('⛔ You need to add at least 2 Avatars for this to work.')
@@ -178,6 +182,7 @@ class Avatar(commands.Cog):
     @app_commands.describe(hour='Hour of the Day in UTC')
     async def _avatar_hour(self, ctx: commands.Context, hour: int):
         """Set Avatar Update Hour."""
+        await ctx.typing()
         log.debug('hour: %s', hour)
         hour = int(hour)
         if not -1 < int(hour) < 23:
@@ -193,6 +198,7 @@ class Avatar(commands.Cog):
     @app_commands.describe(day='Day of the Week')
     async def _avatar_day(self, ctx: commands.Context, day: str):
         """Set Avatar Update Day."""
+        await ctx.typing()
         log.debug('day: %s', day)
         if day.isdigit() and 0 < int(day) < 8:
             dow = int(day)
@@ -214,6 +220,7 @@ class Avatar(commands.Cog):
     @app_commands.describe(frequency='Daily, Weekly, or Monthly')
     async def _avatar_frequency(self, ctx: commands.Context, frequency: str):
         """Set Avatar Update Frequency"""
+        await ctx.typing()
         frequency = frequency.lower()
         log.debug('frequency: %s', frequency)
         for freq, items in self.frequency.items():
@@ -232,6 +239,7 @@ class Avatar(commands.Cog):
     @commands.admin_or_permissions(manage_guild=True)
     async def _avatar_enable(self, ctx: commands.Context):
         """Enable Avatar."""
+        await ctx.typing()
         enabled = await self.config.guild(ctx.guild).enabled()
         if enabled:
             await ctx.send(f'⛔ {self.__cog_name__} already enabled.')
@@ -244,6 +252,7 @@ class Avatar(commands.Cog):
     @commands.admin_or_permissions(manage_guild=True)
     async def _avatar_disable(self, ctx: commands.Context):
         """Disable Avatar."""
+        await ctx.typing()
         enabled = await self.config.guild(ctx.guild).enabled()
         if not enabled:
             await ctx.send(f'⛔ {self.__cog_name__} already disabled.')
@@ -256,6 +265,7 @@ class Avatar(commands.Cog):
     @commands.admin_or_permissions(manage_guild=True)
     async def _avatar_status(self, ctx: commands.Context):
         """Get Avatar status."""
+        await ctx.typing()
         data: Dict[str, Any] = await self.config.guild(ctx.guild).all()
         enabled = '✅ ENABLED' if data['enabled'] else '⛔ DISABLED'
         content = (
@@ -276,6 +286,7 @@ class Avatar(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def _avatar_clear(self, ctx: commands.Context):
         """Remove ALL Avatar's from the random Avatar list."""
+        await ctx.typing()
         await self.config.guild(ctx.guild).avatars.set([])
         await ctx.send('🔥 All stored Avatars were burnt alive.')
 
@@ -285,6 +296,7 @@ class Avatar(commands.Cog):
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def _avatar_list(self, ctx: commands.Context):
         """List all Avatar's in the random Avatar list."""
+        await ctx.typing()
         avatars: List[str] = await self.config.guild(ctx.guild).avatars()
         if len(avatars) < 1:
             return await ctx.send('⛔ No stored avatars found. Add some first...')
@@ -300,6 +312,7 @@ class Avatar(commands.Cog):
     @app_commands.describe(avatar_urls='One or More Avatar URLs')
     async def _avatar_add(self, ctx: commands.Context, *, avatar_urls: str):
         """Add one or more Avatar's to server random Avatar list."""
+        await ctx.typing()
         good, bad = await self.parse_urls(avatar_urls)
         log.debug('good: %s', good)
         log.debug('bad: %s', bad)

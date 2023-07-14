@@ -1,6 +1,6 @@
-# Timer
+# Github
 
-Start and Stop Timers in Discord.
+Github Functions in Discord.
 
 **WIP:** This is a Work in Progress and may not work as expected.
 
@@ -8,8 +8,8 @@ Start and Stop Timers in Discord.
 
 ```text
 [p]cog list carl-cogs
-[p]cog install carl-cogs timer
-[p]load timer
+[p]cog install carl-cogs github
+[p]load github
 
-[p]help Timer
+[p]help Github
 ```

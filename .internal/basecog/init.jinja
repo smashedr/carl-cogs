@@ -1,0 +1,6 @@
+from .{{ data['module'] }} import {{ data['name'] }}
+
+
+async def setup(bot):
+    cog = {{ data['name'] }}(bot)
+    await bot.add_cog(cog)

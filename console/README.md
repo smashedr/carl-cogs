@@ -8,6 +8,8 @@ Random console commands converted to Python and Discord.
 
 ```text
 [p]cog list carl-cogs
-[p]cog install carl-cogs consolecmds
-[p]load consolecmds
+[p]cog install carl-cogs console
+[p]load console
+
+[p]help Console
 ```

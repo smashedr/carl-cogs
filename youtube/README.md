@@ -10,4 +10,6 @@ Auto post YouTube videos to specified channels.
 [p]cog list carl-cogs
 [p]cog install carl-cogs youtube
 [p]load youtube
+
+[p]help YouTube
 ```

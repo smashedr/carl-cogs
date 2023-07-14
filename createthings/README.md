@@ -10,4 +10,6 @@ Create pre-defined or user-defined role/emoji sets.
 [p]cog list carl-cogs
 [p]cog install carl-cogs createthings
 [p]load createthings
+
+[p]help Createthings
 ```

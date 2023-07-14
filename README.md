@@ -1,15 +1,16 @@
-[![Discord](https://img.shields.io/discord/899171661457293343?color=7289da&label=discord&logo=discord&logoColor=white&style=plastic)](https://discord.gg/wXy6m2X8wY)
-[![Codacy grade](https://img.shields.io/codacy/grade/439cde1e5a5b4c649beca9b27ec108aa?logo=codacy&style=plastic)](https://app.codacy.com/gh/smashedr/carl-cogs/dashboard)
-[![](https://repository-images.githubusercontent.com/422749366/a8e0e86a-fcdf-42f4-a5f8-63946c0cd272)](https://carl.sapps.me/)
+[![Discord](https://img.shields.io/discord/899171661457293343?style=plastic&label=Discord&logo=discord&logoColor=white&color=7289da)](https://discord.gg/wXy6m2X8wY)
+[![Codacy](https://img.shields.io/codacy/grade/439cde1e5a5b4c649beca9b27ec108aa?style=plastic&label=Codacy&logo=codacy)](https://app.codacy.com/gh/smashedr/carl-cogs/dashboard)
+[![Issues](https://img.shields.io/github/issues-raw/smashedr/carl-cogs?style=plastic&label=Issues&logo=github&logoColor=white)](https://github.com/smashedr/carl-cogs/issues)
+[![Status](https://uptime-nj.hosted-domains.com/api/badge/26/status?upColor=4fc523&style=plastic)](https://uptime-nj.hosted-domains.com/status/carl)
+[![](https://repository-images.githubusercontent.com/422749366/a8e0e86a-fcdf-42f4-a5f8-63946c0cd272)](https://discord.com/oauth2/authorize?client_id=204384099136176128&scope=bot+applications.commands&permissions=8)
 # Carl-Cogs
 
 Cogs for Carl Bot and Red Discord Bot.
 
-[https://carl.sapps.me/](https://carl.sapps.me/)
+[Click Here](https://discord.com/oauth2/authorize?client_id=204384099136176128&scope=bot+applications.commands&permissions=8)
+to add Carl Bot to your Discord Server.
 
 ## Installing
-
-To add Carl Bot to your server visit: [https://carl.sapps.me/](https://carl.sapps.me/)
 
 If you run a bot compatible with Red Cogs:
 
@@ -21,6 +22,8 @@ If you run a bot compatible with Red Cogs:
 ```
 
 ## Public Cogs
+
+These Cogs should be suitable for public use with little to no extra setup.
 
 | Cog                                  | Description                                                               |
 |--------------------------------------|---------------------------------------------------------------------------|
@@ -49,30 +52,39 @@ If you run a bot compatible with Red Cogs:
 | **[qrscanner](qrscanner)**           | **WIP** - Scans messages for attachments to parse and post QR Data.       |
 | **[reactpost](reactpost)**           | Set channels to add Emoji->Channel mappings to post to channel.           |
 | **[saveforlater](saveforlater)**     | **WIP** - Save any message to later by having the bot send it to you.     |
-| **[stickyroles](stickyroles)**       | Remembers users roles and adds them on rejoin.                            |
+| **[stickyroles](stickyroles)**       | **Deprecated** - Remembers users roles and adds them on rejoin.           |
 | **[sunsetrise](sunsetrise)**         | Get Sun Set and Sun Rise for Location.                                    |
 | **[timer](timer)**                   | **WIP** - Start and Stop Timers in Discord.                               |
 | **[tiorun](tiorun)**                 | **WIP** - Runs code on tio.run and returns the results.                   |
 | **[userchannels](userchannels)**     | Creates custom user rooms on the fly and cleans up when done.             |
-| **[warcraftlogs](warcraftlogs)**     | **WIP** - Split Warcraft Logs into multiple channels with filters.        |
+| **[warcraftlogs](warcraftlogs)**     | **Deprecated** - Split Warcraft Logs into multiple channels with filters. |
+| **[weather](weather)**               | Get Weather for Location.                                                 |
 | **[welcome](welcome)**               | Welcomes new users to your servers on join.                               |
+| **[wolfram](wolfram)**               | **WIP** - Query Wolfram Alpha for Results.                                |
 
 ## Internal/Hidden Cogs
 
+These Cogs are either not designed for other bots, or not ready for the Public yet.
+You will most likely need to look under the hood to set up these Cogs.
+
 | Cog                              | Description                                                                       |
 |----------------------------------|-----------------------------------------------------------------------------------|
-| **[captcha](captcha)**           | **API** - Protect server with CAPTCHA.                                            |
+| **[avatar](avatar)**             | **WIP** - Server Avatar Auto Updates.                                             |
+| **[captcha](captcha)**           | **Redis, API** - Protect server with CAPTCHA.                                     |
 | **[carlcog](carlcog)**           | Custom commands for Carl Bot that could end up in their own module.               |
 | **[createthings](createthings)** | **WIP** - Create pre-defined or user-defined role/emoji sets.                     |
+| **[dockercog](dockercog)**       | **WIP** - Docker Daemon API.                                                      |
 | **[github](github)**             | **WIP** - Github Functions in Discord.                                            |
 | **[grafana](grafana)**           | **WIP** - Grafana Graphs in Discord.                                              |
 | **[miscog](miscog)**             | Miscellaneous commands for Carl Bot that could end up in their own module.        |
 | **[planedb](planedb)**           | **WIP** - Add Name->NNumber Mappings to easily search.                            |
 | **[pubsub](pubsub)**             | **Redis, API** - Custom Redis pubsub module for Red and Carl Bot.                 |
 | **[reactroles](reactroles)**     | **Deprecated** - Create Reaction Role sets to let users get roles from reactions. |
+| **[uptimekuma](uptimekuma)**     | **WIP** - Uptimekuma in Discord.                                                  |
 | **[voicetext](voicetext)**       | **WIP** - Creates Text Channels for Active Voice Channels and Cleans Up.          |
-| **[weather](weather)**           | Get Weather for Location.                                                         |
+| **[webtools](webtools)**         | Web Tools for Carl Bot that could end up in their own module.                     |
 | **[youtube](youtube)**           | **WIP** - Auto post YouTube videos to specified channels.                         |
+| **[ziplinecog](ziplinecog)**     | **WIP** - Zipline Stats in Discord.                                               |
 
 # Additional Setup Information
 
@@ -89,7 +101,7 @@ To configure specific Redis settings, use the `set api` command.
 docker run --name redis -p 6379:6379 -d redis:alpine
 ```
 
-### Configure Redis
+### Setup Redis
 
 ```text
 [p]set api
@@ -104,10 +116,10 @@ pass    onlyifrequired
 ```
 
 Above information are the defaults. Password defaults to `None`.
-DO NOT enter a password in the config unless you require one.
+**DO NOT** enter a password in the config unless you require one.
 
-## API
+## Web API
 
-**Coming Soon**
+It is a Django app in a Docker container:
 
-*   See: https://github.com/smashedr/red-api
+*   https://github.com/smashedr/red-api

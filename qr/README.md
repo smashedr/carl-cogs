@@ -10,4 +10,6 @@ Create QR Codes in Discord.
 [p]cog list carl-cogs
 [p]cog install carl-cogs qr
 [p]load qr
+
+[p]help Autoarchive
 ```

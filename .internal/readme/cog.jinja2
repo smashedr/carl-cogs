@@ -1,0 +1,25 @@
+# {{ data['name'] }}
+
+{{ data['description'] }}{% if 'deprecated' in data['tags'] %}
+
+**DEPRECATED:** This Cog is no longer updated and may not work as expected!
+{%- endif %}{% if 'wip' in data['tags'] %}
+
+**WIP:** This is a Work in Progress and may not work as expected.
+{%- endif %}{% if 'api' in data['tags'] %}
+
+**Web API:** Cog _may_ require the Web API for additional functionality. [API Setup...](../README.md#web-api)
+{%- endif %}{% if 'redis' in data['tags'] %}
+
+**Requires Redis:** Cog requires Redis to function. [Redis Setup...](../README.md#redis)
+{%- endif %}
+
+## Install
+
+```text
+[p]cog list carl-cogs
+[p]cog install carl-cogs {{ data['cog'] }}
+[p]load {{ data['cog'] }}
+
+[p]help {{ data['name'] }}
+```

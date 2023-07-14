@@ -5,7 +5,7 @@
   "description": "Split Warcraft Logs into multiple channels with filters.",
   "install_msg": "Manage this command with `[p]warcraftlogs`",
   "end_user_data_statement": "Caveat Emptor.",
-  "tags": ["wip"],
+  "tags": ["deprecated", "wip"],
   "requirements": [],
   "permissions" : [],
   "required_cogs": {},

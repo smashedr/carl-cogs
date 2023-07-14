@@ -5,7 +5,7 @@
   "description": "Remembers users roles and adds them on rejoin.",
   "install_msg": "Enable this with `[p]stickyroles enable`",
   "end_user_data_statement": "Caveat Emptor.",
-  "tags": [],
+  "tags": ["deprecated"],
   "requirements": [],
   "permissions" : [],
   "required_cogs": {},

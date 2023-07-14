@@ -10,4 +10,6 @@ Add Name->NNumber Mappings to easily search.
 [p]cog list carl-cogs
 [p]cog install carl-cogs planedb
 [p]load planedb
+
+[p]help Planedb
 ```

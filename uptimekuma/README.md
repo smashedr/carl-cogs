@@ -1,4 +1,4 @@
-# UptimeKuma
+# Uptimekuma
 
 Uptimekuma in Discord.
 
@@ -8,6 +8,8 @@ Uptimekuma in Discord.
 
 ```text
 [p]cog list carl-cogs
-[p]cog install carl-cogs grafana
-[p]load grafana
+[p]cog install carl-cogs uptimekuma
+[p]load uptimekuma
+
+[p]help Uptimekuma
 ```

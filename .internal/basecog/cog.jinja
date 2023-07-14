@@ -1,15 +1,16 @@
 import discord
 import logging
-from typing import Optional, Union, List
+from typing import Any, Dict, List, Optional, Tuple, Union
 
+from discord.ext import tasks
 from redbot.core import app_commands, commands, Config
 from redbot.core.utils import chat_formatting as cf
 
-log = logging.getLogger('red.basecog')
+log = logging.getLogger('red.{{ data['module'] }}')
 
 
-class Basecog(commands.Cog):
-    """Carl's Basecog Cog"""
+class {{ data['name'] }}(commands.Cog):
+    """Carl's {{ data['name'] }} Cog"""
 
     guild_default = {
         'enabled': False,
@@ -23,10 +24,18 @@ class Basecog(commands.Cog):
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
+        data: Dict[str, str] = await self.bot.get_shared_api_tokens('{{ data['module'] }}')
+        self.main_loop.start()
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
+        self.main_loop.cancel()
+
+    @tasks.loop(minutes=60.0)
+    async def main_loop(self):
+        await self.bot.wait_until_ready()
+        log.info('%s: Run Loop: main_loop', self.__cog_name__)
 
     @commands.Cog.listener(name='on_message_without_command')
     async def on_message_without_command(self, message: discord.Message):
@@ -42,32 +51,55 @@ class Basecog(commands.Cog):
             return
         # run code here
 
-    @commands.group(name='basecog', aliases=['bscog'])
+    @commands.group(name='{{ data['module'] }}', aliases=['bscog'])
     @commands.guild_only()
     @commands.admin()
-    async def _basecog(self, ctx: commands.Context):
-        """Options for managing Basecog."""
+    async def _{{ data['module'] }}(self, ctx: commands.Context):
+        """Options for managing {{ data['name'] }}."""
 
-    @_basecog.command(name='channel', aliases=['c', 'chan', 'chann', 'channels'])
-    @commands.max_concurrency(1, commands.BucketType.guild)
-    async def _basecog_channel(self, ctx: commands.Context):
-        """Set Channels for Basecog"""
-        view = ChannelView(self, ctx.author)
-        msg = 'Select channels for **Basecog**:'
-        await view.send_initial_message(ctx, msg, True)
-
-    @_basecog.command(name='toggle', aliases=['enable', 'disable', 'on', 'off'])
+    @_{{ data['module'] }}.command(name='toggle', aliases=['enable', 'disable', 'on', 'off'])
     @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def _basecog_toggle(self, ctx: commands.Context):
-        """Enable/Disable Basecog"""
+    async def _{{ data['module'] }}_toggle(self, ctx: commands.Context):
+        """Enable/Disable {{ data['name'] }}"""
         enabled = await self.config.guild(ctx.guild).enabled()
         if enabled:
             await self.config.guild(ctx.guild).enabled.set(False)
-            return await ctx.send(f'✅ {self.__cog_name__} Disabled.')
+            return await ctx.send(f'\U00002705 {self.__cog_name__} Disabled.')
         await self.config.guild(ctx.guild).enabled.set(True)
-        await ctx.send(f'✅ {self.__cog_name__} Enabled.')
+        await ctx.send(f'\U00002705 {self.__cog_name__} Enabled.')
+
+    @_{{ data['module'] }}.command(name='channel', aliases=['c', 'chan', 'chann'])
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def _{{ data['module'] }}_channel(self, ctx: commands.Context,
+                               channel: Optional[discord.TextChannel],
+                               silent: Optional[bool]):
+        """Set Channel(s) for {{ data['name'] }}"""
+        channel: discord.TextChannel
+        if not channel:
+            await self.config.guild(ctx.guild).channel.set(0)
+            return await ctx.send('\U0001F7E2 Disabled. Specify a channel to Enable.', ephemeral=True)
+
+        log.debug('channel: %s', channel)
+        log.debug('channel.type: %s', channel.type)
+        if not str(channel.type) == 'text':
+            return await ctx.send('\U0001F534 Channel must be a Text Channel.', ephemeral=True)
+
+        guild_data = {'channel': channel.id, 'silent': silent}
+        await self.config.guild(ctx.guild).set(guild_data)
+        msg = f'\U0001F7E2 Will post ASN updates to channel: {channel.name}'
+        if silent:
+            msg += '\nMessages will post Silently as to not send notifications.'
+        await ctx.send(msg, ephemeral=True)
+
+    @_{{ data['module'] }}.command(name='channels')
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def _{{ data['module'] }}_channels(self, ctx: commands.Context):
+        """Set Channels for {{ data['name'] }}"""
+        view = ChannelView(self, ctx.author)
+        msg = 'Select channels for **{{ data['name'] }}**:'
+        await view.send_initial_message(ctx, msg, True)
 
 
 class ChannelView(discord.ui.View):
@@ -80,12 +112,6 @@ class ChannelView(discord.ui.View):
         self.message: Optional[discord.Message] = None
         super().__init__(timeout=timeout)
 
-    async def send_initial_message(self, ctx, message: Optional[str] = None,
-                                   ephemeral: bool = False, **kwargs) -> discord.Message:
-        self.ephemeral = ephemeral
-        self.message = await ctx.send(content=message, view=self, ephemeral=self.ephemeral, **kwargs)
-        return self.message
-
     async def on_timeout(self):
         await self.message.delete()
         self.stop()
@@ -93,9 +119,15 @@ class ChannelView(discord.ui.View):
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id == self.user_id:
             return True
-        msg = f"⛔ Looks like you did not create this response."
+        msg = f"\U0001F534 Looks like you did not create this response."
         await interaction.response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
         return False
+
+    async def send_initial_message(self, ctx, message: Optional[str] = None,
+                                   ephemeral: bool = False, **kwargs) -> discord.Message:
+        self.ephemeral = ephemeral
+        self.message = await ctx.send(content=message, view=self, ephemeral=self.ephemeral, **kwargs)
+        return self.message
 
     @discord.ui.select(cls=discord.ui.ChannelSelect, channel_types=[discord.ChannelType.text],
                        min_values=0, max_values=25)
@@ -106,10 +138,10 @@ class ChannelView(discord.ui.View):
             channels.append(value)
         if not channels:
             await self.cog.config.guild(interaction.guild).channels.set([])
-            msg = f'✅ No Channel Selected. All Channels Cleared.'
+            msg = f'\U00002705 {{ data['name'] }} Channels Cleared.'
             return await response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
         ids = [x.id for x in channels]
         await self.cog.config.guild(interaction.guild).channels.set(ids)
         names = [x.name for x in channels]
-        msg = f'✅ Basecog Set to Channels: {cf.humanize_list(names)}'
+        msg = f'\U00002705 {{ data['name'] }} Channels Set to: {cf.humanize_list(names)}'
         return await response.send_message(msg, ephemeral=True, delete_after=self.delete_after)

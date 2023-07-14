@@ -4,9 +4,11 @@ from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
 from typing import Dict, Union
 
-cogs_path = Path('C:\\Users\\Shane\\IdeaProjects\\carl-cogs')
-readme_jinja = 'readme.jinja2'
-cog_file = 'cog.jinja2'
+main_jinja = 'main.jinja2'
+cog_jinja = 'cog.jinja2'
+
+base_dir = Path(__file__).parent.resolve()
+cogs_path = base_dir.parent.parent.resolve()
 
 
 def get_data_from_path(path: Union[Path, str]) -> Dict[str, dict]:
@@ -27,18 +29,22 @@ def get_data_from_path(path: Union[Path, str]) -> Dict[str, dict]:
 
 
 if __name__ == '__main__':
+    print(f'base_dir: {base_dir}')
+    print(f'cogs_path: {cogs_path}')
+    print('-'*40)
+
     cog_data: Dict[str, dict] = get_data_from_path(cogs_path)
-    env = Environment(loader=FileSystemLoader('.'))
-    template = env.get_template(readme_jinja)
+    env = Environment(loader=FileSystemLoader(base_dir))
+
+    template = env.get_template(main_jinja)
     rendered = template.render({'cog_data': cog_data})
-    with open(cogs_path / 'README.md', 'w') as f:
+    with open(cogs_path / 'README.md', 'w', encoding='utf-8', newline='\n') as f:
         f.write(rendered)
-        print(f'Generating: {f.name}')
+        print(f'Generated: {f.name}')
 
     for cog, data in cog_data.items():
-        env = Environment(loader=FileSystemLoader('.'))
-        template = env.get_template(cog_file)
+        template = env.get_template(cog_jinja)
         rendered = template.render({'data': data})
-        with open(cogs_path / f'{cog}/README.md', 'w') as f:
+        with open(cogs_path / f'{cog}/README.md', 'w', encoding='utf-8', newline='\n') as f:
             f.write(rendered)
-            print(f'Generating: {f.name}')
+            print(f'Generated: {f.name}')

@@ -8,4 +8,6 @@ LMGTFY chat replies.
 [p]cog list carl-cogs
 [p]cog install carl-cogs lmgtfy
 [p]load lmgtfy
+
+[p]help LMGTFY
 ```

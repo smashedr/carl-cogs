@@ -1,6 +1,6 @@
-# Timer
+# Dockerd
 
-Start and Stop Timers in Discord.
+Docker Daemon API.
 
 **WIP:** This is a Work in Progress and may not work as expected.
 
@@ -8,8 +8,8 @@ Start and Stop Timers in Discord.
 
 ```text
 [p]cog list carl-cogs
-[p]cog install carl-cogs timer
-[p]load timer
+[p]cog install carl-cogs dockercog
+[p]load dockercog
 
-[p]help Timer
+[p]help Dockerd
 ```
