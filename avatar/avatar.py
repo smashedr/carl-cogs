@@ -72,7 +72,7 @@ class Avatar(commands.Cog):
                 seconds: int = (current - last).seconds
             else:
                 seconds: int = 1 + 60*60*24
-                log.warning('NO LAST FOUND, setting to: %s', seconds)
+                log.warning('Guild %s NO LAST FOUND, setting to: %s', guild_id, seconds)
 
             if data['frequency'] == 'hourly':
                 if seconds > (60*30):
@@ -92,7 +92,9 @@ class Avatar(commands.Cog):
                 continue
 
             if data['frequency'] == 'weekly':
-                if data['day'] != current.isoweekday():
+                if data['hour'] != current.hour:
+                    log.debug('Guild %s wrong HOUR: %s', guild_id, data['hour'])
+                elif data['day'] != current.isoweekday():
                     log.debug('Guild %s wrong DAY: %s', guild_id, data['day'])
                 else:
                     if seconds > (60*60*24):
