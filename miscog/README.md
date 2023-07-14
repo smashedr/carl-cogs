@@ -1,4 +1,4 @@
-# MisCog
+# Miscog
 
 Miscellaneous commands for Carl Bot that could end up in their own module.
 

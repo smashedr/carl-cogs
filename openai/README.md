@@ -2,7 +2,7 @@
 
 OpenAI and ChatGPT Commands.
 
-**Requires Redis:** See Below for More Details...
+**Requires Redis:** Cog requires Redis to function. See below...
 
 ## Install
 

@@ -2,9 +2,9 @@
 
 Custom Redis pubsub module for Red and Carl Bot.
 
-**API Required:** This cog _might_ require the Web API...
+**Web API:** Cog _may_ require the Web API for additional functionality. See below...
 
-**Requires Redis:** See Below for More Details...
+**Requires Redis:** Cog requires Redis to function. See below...
 
 ## Install
 
@@ -37,6 +37,8 @@ To start a Redis instance with all defaults run:
 docker run --name redis -p 6379:6379 -d redis:alpine
 ```
 
-## Configure API
+## Configure Web API
 
-API Docs Coming Soon...
+It is a Django app in a Docker container:
+
+*   https://github.com/smashedr/red-api

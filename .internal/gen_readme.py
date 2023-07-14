@@ -31,14 +31,13 @@ if __name__ == '__main__':
     env = Environment(loader=FileSystemLoader('.'))
     template = env.get_template(readme_jinja)
     rendered = template.render({'cog_data': cog_data})
-    with open(cogs_path / 'README.md', 'w') as f:
+    with open(cogs_path / 'README.md', 'w', newline='\n') as f:
         f.write(rendered)
         print(f'Generating: {f.name}')
 
     for cog, data in cog_data.items():
-        env = Environment(loader=FileSystemLoader('.'))
         template = env.get_template(cog_file)
         rendered = template.render({'data': data})
-        with open(cogs_path / f'{cog}/README.md', 'w') as f:
+        with open(cogs_path / f'{cog}/README.md', 'w', newline='\n') as f:
             f.write(rendered)
             print(f'Generating: {f.name}')
