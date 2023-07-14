@@ -10,4 +10,6 @@ Grafana Graphs in Discord.
 [p]cog list carl-cogs
 [p]cog install carl-cogs grafana
 [p]load grafana
+
+[p]help Grafana
 ```

@@ -10,4 +10,6 @@ Start and Stop Timers in Discord.
 [p]cog list carl-cogs
 [p]cog install carl-cogs timer
 [p]load timer
+
+[p]help Timer
 ```

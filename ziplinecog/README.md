@@ -4,7 +4,7 @@ Zipline Stats in Discord.
 
 **WIP:** This is a Work in Progress and may not work as expected.
 
-**Web API:** Cog _may_ require the Web API for additional functionality. See below...
+**Web API:** Cog _may_ require the Web API for additional functionality. [API Setup...](../README.md#web-api)
 
 ## Install
 
@@ -12,10 +12,6 @@ Zipline Stats in Discord.
 [p]cog list carl-cogs
 [p]cog install carl-cogs ziplinecog
 [p]load ziplinecog
+
+[p]help Zipline
 ```
-
-## Configure Web API
-
-It is a Django app in a Docker container:
-
-*   https://github.com/smashedr/red-api

@@ -10,4 +10,6 @@ Uptimekuma in Discord.
 [p]cog list carl-cogs
 [p]cog install carl-cogs uptimekuma
 [p]load uptimekuma
+
+[p]help Uptimekuma
 ```

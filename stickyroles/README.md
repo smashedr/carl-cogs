@@ -8,4 +8,6 @@ Remembers users roles and adds them on rejoin.
 [p]cog list carl-cogs
 [p]cog install carl-cogs stickyroles
 [p]load stickyroles
+
+[p]help Stickyroles
 ```

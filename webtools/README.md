@@ -8,4 +8,6 @@ Web Tools for Carl Bot that could end up in their own module.
 [p]cog list carl-cogs
 [p]cog install carl-cogs webtools
 [p]load webtools
+
+[p]help Webtools
 ```

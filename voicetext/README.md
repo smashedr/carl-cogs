@@ -10,4 +10,6 @@ Creates Text Channels for Active Voice Channels and Cleans Up.
 [p]cog list carl-cogs
 [p]cog install carl-cogs voicetext
 [p]load voicetext
+
+[p]help VoiceText
 ```

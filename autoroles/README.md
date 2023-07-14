@@ -8,4 +8,6 @@ Adds roles to new members on join.
 [p]cog list carl-cogs
 [p]cog install carl-cogs autoroles
 [p]load autoroles
+
+[p]help Autoroles
 ```

@@ -10,4 +10,6 @@ Server Avatar Auto Updates.
 [p]cog list carl-cogs
 [p]cog install carl-cogs avatar
 [p]load avatar
+
+[p]help Avatar
 ```

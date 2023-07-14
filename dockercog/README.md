@@ -10,4 +10,6 @@ Docker Daemon API.
 [p]cog list carl-cogs
 [p]cog install carl-cogs dockercog
 [p]load dockercog
+
+[p]help Dockerd
 ```

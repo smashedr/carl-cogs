@@ -5,10 +5,10 @@
 **WIP:** This is a Work in Progress and may not work as expected.
 {%- endif %}{% if 'api' in data['tags'] %}
 
-**Web API:** Cog _may_ require the Web API for additional functionality. See below...
+**Web API:** Cog _may_ require the Web API for additional functionality. [API Setup...](../README.md#web-api)
 {%- endif %}{% if 'redis' in data['tags'] %}
 
-**Requires Redis:** Cog requires Redis to function. See below...
+**Requires Redis:** Cog requires Redis to function. [Redis Setup...](../README.md#redis)
 {%- endif %}
 
 ## Install
@@ -17,38 +17,6 @@
 [p]cog list carl-cogs
 [p]cog install carl-cogs {{ data['cog'] }}
 [p]load {{ data['cog'] }}
+
+[p]help {{ data['name'] }}
 ```
-
-{%- if 'redis' in data['tags'] %}
-
-## Configure Redis
-
-Use the set api command to configure redis credentials.
-This is not necessary if all values are default.
-Make sure to **NOT** set a password unless you need one.
-
-```text
-[p]set api
-```
-
-Name `redis` with data:
-```text
-host    redis
-port    6379
-db      0
-pass    onlyifrequired
-```
-
-To start a Redis instance with all defaults run:
-```text
-docker run --name redis -p 6379:6379 -d redis:alpine
-```
-{%- endif %}{% if 'api' in data['tags'] %}
-
-## Configure Web API
-
-It is a Django app in a Docker container:
-
-*   https://github.com/smashedr/red-api
-{%- endif %}
-

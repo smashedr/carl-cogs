@@ -2,7 +2,7 @@
 
 Generate Pie Graph of Messages in Current or Specified Channel.
 
-**Web API:** Cog _may_ require the Web API for additional functionality. See below...
+**Web API:** Cog _may_ require the Web API for additional functionality. [API Setup...](../README.md#web-api)
 
 ## Install
 
@@ -10,10 +10,6 @@ Generate Pie Graph of Messages in Current or Specified Channel.
 [p]cog list carl-cogs
 [p]cog install carl-cogs chatgraph
 [p]load chatgraph
+
+[p]help ChatGraph
 ```
-
-## Configure Web API
-
-It is a Django app in a Docker container:
-
-*   https://github.com/smashedr/red-api

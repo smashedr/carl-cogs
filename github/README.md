@@ -10,4 +10,6 @@ Github Functions in Discord.
 [p]cog list carl-cogs
 [p]cog install carl-cogs github
 [p]load github
+
+[p]help Github
 ```

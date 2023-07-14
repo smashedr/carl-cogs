@@ -10,4 +10,6 @@ Query Wolfram Alpha for Results.
 [p]cog list carl-cogs
 [p]cog install carl-cogs wolfram
 [p]load wolfram
+
+[p]help Wolfram
 ```

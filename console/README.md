@@ -10,4 +10,6 @@ Random console commands converted to Python and Discord.
 [p]cog list carl-cogs
 [p]cog install carl-cogs console
 [p]load console
+
+[p]help Console
 ```

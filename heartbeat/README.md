@@ -8,4 +8,6 @@ Pings a Heartbeat service every X seconds.
 [p]cog list carl-cogs
 [p]cog install carl-cogs heartbeat
 [p]load heartbeat
+
+[p]help Heartbeat
 ```
