@@ -323,7 +323,7 @@ class DataModal(discord.ui.Modal):
         user: discord.Member = interaction.user
         # TODO: Verify Settings Here
         user_config = {
-            'base_url': self.base_url.value.rstrip('dashboard').strip('/ '),
+            'base_url': self.base_url.value.replace('dashboard', '').strip('/ '),
             'zip_token': self.zip_token.value.strip(),
         }
         await self.view.cog.config.user(user).set(user_config)
