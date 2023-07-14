@@ -35,6 +35,8 @@ If you run a bot compatible with Red Cogs:
 
 These Cogs should be suitable for public use with little to no extra setup.
 
+**34**/50
+
 | Cog | Description |
 | --- | --- |
 | **[activerole](activerole)** | **Redis** - Adds a role to active chatters. |
@@ -77,6 +79,8 @@ These Cogs should be suitable for public use with little to no extra setup.
 These Cogs are either not designed for other bots or not ready for the Public yet.
 You will most likely need to look under the hood to set up these Cogs.
 
+**16**/50
+
 | Cog | Description |
 | --- | --- |
 | **[captcha](captcha)** | **WIP** - Protect server with CAPTCHA. |
@@ -98,12 +102,12 @@ You will most likely need to look under the hood to set up these Cogs.
 
 ## Tags
 
-| Tag | Description |
-|---|---|
-| deprecated | Cog is DEPRECATED and may not function as expected or receive updates. |
-| wip | Cog is an active Work in Progress and my be frequently updated with breaking changes. |
-| redis | Cog requires Redis. [Read More Here...](#redis) |
-| api | Cog **may** require Web API. [Read More Here...](#web-api) |
+| Tag | Count | Description |
+|---|---|---|
+| deprecated | **4** | Cog is **DEPRECATED** and may not function as expected or receive updates. |
+| wip | **21** | Cog is an active **Work in Progress** and my be frequently updated with breaking changes. |
+| redis | **8** | Cog requires **Redis**. [Read More Here...](#redis) |
+| api | **4** | Cog **may** require Web API. [Read More Here...](#web-api) |
 
 ## Redis
 

@@ -35,6 +35,8 @@ If you run a bot compatible with Red Cogs:
 
 These Cogs should be suitable for public use with little to no extra setup.
 
+**{{ stats['public'] }}**/{{ stats['total'] }}
+
 | Cog | Description |
 | --- | --- |
 {% for cog, data in cog_data.items() %}
@@ -54,6 +56,8 @@ These Cogs should be suitable for public use with little to no extra setup.
 These Cogs are either not designed for other bots or not ready for the Public yet.
 You will most likely need to look under the hood to set up these Cogs.
 
+**{{ stats['hidden'] }}**/{{ stats['total'] }}
+
 | Cog | Description |
 | --- | --- |
 {% for cog, data in cog_data.items() %}
@@ -70,12 +74,12 @@ You will most likely need to look under the hood to set up these Cogs.
 {% endfor %}
 ## Tags
 
-| Tag | Description |
-|---|---|
-| deprecated | Cog is DEPRECATED and may not function as expected or receive updates. |
-| wip | Cog is an active Work in Progress and my be frequently updated with breaking changes. |
-| redis | Cog requires Redis. [Read More Here...](#redis) |
-| api | Cog **may** require Web API. [Read More Here...](#web-api) |
+| Tag | Count | Description |
+|---|---|---|
+| deprecated | **{{ stats['tags']['deprecated'] }}** | Cog is **DEPRECATED** and may not function as expected or receive updates. |
+| wip | **{{ stats['tags']['wip'] }}** | Cog is an active **Work in Progress** and my be frequently updated with breaking changes. |
+| redis | **{{ stats['tags']['redis'] }}** | Cog requires **Redis**. [Read More Here...](#redis) |
+| api | **{{ stats['tags']['api'] }}** | Cog **may** require Web API. [Read More Here...](#web-api) |
 
 ## Redis
 
