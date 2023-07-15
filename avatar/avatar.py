@@ -228,8 +228,9 @@ class Avatar(commands.Cog):
                 new_freq = freq
                 break
         else:
-            content = (f'⛔ Unable to determine Update Frequency from input: {frequency}.\n'
-                       f'Frequency should be: {cf.humanize_list(list(self.frequency.keys()))}')
+            frequency_txt = cf.humanize_list(list(self.frequency.keys()), style='or')
+            content = (f'⛔ Unable to determine Update Frequency from input: '
+                       f'`{frequency}`.\nFrequency should be: {frequency_txt}')
             return await ctx.send(content)
         await self.config.guild(ctx.guild).frequency.set(new_freq)
         await ctx.send(f'✅ {self.__cog_name__} frequency updated to: `{new_freq}`')

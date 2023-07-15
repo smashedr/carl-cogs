@@ -1,12 +1,9 @@
 [![DEPRECATED](https://img.shields.io/badge/tag-DEPRECATED-red?logo=git&logoColor=white)](../README.md#tags)
-[![WIP](https://img.shields.io/badge/tag-WIP-orange?logo=git&logoColor=white)](../README.md#tags)
 # Warcraftlogs
 
 Split Warcraft Logs into multiple channels with filters.
 
 **DEPRECATED:** This Cog is no longer updated and may not work as expected!
-
-**WIP:** This is a Work in Progress and may not work as expected.
 
 ## Install
 

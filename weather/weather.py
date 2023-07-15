@@ -3,11 +3,14 @@ import discord
 import geopy
 import httpx
 import logging
+import xmltodict
 from geopy.geocoders import Nominatim
+from metar import Metar
 from timezonefinder import TimezoneFinder
-from typing import Optional, Union, Tuple, Dict, Any
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from redbot.core import app_commands, commands
+from redbot.core.utils import chat_formatting as cf
 
 log = logging.getLogger('red.weather')
 
@@ -16,6 +19,7 @@ class Weather(commands.Cog):
     """Carl's Weather Cog"""
 
     url = 'https://forecast.weather.gov/MapClick.php?lon={lon}&lat={lat}'
+    metar = 'https://www.aviationweather.gov/metar/data?ids={loc}&format=raw&hours={hours}&taf=off&layout=on'
 
     http_options = {
         'follow_redirects': True,
@@ -46,36 +50,41 @@ class Weather(commands.Cog):
     @app_commands.describe(location='Location to get Weather for')
     async def weather_command(self, ctx: commands.Context, *, location: str):
         """Get Weather for <location>"""
+        location = location.strip('` ')
         async with ctx.typing():
             try:
                 geo = self.gl.geocode(location)
                 if not geo or not geo.latitude or not geo.longitude:
-                    return await ctx.send(f'⛔ Error getting Lat/Lon Data for: {location}')
+                    content = f'⛔ Error getting Lat/Lon Data for: {location}'
+                    return await ctx.send(content, delete_after=30)
                 weather, forecast = await self.get_weather(geo.latitude, geo.longitude)
                 log.debug('-'*40)
                 log.debug(weather)
                 log.debug('-'*40)
                 if not weather or not weather['properties']:
-                    return await ctx.send(f'⛔ Error getting Weather for: {location}\n'
-                                          f'Lat: `{geo.latitude}` Lon: `{geo.longitude}`')
+                    content = (f'⛔ Error getting Weather for: {location}\n'
+                               f'Lat: `{geo.latitude}` Lon: `{geo.longitude}`')
+                    return await ctx.send(content, delete_after=30)
                 # tz = self.tf.timezone_at(lat=geo.latitude, lng=geo.longitude)
                 # timezone = pytz.timezone(tz)
                 # current_time_utc = datetime.datetime.now(pytz.UTC)
                 # current_time = current_time_utc.astimezone(timezone)
+                content = f"`{weather['properties']['rawMessage']}`"
                 embed = self.gen_embed(geo, weather['properties'], forecast['properties']['periods'][0])
-                await ctx.send(embed=embed)
+                await ctx.send(content=content, embed=embed)
             except Exception as error:
                 log.exception(error)
-                content = (f'Error fetching Weather, please try again '
+                content = (f'⛔ Error fetching Weather, please try again '
                            f'or wait until later.\nError: `{error}`')
-                await ctx.send(content=content)
+                await ctx.send(content=content, delete_after=30)
 
     def gen_embed(self, geo: geopy.location.Location, weather: Dict[str, Any],
                   period: Dict[str, Any]) -> discord.Embed:
+
         embed = discord.Embed(
             title=geo.raw['display_name'],
             url=self.url.format(lat=geo.latitude, lon=geo.longitude),
-            timestamp=datetime.datetime.now(),
+            timestamp=datetime.datetime.fromisoformat(weather['timestamp']),
         )
         embed.set_author(
             name=f'Lat: {geo.latitude} / Lon: {geo.longitude}',
@@ -87,10 +96,9 @@ class Weather(commands.Cog):
         description = ''
         if weather['textDescription']:
             description += f"Currently {weather['textDescription']}. "
-        description += f"{period['name']}"
         if period['detailedForecast']:
-            description += f", {period['detailedForecast']}"
-        embed.description = description
+            description += f"{period['name']}, {period['detailedForecast']}"
+        embed.description = description.strip()
 
         if weather['temperature']['value']:
             temp = self._num((weather['temperature']['value'] * 9/5) + 32, to=1)
@@ -174,12 +182,78 @@ class Weather(commands.Cog):
 
         return observation, forecast
 
-    async def _get_json(self, url: str, **kwargs) -> Dict[str, Any]:
+    @commands.hybrid_command(name='metar', aliases=['metars'], description='Decode <metar>')
+    @commands.guild_only()
+    @app_commands.describe(metar='METAR to Decode')
+    async def metar_command(self, ctx: commands.Context, *, metar: str):
+        """Decode <metar>"""
+        await ctx.typing()
+        metar = metar.upper().replace('METAR', '').strip('`()[]{}:;"\' ')
+        try:
+            obs = Metar.Metar(metar)
+            url = self.metar.format(loc=obs.station_id, hours=0)
+            await ctx.send(f'METAR for **{obs.station_id}** at `{obs.time}`\n<{url}>\n{obs.string()}')
+        except Exception as error:
+            log.error(error)
+            await ctx.send(f'⛔ Error: {error}', delete_after=30)
+
+    @commands.hybrid_command(name='getmetar', aliases=['getmetars'], description='Get METAR for <location>')
+    @commands.guild_only()
+    @app_commands.describe(station='Station to get METAR for', hours='Hours of METARS to fetch')
+    async def getmetar_command(self, ctx: commands.Context, station: str, hours: Optional[int] = 1):
+        """Get METAR for <station>"""
+        await ctx.typing()
+        station = station.upper().strip('` ')
+        log.debug('station: %s', station)
+        log.debug('hours: %s', hours)
+        if hours < 1:
+            return await ctx.send('⛔ Hours must be 1 or greater.', delete_after=30)
+
+        metars = await self.get_metar(station, hours)
+        if not metars:
+            return await ctx.send(f'⛔ No Results for: {station}', delete_after=30)
+
+        url = self.metar.format(loc=station, hours=hours)
+        if len(metars) == 1:
+            obs = Metar.Metar(metars[0]['raw_text'])
+            content = f'METAR for **{obs.station_id}** at `{obs.time}`\n<{url}>\n{obs.string()}'
+            return await ctx.send(content)
+
+        metas = [x['raw_text'] for x in metars]
+        plain = cf.box('\n'.join(metas))
+        log.debug('metas: %s', metas)
+        content = f'METARS `{len(metars)}` for **{station}** over `{hours}` hours:\n<{url}>\n{plain}'
+        await ctx.send(content)
+
+    async def get_metar(self, location: str, hours: Optional[int] = 1) -> Optional[List[dict]]:
+        url = 'https://www.aviationweather.gov/adds/dataserver_current/httpparam'
+        params = {
+            'dataSource': 'metars',
+            'requestType': 'retrieve',
+            'format': 'xml',
+            'stationString': location,
+            'hoursBeforeNow': hours,
+        }
+        r = await self._get_json(url, json=False, **params)
+        log.debug('r.url: %s', r.url)
+        # log.debug('r.text: %s', r.text)
+        data = xmltodict.parse(r.text)['response']['data']
+        if int(data['@num_results']) < 1:
+            return
+        elif int(data['@num_results']) == 1:
+            return [data['METAR']]
+        else:
+            return data['METAR']
+
+    async def _get_json(self, url: str, json=True, **kwargs) -> Union[Dict[str, Any], httpx.Response]:
         log.debug('url: %s', url)
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.get(url, params=kwargs)
             r.raise_for_status()
-        return r.json()
+        if json:
+            return r.json()
+        else:
+            return r
 
     def geohack_url_from_geo(self, geo: geopy.location.Location, name: Optional[str] = None) -> str:
         name = name.replace(' ', '_') if name else geo.raw['display_name'].replace(' ', '_')
