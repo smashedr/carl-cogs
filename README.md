@@ -108,7 +108,7 @@ Information on Cog Tags.
 |---|---|---|
 | redis | **8** | Cog requires **Redis**. [Read More Here...](#redis) |
 | api | **4** | Cog **may** require Web API. [Read More Here...](#web-api) |
-| wip | **21** | Cog is an active **Work in Progress** and my be frequently updated with breaking changes. |
+| wip | **20** | Cog is an active **Work in Progress** and may be frequently updated with breaking changes. |
 | deprecated | **4** | Cog is **DEPRECATED** and may not function as expected or receive updates. |
 
 ## Redis

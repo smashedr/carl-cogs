@@ -1,7 +1,7 @@
 {
   "name": "Pubsub",
   "author": ["Shane#0816"],
-  "short": "Custom Redis Pub/Sub.",
+  "short": "Carl's Pub/Sub Module.",
   "description": "Custom Redis pubsub module for Red and Carl Bot.",
   "install_msg": "**Requires Redis and API...** Only use if you know what you are doing.",
   "end_user_data_statement": "Caveat Emptor.",

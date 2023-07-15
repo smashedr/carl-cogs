@@ -1,7 +1,7 @@
 {
   "name": "AviationSafetyNetwork",
   "author": ["Shane#0816"],
-  "short": "Get and post ASN data to Discord.",
+  "short": "Carl's ASN Module.",
   "description": "Aviation Safety Network data in discord.",
   "install_msg": "Manage this command with `[p]asn`",
   "end_user_data_statement": "Caveat Emptor.",
