@@ -6,7 +6,7 @@ import logging
 import pytz
 from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
-from typing import Optional, Union, Tuple, Dict, Any
+from typing import Any, Dict, Optional, Tuple, Union
 
 from redbot.core import app_commands, commands
 
@@ -16,8 +16,8 @@ log = logging.getLogger('red.sunsetrise')
 class Sunsetrise(commands.Cog):
     """Carl's Sunsetrise Cog"""
 
-    sun_png = 'https://img.cssnr.com/p/20230621-181909363.png'
-    moon_png = 'https://img.cssnr.com/p/20230621-181939767.png'
+    sun_png = 'https://i.cssnr.com/r/fegjfYprbh.png'
+    moon_png = 'https://i.cssnr.com/r/gkwT2d78cD.png'
 
     def __init__(self, bot):
         self.bot = bot
@@ -105,15 +105,3 @@ class Sunsetrise(commands.Cog):
         mnt, sec = divmod(abs(dd)*3600, 60)
         deg, mnt = divmod(mnt, 60)
         return abs(mult*deg), abs(mult*mnt), abs(mult*sec)
-
-    # @commands.group(name='sunsetrise')
-    # @commands.guild_only()
-    # @commands.admin()
-    # async def _sun(self, ctx: commands.Context):
-    #     """Options for managing Basecog."""
-    #
-    # @_sun.command(name='location', aliases=['setlocation'])
-    # @commands.max_concurrency(1, commands.BucketType.guild)
-    # async def _sun_location(self, ctx: commands.Context):
-    #     """Set Channels for Basecog"""
-    #     pass

@@ -207,7 +207,7 @@ class Weather(commands.Cog):
         log.debug('station: %s', station)
         log.debug('hours: %s', hours)
         if hours < 1:
-            return await ctx.send(f'⛔ Hours must be 1 or greater.', delete_after=30)
+            return await ctx.send('⛔ Hours must be 1 or greater.', delete_after=30)
 
         metars = await self.get_metar(station, hours)
         if not metars:
