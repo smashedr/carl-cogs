@@ -3,7 +3,7 @@
   "author": ["Shane#0816"],
   "short": "Carl's Avatar Module.",
   "description": "Server Avatar Auto Updates.",
-  "install_msg": "Get started with `[p]zipline`",
+  "install_msg": "Get started with `[p]avatar`",
   "end_user_data_statement": "Caveat Emptor.",
   "tags": ["wip"],
   "requirements": ["httpx", "validators"],

@@ -165,7 +165,7 @@ class Avatar(commands.Cog):
             last = datetime.datetime.fromtimestamp(data['last'])
             seconds: float = (current - last).seconds
         else:
-            seconds: float = 0
+            seconds: float = 300
         log.debug('seconds: %s', seconds)
         if seconds < 300:
             return await ctx.send(f'⛔ Avatar Rotation on hard cooldown for {300-seconds} more seconds.')
