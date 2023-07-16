@@ -6,6 +6,7 @@ import logging
 import random
 import validators
 from typing import Any, Dict, List, Optional, Tuple, Union
+from zipline import Zipline
 
 from discord.ext import tasks
 from redbot.core import app_commands, commands, Config
@@ -45,9 +46,17 @@ class Avatar(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(**self.guild_default)
+        self.zipline: Optional[Zipline] = None
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
+        data: dict = await self.bot.get_shared_api_tokens('zipline')
+        if 'url' in data and 'token' in data:
+            self.zipline = Zipline(
+                data['url'],
+                authorization=data['token'],
+                expires_at=data.get('expire', '30d'),
+            )
         self.update_avatar.start()
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
@@ -165,7 +174,7 @@ class Avatar(commands.Cog):
             last = datetime.datetime.fromtimestamp(data['last'])
             seconds: float = (current - last).seconds
         else:
-            seconds: float = 0
+            seconds: float = 300
         log.debug('seconds: %s', seconds)
         if seconds < 300:
             return await ctx.send(f'⛔ Avatar Rotation on hard cooldown for {300-seconds} more seconds.')
@@ -291,7 +300,7 @@ class Avatar(commands.Cog):
         await self.config.guild(ctx.guild).avatars.set([])
         await ctx.send('🔥 All stored Avatars were burnt alive.')
 
-    @_avatar.command(name='list', aliases=['show'])
+    @_avatar.command(name='list', aliases=['urls'])
     @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
     @commands.max_concurrency(1, commands.BucketType.guild)
@@ -325,6 +334,25 @@ class Avatar(commands.Cog):
         good_out = '\n'.join([f'<{x}>' for x in good])
         content = f'✅ Added the following Avatar URLs to the list:\n{good_out}'
         await ctx.send(content)
+
+    @_avatar.command(name='show', aliases=['view'])
+    @commands.guild_only()
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def _avatar_show(self, ctx: commands.Context):
+        """Show Avatar's in an external Grid."""
+        await ctx.typing()
+        if not self.zipline:
+            return await ctx.send('⛔ Zipline Uploader not Configured...')
+        avatars: List[str] = await self.config.guild(ctx.guild).avatars()
+        if len(avatars) < 1:
+            return await ctx.send('⛔ No stored avatars found. Add some first...')
+
+        lines = [f'![]({x})' for x in avatars]
+        bytes_io = io.BytesIO(bytes('\n'.join(lines), 'utf-8'))
+        stamp = datetime.datetime.now().strftime('%y%m%d%H%M%S')
+        name = f'{ctx.guild.name}-Avatars-{stamp}.md'
+        url = self.zipline.send_file(name, bytes_io)
+        await ctx.send(f'**{ctx.guild.name} Avatars**: {url.url}')
 
     async def parse_urls(self, string: str) -> Tuple[Optional[List[str]], Optional[List[str]]]:
         good, bad = [], []
