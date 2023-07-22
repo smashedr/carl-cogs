@@ -6,7 +6,7 @@
   "install_msg": "Get started with `[p]weather`",
   "end_user_data_statement": "Caveat Emptor.",
   "tags": ["wip"],
-  "requirements": ["geopy", "httpx", "metar", "timezonefinder", "xmltodict"],
+  "requirements": ["geopy", "httpx", "metar", "pytest-playwright", "timezonefinder", "xmltodict"],
   "permissions" : [],
   "required_cogs": {},
   "min_bot_version": "3.4.0",

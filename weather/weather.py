@@ -2,10 +2,13 @@ import datetime
 import discord
 import geopy
 import httpx
+import io
 import logging
+import urllib.parse
 import xmltodict
 from geopy.geocoders import Nominatim
 from metar import Metar
+from playwright.async_api import async_playwright
 from timezonefinder import TimezoneFinder
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -236,7 +239,6 @@ class Weather(commands.Cog):
         }
         r = await self._get_json(url, json=False, **params)
         log.debug('r.url: %s', r.url)
-        # log.debug('r.text: %s', r.text)
         data = xmltodict.parse(r.text)['response']['data']
         if int(data['@num_results']) < 1:
             return
@@ -244,6 +246,69 @@ class Weather(commands.Cog):
             return [data['METAR']]
         else:
             return data['METAR']
+
+    @commands.hybrid_command(name='hourly', description='Hourly Forecast for <location>')
+    @commands.guild_only()
+    @app_commands.describe(location='Location to get Hourly Forecast for')
+    async def hourly_command(self, ctx: commands.Context, location: str):
+        """Get Hourly Forecast for <location>"""
+        await ctx.typing()
+        location = location.strip('` ')
+        geo = self.gl.geocode(location)
+        log.debug('lat: %s', geo.latitude)
+        log.debug('lon: %s', geo.longitude)
+        if not geo or not geo.latitude or not geo.longitude:
+            content = f'⛔ Error getting Lat/Lon Data for: {location}'
+            return await ctx.send(content, delete_after=30)
+        shot: bytes = await self.get_hourly(geo.latitude, geo.longitude)
+        bytesio = io.BytesIO()
+        bytesio.write(shot)
+        bytesio.seek(0)
+        file = discord.File(bytesio, self.get_ts() + '.png')
+        await ctx.send(f'Hourly forecast for **{location}**', file=file)
+
+    @staticmethod
+    async def get_hourly(lat: str, lon: str) -> bytes:
+        log.debug('lat: %s', lat)
+        log.debug('lon: %s', lon)
+        async with async_playwright() as p:
+            params = {
+                'w0':	't',
+                'w1':	'td',
+                'w2':	'hi',
+                'w3':	'sfcwind',
+                'w4':	'sky',
+                'w5':	'pop',
+                'w6':	'rh',
+                'w7':	'rain',
+                'AheadHour':	'0',
+                'Submit':	'Submit',
+                'FcstType':	'graphical',
+                'textField1':	lat,
+                'textField2':	lon,
+                'site':	'all',
+                'menu':	'1',
+            }
+            query = urllib.parse.urlencode(params)
+            url = f'https://forecast.weather.gov/MapClick.php?{query}'
+            log.debug('url: %s', url)
+            browser = await p.chromium.launch()
+            page = await browser.new_page()
+            await page.goto(url=url, timeout=60000)
+            table = page.locator("table").nth(5)
+            if not table:
+                log.debug('11111 NO TABLE')
+            shot = await table.screenshot()
+            if not shot:
+                log.debug('11111 NO SHOT')
+            return shot
+
+    @staticmethod
+    def get_ts(stamp: Optional[str] = '%Y%m%d-%H%M%S',
+               prefix: Optional[str] = '',
+               suffix: Optional[str] = '') -> str:
+        ts = datetime.datetime.now().strftime(stamp)
+        return f'{prefix}{ts}{suffix}'
 
     async def _get_json(self, url: str, json=True, **kwargs) -> Union[Dict[str, Any], httpx.Response]:
         log.debug('url: %s', url)
