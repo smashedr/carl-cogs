@@ -3,7 +3,9 @@ import discord
 import httpx
 import io
 import logging
+import os
 import random
+import re
 import validators
 from typing import Any, Dict, List, Optional, Tuple, Union
 from zipline import Zipline
@@ -47,10 +49,11 @@ class Avatar(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(**self.guild_default)
         self.zipline: Optional[Zipline] = None
+        self.owner_ids: Optional[List[int]] = None
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
-        data: dict = await self.bot.get_shared_api_tokens('zipline')
+        data: Dict[str, Any] = await self.bot.get_shared_api_tokens('zipline')
         if 'url' in data and 'token' in data:
             self.zipline = Zipline(
                 data['url'],
@@ -58,11 +61,23 @@ class Avatar(commands.Cog):
                 expires_at=data.get('expire', '30d'),
             )
         self.update_avatar.start()
+        self.owner_ids: List[int] = await self.get_owners(self.bot, ids=True)
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
         self.update_avatar.cancel()
+
+    @staticmethod
+    async def get_owners(bot, ids=False) -> List[Union[discord.User, int]]:
+        app_info = await bot.application_info()
+        owners: List[discord.User] = [app_info.owner]
+        if os.environ.get('CO_OWNER'):
+            for owner_id in os.environ.get('CO_OWNER').split(','):
+                owners.append(bot.get_user(int(owner_id)))
+        if ids:
+            return [x.id for x in owners]
+        return owners
 
     @tasks.loop(minutes=60.0)
     async def update_avatar(self):
@@ -73,7 +88,7 @@ class Avatar(commands.Cog):
         all_guilds: Dict[int, dict] = await self.config.all_guilds()
         async for guild_id, data in AsyncIter(all_guilds.items(), delay=5, steps=10):
             if not data['enabled'] or len(data['avatars']) < 2:
-                log.debug('Guild %s Disabled or No Avatars', guild_id)
+                log.info('Guild %s Disabled or No Avatars', guild_id)
                 continue
 
             if data['last']:
@@ -87,29 +102,29 @@ class Avatar(commands.Cog):
                 if seconds > (60*30):
                     await self.process_avatar_update(guild_id, current)
                 else:
-                    log.debug('Guild %s on COOLDOWN: %s', guild_id, seconds)
+                    log.info('Guild %s on COOLDOWN: %s', guild_id, seconds)
                 continue
 
             if data['frequency'] == 'daily':
                 if data['hour'] != current.hour:
-                    log.debug('Guild %s wrong HOUR: %s', guild_id, data['hour'])
+                    log.info('Guild %s wrong HOUR: %s', guild_id, data['hour'])
                 else:
                     if seconds > (60*60*1):
                         await self.process_avatar_update(guild_id, current)
                     else:
-                        log.debug('Guild %s on COOLDOWN: %s', guild_id, seconds)
+                        log.info('Guild %s on COOLDOWN: %s', guild_id, seconds)
                 continue
 
             if data['frequency'] == 'weekly':
                 if data['hour'] != current.hour:
-                    log.debug('Guild %s wrong HOUR: %s', guild_id, data['hour'])
+                    log.info('Guild %s wrong HOUR: %s', guild_id, data['hour'])
                 elif data['day'] != current.isoweekday():
-                    log.debug('Guild %s wrong DAY: %s', guild_id, data['day'])
+                    log.info('Guild %s wrong DAY: %s', guild_id, data['day'])
                 else:
                     if seconds > (60*60*24):
                         await self.process_avatar_update(guild_id, current)
                     else:
-                        log.debug('Guild %s on COOLDOWN: %s', guild_id, seconds)
+                        log.info('Guild %s on COOLDOWN: %s', guild_id, seconds)
                 continue
 
             log.error('NO FREQUENCY MATCH: %s', guild_id)
@@ -310,10 +325,17 @@ class Avatar(commands.Cog):
         avatars: List[str] = await self.config.guild(ctx.guild).avatars()
         if len(avatars) < 1:
             return await ctx.send('⛔ No stored avatars found. Add some first...')
-        lines = [f'🖼️ Stored Avatars: `{len(avatars)}`']
+        embed = discord.Embed(
+            title=f'Stored Avatars {len(avatars)}',
+            timestamp=datetime.datetime.now(),
+        )
+        embed.set_author(name=ctx.guild.name)
+        embed.set_thumbnail(url=ctx.guild.icon.url)
+        lines = []
         for avatar in avatars:
             lines.append(f'<{avatar}>')
-        await ctx.send('\n'.join(lines))
+        embed.description = '\n'.join(lines)
+        await ctx.send(embed=embed)
 
     @_avatar.command(name='add')
     @commands.guild_only()
@@ -334,6 +356,19 @@ class Avatar(commands.Cog):
         good_out = '\n'.join([f'<{x}>' for x in good])
         content = f'✅ Added the following Avatar URLs to the list:\n{good_out}'
         await ctx.send(content)
+
+    @_avatar.command(name='edit')
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def _avatar_edit(self, ctx: commands.Context):
+        """Add one or more Avatar's to server random Avatar list."""
+        await ctx.typing()
+        # data: Dict[str, Any] = await self.config.guild(ctx.guild).all()
+        view = ModalView(self, self.owner_ids)
+        content = (f'⚠️ **Warning:** Editing Raw Data with **NO VALIDATION!**\n'
+                   f'✅ Use `{ctx.clean_prefix}avatar add` to get your parking validated.')
+        await view.send_initial_message(ctx, content=content)
 
     @_avatar.command(name='show', aliases=['view'])
     @commands.guild_only()
@@ -368,57 +403,68 @@ class Avatar(commands.Cog):
         return good, bad
 
 
-# class ModalView(discord.ui.View):
-#     def __init__(self, cog: commands.Cog, data: Dict[str, str]):
-#         super().__init__(timeout=None)
-#         self.cog = cog
-#         self.data: Dict[str, str] = data
-#
-#     @discord.ui.button(label='Set Zipline Details', emoji='🖼️', style=discord.ButtonStyle.blurple)
-#     async def set_zipline(self, interaction: discord.interactions.Interaction, button: discord.Button):
-#         log.debug(interaction)
-#         log.debug(button)
-#         user = interaction.user
-#         user_config: Dict[str, Any] = await self.cog.config.user(user).all()
-#         modal = DataModal(view=self, data=user_config)
-#         await interaction.response.send_modal(modal)
-#
-#
-# class DataModal(discord.ui.Modal):
-#     def __init__(self, view: discord.ui.View, data: Dict[str, Any]):
-#         super().__init__(title='Set Zipline Details')
-#         self.view: discord.ui.View = view
-#         self.data: Dict[str, Any] = data
-#         self.base_url = discord.ui.TextInput(
-#             label='Zipline Base URL',
-#             placeholder='Ex: https://example.com/dashboard',
-#             default=self.data.get('base_url'),
-#             style=discord.TextStyle.short,
-#             max_length=255,
-#             min_length=10,
-#         )
-#         self.add_item(self.base_url)
-#         self.zip_token = discord.ui.TextInput(
-#             label='Zipline Authorization Token',
-#             placeholder='Ex: alRLdlKDFJ31FckdfjEndu5n.AL4nxkdkMjerLqMAPA',
-#             default=self.data.get('zip_token'),
-#             style=discord.TextStyle.short,
-#             max_length=43,
-#             min_length=43,
-#         )
-#         self.add_item(self.zip_token)
-#
-#     async def on_submit(self, interaction: discord.Interaction):
-#         # discord.interactions.InteractionResponse
-#         log.debug('ReplyModal - on_submit')
-#         # message: discord.Message = interaction.message
-#         user: discord.Member = interaction.user
-#         # TODO: Verify Settings Here
-#         user_config = {
-#             'base_url': self.base_url.value.rstrip('dashboard').strip('/ '),
-#             'zip_token': self.zip_token.value.strip(),
-#         }
-#         await self.view.cog.config.user(user).set(user_config)
-#         log.debug(user_config)
-#         msg = "✅ Zipline Details Updated Successfully..."
-#         await interaction.response.send_message(msg, ephemeral=True)
+class ModalView(discord.ui.View):
+    def __init__(self, cog: commands.Cog, owner_ids: List[int], timeout: int = 900):
+        super().__init__(timeout=timeout)
+        self.cog = cog
+        self.owner_ids: List[int] = owner_ids
+        self.message: Optional[discord.Message] = None
+        self.ephemeral: bool = False
+        self.delete_after = 30
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.style = discord.ButtonStyle.gray
+            child.disabled = True
+        await self.message.edit(view=self)
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id in self.owner_ids:
+            return True
+        msg = '⛔ Sorry, this is restricted to bot owners.'
+        await interaction.response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
+        return False
+
+    async def send_initial_message(self, ctx, content: Optional[str] = None,
+                                   ephemeral: bool = False, **kwargs) -> discord.Message:
+        self.ephemeral = ephemeral
+        self.message = await ctx.send(content=content, view=self, ephemeral=self.ephemeral, **kwargs)
+        return self.message
+
+    @discord.ui.button(label='Edit Raw Avatar URLs', emoji='🖼️', style=discord.ButtonStyle.blurple)
+    async def edit_avatars(self, interaction: discord.interactions.Interaction, button: discord.Button):
+        log.debug(interaction)
+        log.debug(button)
+        user = interaction.user
+        log.debug('user: %s', user)
+        data: Dict[str, Any] = await self.cog.config.guild(user.guild).all()
+        modal = DataModal(view=self, data=data)
+        await interaction.response.send_modal(modal)
+
+
+class DataModal(discord.ui.Modal):
+    def __init__(self, view: discord.ui.View, data: Dict[str, Any]):
+        super().__init__(title='Set Avatars')
+        self.view: discord.ui.View = view
+        self.data: Dict[str, Any] = data
+        avatars = '\n'.join(data.get('avatars', []))
+        log.debug('len.avatars: %s', len(avatars))
+        self.avatar_urls = discord.ui.TextInput(
+            label='Avatar URL List',
+            placeholder='List of URLs to Avatars',
+            default=avatars,
+            style=discord.TextStyle.paragraph,
+        )
+        self.add_item(self.avatar_urls)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        # discord.interactions.InteractionResponse
+        log.debug('ReplyModal - on_submit')
+        # message: discord.Message = interaction.message
+        user: discord.Member = interaction.user
+        # TODO: Verify Settings Here
+        avatars = list(filter(None, re.split(' |,|\n|\|', self.avatar_urls.value)))
+        log.debug('avatars: %s', avatars)
+        await self.view.cog.config.guild(user.guild).avatars.set(avatars)
+        msg = "✅ Avatars Updated Successfully..."
+        await interaction.response.send_message(msg, ephemeral=True)

@@ -39,16 +39,17 @@ class Docker(commands.Cog):
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
         data: Dict[str, str] = await self.config.all()
+        zip_data: Dict[str, Any] = await self.bot.get_shared_api_tokens('zipline')
         log.debug('data: %s', data)
         self.client = docker.DockerClient(base_url=data['docker_url'])
         self.client_low = docker.APIClient(base_url=data['docker_url'])
         if data['portainer_url']:
             self.portainer_url = data['portainer_url']
-        if data['zipline_url'] and data['zipline_token']:
+        if zip_data and zip_data['url'] and zip_data['token']:
             self.zipline = Zipline(
-                data['zipline_url'],
-                authorization=data['zipline_token'],
-                expires_at=data['zipline_expire'],
+                zip_data['url'],
+                authorization=zip_data['token'],
+                expires_at=zip_data['expire'],
             )
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
@@ -533,38 +534,38 @@ class DataModal(discord.ui.Modal):
         # )
         # self.add_item(self.portainer_endpoint)
 
-        self.zipline_url = discord.ui.TextInput(
-            label='Zipline Base URL',
-            # placeholder=self.view.data['zipline_url'],
-            default=self.view.data['zipline_url'],
-            style=discord.TextStyle.short,
-            max_length=255,
-            min_length=10,
-            required=False,
-        )
-        self.add_item(self.zipline_url)
-
-        self.zipline_token = discord.ui.TextInput(
-            label='Zipline Authorization Token',
-            # placeholder=self.view.data['zipline_token'],
-            default=self.view.data['zipline_token'],
-            style=discord.TextStyle.short,
-            max_length=43,
-            min_length=43,
-            required=False,
-        )
-        self.add_item(self.zipline_token)
-
-        self.zipline_expire = discord.ui.TextInput(
-            label='Zipline Expire At',
-            # placeholder=self.view.data['zipline_expire'],
-            default=self.view.data['zipline_expire'],
-            style=discord.TextStyle.short,
-            max_length=32,
-            min_length=2,
-            required=False,
-        )
-        self.add_item(self.zipline_expire)
+        # self.zipline_url = discord.ui.TextInput(
+        #     label='Zipline Base URL',
+        #     # placeholder=self.view.data['zipline_url'],
+        #     default=self.view.data['zipline_url'],
+        #     style=discord.TextStyle.short,
+        #     max_length=255,
+        #     min_length=10,
+        #     required=False,
+        # )
+        # self.add_item(self.zipline_url)
+        #
+        # self.zipline_token = discord.ui.TextInput(
+        #     label='Zipline Authorization Token',
+        #     # placeholder=self.view.data['zipline_token'],
+        #     default=self.view.data['zipline_token'],
+        #     style=discord.TextStyle.short,
+        #     max_length=43,
+        #     min_length=43,
+        #     required=False,
+        # )
+        # self.add_item(self.zipline_token)
+        #
+        # self.zipline_expire = discord.ui.TextInput(
+        #     label='Zipline Expire At',
+        #     # placeholder=self.view.data['zipline_expire'],
+        #     default=self.view.data['zipline_expire'],
+        #     style=discord.TextStyle.short,
+        #     max_length=32,
+        #     min_length=2,
+        #     required=False,
+        # )
+        # self.add_item(self.zipline_expire)
 
     async def on_submit(self, interaction: discord.Interaction):
         log.debug('DataModal - on_submit')
