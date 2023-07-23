@@ -572,14 +572,14 @@ class DataModal(discord.ui.Modal):
         # message: discord.Message = interaction.message
         # user: discord.Member = interaction.user
         portainer_url = self.portainer_url.value.replace('docker/dashboard', '').strip().rstrip('/')
-        zipline_url = self.zipline_url.value.replace('dashboard', '').strip().rstrip('/')
+        # zipline_url = self.zipline_url.value.replace('dashboard', '').strip().rstrip('/')
         data = {
             'docker_url': self.docker_url.value.strip(),
             'portainer_url': portainer_url,
             # 'portainer_endpoint': self.portainer_endpoint.value.strip(),
-            'zipline_url': zipline_url,
-            'zipline_token': self.zipline_token.value.strip(),
-            'zipline_expire': self.zipline_expire.value.strip(),
+            # 'zipline_url': zipline_url,
+            # 'zipline_token': self.zipline_token.value.strip(),
+            # 'zipline_expire': self.zipline_expire.value.strip(),
         }
         await self.view.cog.config.set(data)
         log.debug(data)
