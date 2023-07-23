@@ -21,9 +21,9 @@ class Docker(commands.Cog):
     global_default = {
         'docker_url': 'unix://var/run/docker.sock',
         'portainer_url': None,
-        'zipline_url': None,
-        'zipline_token': None,
-        'zipline_expire': '30d',
+        # 'zipline_url': None,
+        # 'zipline_token': None,
+        # 'zipline_expire': '30d',
     }
 
     def __init__(self, bot):
@@ -39,12 +39,14 @@ class Docker(commands.Cog):
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
         data: Dict[str, str] = await self.config.all()
-        zip_data: Dict[str, Any] = await self.bot.get_shared_api_tokens('zipline')
         log.debug('data: %s', data)
+        log.info('Docker URL: %s', data['docker_url'])
         self.client = docker.DockerClient(base_url=data['docker_url'])
         self.client_low = docker.APIClient(base_url=data['docker_url'])
-        if data['portainer_url']:
-            self.portainer_url = data['portainer_url']
+        self.portainer_url = data.get('portainer_url')
+        log.info('Portainer URL: %s', self.portainer_url)
+
+        zip_data: Dict[str, Any] = await self.bot.get_shared_api_tokens('zipline')
         if zip_data and zip_data['url'] and zip_data['token']:
             self.zipline = Zipline(
                 zip_data['url'],
