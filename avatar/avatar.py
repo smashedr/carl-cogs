@@ -92,8 +92,12 @@ class Avatar(commands.Cog):
                 continue
 
             if data['last']:
+                log.info('last: %s', data['last'])
                 last = datetime.datetime.fromtimestamp(data['last'])
+                log.info('last: %s', last.timestamp())
+                log.info('current: %s', current.timestamp())
                 seconds: int = (current - last).seconds
+                log.info('seconds: %s', seconds)
             else:
                 seconds: int = 1 + 60*60*24
                 log.warning('Guild %s NO LAST FOUND, setting to: %s', guild_id, seconds)
@@ -164,8 +168,9 @@ class Avatar(commands.Cog):
         file = io.BytesIO(r.content)
         await guild.edit(icon=file.getvalue(), reason='Avatar Rotation')
         data['last'] = dt.timestamp()
+        log.info('Updated Guild %s Last to: %s', guild.id, data['last'])
         await self.config.guild(guild).set(data)
-        log.debug('Updated Guild %s Avatar to: %s', guild.id, new_avatar)
+        log.info('Updated Guild %s Avatar to: %s', guild.id, new_avatar)
         return True
 
     @commands.hybrid_group(name='avatar')

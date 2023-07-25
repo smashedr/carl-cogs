@@ -42,6 +42,7 @@ class Imdblookup(commands.Cog):
     @app_commands.describe(search='IMDB Search String')
     async def _imdb(self, ctx: Union[commands.Context, discord.TextChannel], *, search: str):
         """IMDB <search>"""
+        # TODO: This does not work in a /slash command because you can only send one followup
         await ctx.typing()
         ia = Cinemagoer()
         results = ia.search_movie(search)

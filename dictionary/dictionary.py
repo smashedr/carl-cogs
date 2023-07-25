@@ -42,10 +42,10 @@ class Dictionary(commands.Cog):
         if not trigger or not query:
             return
 
-        if trigger in ['define', 'lookup', 'dictionary']:
-            log.debug('trigger: %s', trigger)
-            log.debug('query: %s', query)
-            await self.dictionary(message.channel, term=query)
+        # if trigger in ['define', 'lookup', 'dictionary']:
+        #     log.debug('trigger: %s', trigger)
+        #     log.debug('query: %s', query)
+        #     await self.dictionary(message.channel, term=query)
         if trigger in ['urban']:
             log.debug('trigger: %s', trigger)
             log.debug('query: %s', query)
