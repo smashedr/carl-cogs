@@ -169,6 +169,7 @@ class Avatar(commands.Cog):
         await guild.edit(icon=file.getvalue(), reason='Avatar Rotation')
         data['last'] = dt.timestamp()
         log.info('Updated Guild %s Last to: %s', guild.id, data['last'])
+        log.info(data)
         await self.config.guild(guild).set(data)
         log.info('Updated Guild %s Avatar to: %s', guild.id, new_avatar)
         return True
