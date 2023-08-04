@@ -96,7 +96,7 @@ class Avatar(commands.Cog):
                 last = datetime.datetime.fromtimestamp(data['last'])
                 log.info('last: %s', last.timestamp())
                 log.info('current: %s', current.timestamp())
-                seconds: int = (current - last).seconds
+                seconds: int = int(current.timestamp() - last.timestamp())
                 log.info('seconds: %s', seconds)
             else:
                 seconds: int = 1 + 60*60*24

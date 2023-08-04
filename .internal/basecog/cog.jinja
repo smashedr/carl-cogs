@@ -145,3 +145,4 @@ class ChannelView(discord.ui.View):
         names = [x.name for x in channels]
         msg = f'\U00002705 {{ data['name'] }} Channels Set to: {cf.humanize_list(names)}'
         return await response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
+

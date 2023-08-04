@@ -1,9 +1,9 @@
 {
-  "name": "{{ data['name'] }}",
+  "name": "Generators",
   "author": ["Shane#0816"],
-  "short": "Carl's {{ data['name'] }} Module.",
-  "description": "Carl's {{ data['name'] }} Module.",
-  "install_msg": "Get started with `[p]help {{ data['name'] }}`",
+  "short": "Carl's Generators Module.",
+  "description": "Carl's Generators Module.",
+  "install_msg": "Get started with `[p]help Generators`",
   "end_user_data_statement": "Caveat Emptor.",
   "tags": ["wip"],
   "requirements": [],
@@ -15,4 +15,3 @@
   "hidden": true,
   "type": "COG"
 }
-
