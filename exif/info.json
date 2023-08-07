@@ -3,7 +3,7 @@
   "author": ["Shane#0816"],
   "short": "Carl's Exif Module.",
   "description": "Carl's Exif Module.",
-  "install_msg": "Get started with `[p]help Exif`",
+  "install_msg": "Get started `[p]help Exif`",
   "end_user_data_statement": "Caveat Emptor.",
   "tags": ["wip"],
   "requirements": [],
