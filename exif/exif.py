@@ -4,7 +4,7 @@ import io
 import logging
 from PIL import Image
 from PIL import ExifTags
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Union
 
 from discord.ext import tasks
 from redbot.core import app_commands, commands, Config
@@ -50,8 +50,10 @@ class Exif(commands.Cog):
     async def on_message_without_command(self, message: discord.Message):
         """Listens for Messages"""
         guild: discord.Guild = message.guild
-        if message.author.bot or not guild or not message.embeds:
-            return
+        if message.author.bot or not guild:
+            return log.debug('bot or no guild')
+        if not message.embeds and not message.attachments:
+            return log.debug('no EMBEDS')
         config: Dict = await self.config.guild(guild).all()
         if not config['enabled']:
             return log.debug('GUILD DISABLED: %s', guild.id)
@@ -61,19 +63,31 @@ class Exif(commands.Cog):
 
     async def process_message(self, message: discord.Message):
         log.debug('process_image')
-        log.debug(message.embeds[0].url)
         for embed in message.embeds:
-            await self.process_url(message, embed)
+            await self.process_url(message, embed=embed)
+        for attachment in message.attachments:
+            await self.process_url(message, attachment=attachment)
 
-    async def process_url(self, message, embed: discord.Embed):
+    async def process_url(self, message, embed: Optional[discord.Embed] = None,
+                          attachment: Optional[discord.Attachment] = None):
+        url = None
+        if embed:
+            url = embed.url
+        elif attachment:
+            url = attachment.url
+        if not url:
+            return log.debug('NO URL')
+        log.debug('URL: %s', url)
         async with httpx.AsyncClient(**self.http_options) as client:
-            r = await client.get(embed.url)
+            r = await client.get(url)
             r.raise_for_status()
         file = io.BytesIO(r.content)
         image = Image.open(file)
         exif_data = image.getexif()
         gps_ifd = exif_data.get_ifd(ExifTags.IFD.GPSInfo)
         url = self.geohack_url_from_exif(gps_ifd)
+        if not url:
+            return log.info('NO GPS URL from geohack_url_from_exif')
         await message.reply(url)
 
     @commands.group(name='exif')
@@ -128,15 +142,18 @@ class Exif(commands.Cog):
 
     @staticmethod
     def geohack_url_from_exif(gps_ifd: dict, name: Optional[str] = None) -> str:
-        name = name.replace(' ', '_') if name else 'Unknown'
-        dn = gps_ifd[2][0]
-        mn = gps_ifd[2][1]
-        sn = gps_ifd[2][2]
-        dw = gps_ifd[4][0]
-        mw = gps_ifd[4][1]
-        sw = gps_ifd[4][2]
-        params = f"{dn}_{mn}_{sn}_N_{dw}_{mw}_{sw}_W_scale:500000"
-        return f"https://geohack.toolforge.org/geohack.php?pagename={name}&params={params}"
+        try:
+            name = name.replace(' ', '_') if name else 'Unknown'
+            dn = gps_ifd[2][0]
+            mn = gps_ifd[2][1]
+            sn = gps_ifd[2][2]
+            dw = gps_ifd[4][0]
+            mw = gps_ifd[4][1]
+            sw = gps_ifd[4][2]
+            params = f"{dn}_{mn}_{sn}_N_{dw}_{mw}_{sw}_W_scale:500000"
+            return f"https://geohack.toolforge.org/geohack.php?pagename={name}&params={params}"
+        except Exception as error:
+            log.debug(error)
 
 
 class ChannelView(discord.ui.View):
