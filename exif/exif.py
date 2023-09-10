@@ -26,10 +26,15 @@ class Exif(commands.Cog):
         'channels': [],
     }
 
+    global_default = {
+        'recent': [],
+    }
+
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(**self.guild_default)
+        self.config.register_global(**self.global_default)
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
@@ -144,12 +149,8 @@ class Exif(commands.Cog):
     def geohack_url_from_exif(gps_ifd: dict, name: Optional[str] = None) -> str:
         try:
             name = name.replace(' ', '_') if name else 'Unknown'
-            dn = gps_ifd[2][0]
-            mn = gps_ifd[2][1]
-            sn = gps_ifd[2][2]
-            dw = gps_ifd[4][0]
-            mw = gps_ifd[4][1]
-            sw = gps_ifd[4][2]
+            dn, mn, sn = gps_ifd[2]
+            dw, mw, sw = gps_ifd[4]
             params = f"{dn}_{mn}_{sn}_N_{dw}_{mw}_{sw}_W_scale:500000"
             return f"https://geohack.toolforge.org/geohack.php?pagename={name}&params={params}"
         except Exception as error:
