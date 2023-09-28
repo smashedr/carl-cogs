@@ -17,7 +17,7 @@ class Grafana(commands.Cog):
 
     http_options = {
         'follow_redirects': True,
-        'timeout': 10,
+        'timeout': 20,
     }
 
     user_default = {

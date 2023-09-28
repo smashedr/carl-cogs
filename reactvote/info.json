@@ -1,0 +1,17 @@
+{
+  "name": "ReactVote",
+  "author": ["Shane#0816"],
+  "short": "Carl's ReactVote Module.",
+  "description": "Set Icons for Up/Down Votes and Values for Archive/Repost",
+  "install_msg": "Get started with `[p]help ReactVote`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "tags": ["wip"],
+  "requirements": [],
+  "permissions" : [],
+  "required_cogs": {},
+  "min_bot_version": "3.5.0",
+  "min_python_version" : [3,8,0],
+  "disabled": false,
+  "hidden": true,
+  "type": "COG"
+}
