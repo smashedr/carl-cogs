@@ -65,7 +65,7 @@ class Flightaware(commands.Cog):
 
         fn = m.group(0).upper()
         log.debug('FN: %s', fn)
-        m = re.search('[a-zA-Z]{3}[0-9]{1,4}', fn)
+        m = re.search('[a-zA-Z]{2,3}[0-9]{1,4}', fn)
         if not m or not m.group(0):
             return
 

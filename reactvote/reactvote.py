@@ -100,14 +100,15 @@ class ReactVote(commands.Cog):
                                    delete_after=300)
 
     @staticmethod
-    async def count_reactions(message: discord.Message, icon: str):
+    async def count_reactions(message: discord.Message, icon: str, exclude_bots=True):
         count = 0
         for react in message.reactions:
             if str(react.emoji) == icon:
                 count = react.count
-                async for user in react.users():
-                    if user.bot:
-                        count -= 1
+                if exclude_bots:
+                    async for user in react.users():
+                        if user.bot:
+                            count -= 1
         return count
 
     @staticmethod
@@ -183,7 +184,7 @@ class ReactVote(commands.Cog):
         log.debug('channel: %s', channel)
         log.debug('channel.id: %s', channel.id)
         await self.config.guild(ctx.guild).downvote.set(channel.id)
-        await ctx.send(f'\U00002705 ReactVote Down Voted Messages Channel: {channel.mention}')
+        await ctx.send(f'\U00002705 ReactVote Down Voted Messages Channel: {channel.mention}', silent=True)
         await self.sync_settings(ctx.guild)
 
     @_reactvote.command(name='upvoted', aliases=['upvote', 'starboard'])
@@ -193,7 +194,7 @@ class ReactVote(commands.Cog):
         log.debug('channel: %s', channel)
         log.debug('channel.id: %s', channel.id)
         await self.config.guild(ctx.guild).upvote.set(channel.id)
-        await ctx.send(f'\U00002705 ReactVote Up Voted Messages Channel: {channel.mention}')
+        await ctx.send(f'\U00002705 ReactVote Up Voted Messages Channel: {channel.mention}', silent=True)
         await self.sync_settings(ctx.guild)
 
     @_reactvote.command(name='status', aliases=['settings', 'config'])
