@@ -403,7 +403,7 @@ class ListView(discord.ui.View):
 
     @discord.ui.button(label='Prev', style=discord.ButtonStyle.green)
     async def prev_button(self, interaction: discord.Interaction, button):
-        if not self.index < len(self.data_list) - 1:
+        if self.index >= len(self.data_list) - 1:
             log.debug('end of list: %s', self.index)
             msg = "At the end, use: `Next`"
             return await interaction.response.send_message(msg, ephemeral=True, delete_after=4)
@@ -435,7 +435,7 @@ class ListView(discord.ui.View):
 
     @discord.ui.button(label='Delete', style=discord.ButtonStyle.red)
     async def delete_button(self, interaction: discord.Interaction, button):
-        if not interaction.user.id == self.user_id:
+        if interaction.user.id != self.user_id:
             msg = ("⛔ Looks like you didn't create this response.\n"
                    "You can create your own response with the `/history` command.")
             return await interaction.response.send_message(msg, ephemeral=True, delete_after=10)

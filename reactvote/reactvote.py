@@ -95,7 +95,7 @@ class ReactVote(commands.Cog):
                                        delete_after=120)
             return await message.pin()
 
-        repost: discord.Message = await self.repost_message(message, channel)
+        repost: discord.Message = await self.repost_message(message, channel, False)
         await message.channel.send(f"Message {repost.jump_url} reposted by **{config['votes']}** up votes.",
                                    delete_after=300)
 
@@ -113,7 +113,7 @@ class ReactVote(commands.Cog):
 
     @staticmethod
     async def repost_message(message: discord.Message, destination: discord.TextChannel,
-                             silent=True, delete=True) -> discord.Message:
+                             delete=True, silent=True) -> discord.Message:
         files = []
         for attachment in message.attachments:
             files.append(await attachment.to_file())
