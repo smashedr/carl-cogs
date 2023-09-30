@@ -250,7 +250,13 @@ class Avherald(commands.Cog):
 
         html = r.text
         soup = BeautifulSoup(html, 'html.parser')
-        div_element = soup.find('div', attrs={'align': 'left'})
+        div_element = soup.find_all('div', attrs={'align': 'left'})
+
+        headline_article = div_element[0].find('span', class_='headline_article')
+        if headline_article and 'aviation herald needs your help' in headline_article.text.lower():
+            div_element = div_element[1]
+        else:
+            div_element = div_element[0]
         sitetext_span = div_element.find('span', class_='sitetext')
         anchor_tags = sitetext_span.find_all('a')
         links = [anchor_tag.get('href') for anchor_tag in anchor_tags]
@@ -282,6 +288,7 @@ class Avherald(commands.Cog):
             r = await client.get(self.base_url, headers=self.http_headers)
             log.debug('r.status_code: %s', r.status_code)
         log.debug('r.status_code: %s', r.status_code)
+        log.debug('r.url: %s', r.url)
         r.raise_for_status()
         html = r.text
         soup = BeautifulSoup(html, 'html.parser')
@@ -293,17 +300,31 @@ class Avherald(commands.Cog):
             if date_span:
                 current_date = date_span.text.strip()
             incident_data = row.find('img', class_='frame')
+            # title = soup.find('title')
+            # log.debug('title: %s', title)
+            # log.debug(type(title))
+            # incident_type = title.split(':', 1)[0].strip()
+            # log.debug('incident_type: %s', incident_type)
+            # incident_title = title.split(':', 1)[1].strip()
+            # log.debug('incident_title: %s', incident_title)
             if incident_data:
                 incident_type: str = incident_data['alt']
+                log.debug('incident_type: %s', incident_type)
                 incident_href: str = row.find('a')['href']
-                incident_title: str = row.find('span', class_='headline_avherald').text.strip()
+                log.debug('incident_href: %s', incident_href)
+                incident_title = row.find('span', class_='headline_avherald')
+                if not incident_title:
+                    log.debug('no title, continuing...')
+                    continue
+                log.debug('incident_title: %s', incident_title)
+                incident_title = incident_title.text.strip()
 
-                split = incident_title.split(' on ')
+                split = incident_title.split(' on ', 1)
                 op_type_loc = split[0].strip()
                 split.pop(0)
                 date_issue = ' on '.join(split).strip()
 
-                split = date_issue.split(', ')
+                split = date_issue.split(', ', 1)
                 date = split[0].strip()
                 split.pop(0)
                 issue = ', '.join(split).strip()
@@ -311,7 +332,7 @@ class Avherald(commands.Cog):
                 op_type, location = None, None
                 for term in [' enroute ', ' over ', ' near ', ' at ']:
                     if term in op_type_loc:
-                        split = op_type_loc.split(term)
+                        split = op_type_loc.split(term, 1)
                         op_type = split[0].strip()
                         split.pop(0)
                         location = term.join(split).strip()
