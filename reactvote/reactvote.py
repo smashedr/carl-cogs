@@ -18,6 +18,7 @@ class ReactVote(commands.Cog):
         'channels': [],
         'icons': ['👍', '👎'],
         'votes': 3,
+        'last': [],
     }
 
     def __init__(self, bot, *args, **kwargs):
@@ -51,6 +52,8 @@ class ReactVote(commands.Cog):
         log.debug('config.channels: %s', config['channels'])
         if payload.channel_id not in config['channels']:
             return log.debug('channel not enabled')
+        if payload.message_id in config['last']:
+            return log.info('message already processed: %s', payload.message_id)
         if str(payload.emoji) not in config['icons']:
             return log.debug('emoji not in list')
         log.debug('payload.channel_id: %s', payload.channel_id)
@@ -79,15 +82,18 @@ class ReactVote(commands.Cog):
             await self.process_upvote(message, config)
 
     async def process_downvote(self, message: discord.Message, config):
+        await self.update_last(message, config)
         channel: discord.TextChannel = message.guild.get_channel(config['downvote'])
         log.debug(f'channel: {channel}')
         if not channel:
             return log.warning('404: Down Vote Channel NOT FOUND!')
-        repost: discord.Message = await self.repost_message(message, channel)
+        content: str = self.get_message_content(message, 'down vote')
+        repost: discord.Message = await self.repost_message(message, channel, content)
         await message.channel.send(f"Message {repost.jump_url} deleted by **{config['votes']}** down votes.",
                                    delete_after=300)
 
     async def process_upvote(self, message: discord.Message, config):
+        await self.update_last(message, config)
         channel: discord.TextChannel = message.guild.get_channel(config['upvote'])
         log.debug(f'channel: {channel}')
         if not channel:
@@ -95,9 +101,21 @@ class ReactVote(commands.Cog):
                                        delete_after=120)
             return await message.pin()
 
-        repost: discord.Message = await self.repost_message(message, channel, False)
+        content: str = self.get_message_content(message, 'up vote')
+        repost: discord.Message = await self.repost_message(message, channel, content, False)
         await message.channel.send(f"Message {repost.jump_url} reposted by **{config['votes']}** up votes.",
                                    delete_after=300)
+
+    async def update_last(self, message: discord.Message, config):
+        last: list = config['last'][50:]
+        last.append(message.id)
+        await self.config.guild(message.guild).last.set(last)
+
+    @staticmethod
+    def get_message_content(message, text) -> str:
+        return (f'**ReactVote** {text} from {message.channel.mention} '
+                f'on <t:{int(message.created_at.timestamp())}:D> '
+                f'by {message.author.mention}\n{message.content}')
 
     @staticmethod
     async def count_reactions(message: discord.Message, icon: str, exclude_bots=True):
@@ -113,14 +131,11 @@ class ReactVote(commands.Cog):
 
     @staticmethod
     async def repost_message(message: discord.Message, destination: discord.TextChannel,
-                             delete=True, silent=True) -> discord.Message:
+                             content: str, delete=True, silent=True) -> discord.Message:
         files = []
         for attachment in message.attachments:
             files.append(await attachment.to_file())
         embeds: List[discord.Embed] = [e for e in message.embeds if e.type == 'rich']
-        content = (f'**ReactVote** DownVote from {message.channel.mention} '
-                   f'on <t:{int(message.created_at.timestamp())}:D> '
-                   f'by {message.author.mention}\n{message.content}')
         repost = await destination.send(content, embeds=embeds, files=files, silent=silent,
                                         allowed_mentions=discord.AllowedMentions.none())
         if delete:
