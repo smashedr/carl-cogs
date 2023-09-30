@@ -280,7 +280,9 @@ class Avherald(commands.Cog):
         log.debug('--- remote call ---')
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.get(self.base_url, headers=self.http_headers)
-            r.raise_for_status()
+            log.debug('r.status_code: %s', r.status_code)
+        log.debug('r.status_code: %s', r.status_code)
+        r.raise_for_status()
         html = r.text
         soup = BeautifulSoup(html, 'html.parser')
         rows = soup.find('td', id='ad1cell', class_='center_td').find_all('tr')
