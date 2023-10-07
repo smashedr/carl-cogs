@@ -113,6 +113,19 @@ class Flightaware(commands.Cog):
     async def fa(self, ctx: commands.Context):
         """FlightAware Commands."""
 
+    @fa.command(name='toggle', aliases=['enable', 'disable', 'on', 'off'])
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    async def fa_toggle(self, ctx: commands.Context):
+        """Enable/Disable FlightAware"""
+        enabled = await self.config.guild(ctx.guild).enabled()
+        if enabled:
+            await self.config.guild(ctx.guild).enabled.set(False)
+            return await ctx.send(f'\U0001F6D1 {self.__cog_name__} Disabled.')
+        await self.config.guild(ctx.guild).enabled.set(True)
+        await ctx.send(f'\U00002705 {self.__cog_name__} Enabled.')
+
     @fa.command(name='flight', description='Get Flight Information')
     @app_commands.describe(ident='Flight Number or Registration Number')
     async def fa_flight(self, ctx: commands.Context, ident: str):
@@ -178,10 +191,9 @@ class Flightaware(commands.Cog):
             off_dt = datetime.strptime(off, '%Y-%m-%dT%H:%M:%SZ')
             if off_dt:
                 em.timestamp = off_dt
-                if not index:
-                    if datetime.now() < off_dt:
-                        log.debug('set index on DATETIME')
-                        index = i-1
+                if datetime.now() < off_dt:
+                    index = i
+                    log.debug('set index on DATETIME: %s', index)
             oper_icao = d['operator_icao'] or d['operator'] or d['operator_iata']
             msgs = []
             matches = ['on the way', 'en route', 'taxiing']
@@ -195,32 +207,51 @@ class Flightaware(commands.Cog):
                 msgs.append('🔵 **Position Only!** ')
             if d['cancelled']:
                 msgs.append('🔴 **Cancelled!** ')
+            if d['blocked']:
+                msgs.append('🟠 **Blocked!** ')
             if d['diverted']:
                 msgs.append('🟡 **Diverted!** ')
             msgs = ['\n'.join(msgs)]
             msgs.append(
                 f"```ini\n"
-                f"[Operator]:   {d['operator_icao']} / {d['operator_iata']}\n"
                 f"[ICAO/IATA]:  {d['ident_icao']} / {d['ident_iata']}\n"
+                f"[Operator]:   {d['operator_icao']} / {d['operator_iata']}\n"
+            )
+            if d['codeshares']:
+                msgs.append(f"[Codeshares]: {cf.humanize_list(d['codeshares'])}\n")
+            msgs.append(
                 f"[Status]:     {d['status']}\n"
                 f"[Distance]:   {d['route_distance']} nm / {d['progress_percent']}%\n"
-                f"[Aircraft]:   {d['aircraft_type']} / {d['registration']}"
+                f"[Aircraft]:   {d['aircraft_type']} / {d['registration']}\n"
             )
+            if d['filed_airspeed'] or d['filed_altitude']:
+                msgs.append(f"[Speed/Alt]:  {d['filed_airspeed']} kn / FL {d['filed_altitude']}\n")
+            if d['route']:
+                if not d['route'].startswith(d['origin']['code_icao']):
+                    d['route'] = f"{d['origin']['code_icao']} {d['route']}"
+                msgs.append(f"[Route]:      {d['route']}\n")
+            msgs.append('\n')
             if d['origin'] and d['destination']:
-                msgs.append(
-                    f"\n[Takeoff]:    {d['actual_off']}\n"
-                    f"[From]:       {d['origin']['code']} / {d['origin']['name']}\n"
-                    f"[ETA]:        {d['estimated_on']}\n"
-                    f"[To]:         {d['destination']['code']} / {d['destination']['name']}"
-                )
-            if d['gate_destination'] and d['baggage_claim']:
-                msgs.append(f"\n[Gate/Bags]:  {d['gate_destination']} / {d['baggage_claim']}")
-            elif d['gate_destination']:
-                msgs.append(f"\n[Gate]:       {d['gate_destination']}")
-            elif d['route']:
-                msgs.append(f"\n[Route]:      {d['route']}")
-            if d['codeshares']:
-                msgs.append(f"\n[Codeshares]: {cf.humanize_list(d['codeshares'])}")
+                out = d['scheduled_out'] or d['estimated_out'] or d['actual_out']
+                off = d['scheduled_off'] or d['estimated_off'] or d['actual_off']
+                msgs.append(f"[From]:       {d['origin']['code']} / {d['origin']['name']}\n")
+                if out:
+                    msgs.append(f"[Departs]:    {off}\n")
+                if off:
+                    msgs.append(f"[Takeoff]:    {off}\n")
+                _on = d['scheduled_on'] or d['estimated_on'] or d['actual_on']
+                _in = d['scheduled_in'] or d['estimated_in'] or d['actual_in']
+                msgs.append(f"\n[To]:         {d['destination']['code']} / {d['destination']['name']}\n")
+                if _on:
+                    msgs.append(f"[Landing]:    {_on}\n")
+                if _in:
+                    msgs.append(f"[Arrival]:    {_in}\n")
+            if d['gate_destination'] or d['baggage_claim']:
+                msgs.append(f"[Gate/Bags]:  {d['gate_destination']} / {d['baggage_claim']}\n")
+            # msgs.append(
+            #     f"[Speed/Alt]:  {d['filed_airspeed']}/{d['filed_altitude']}\n"
+            #     f"[From]:       {d['origin']['code']} / {d['origin']['name']}\n"
+            # )
             msgs.append("```")
             value = ''
             if d['registration']:
@@ -243,7 +274,7 @@ class Flightaware(commands.Cog):
             em.add_field(name='Links', value=value)
             em.set_footer(text=f"{i+1}/{len(fdata['flights'])}")
             # msgs.append(f"{i+1}/{len(fdata['flights'])}")
-            em.description = ' '.join(msgs)
+            em.description = ''.join(msgs)
             embeds.append(em)
         log.debug('embeds: %s', len(embeds))
         log.debug('index: %s', index)
