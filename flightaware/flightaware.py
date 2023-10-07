@@ -159,7 +159,7 @@ class Flightaware(commands.Cog):
             log.debug(fdata)
             await self.redis.setex(
                 f'fa:{ident}',
-                timedelta(minutes=55),  # TODO: DO NOT COMMIT DO NOT COMMIT DO NOT COMMIT DO NOT COMMIT DO NOT COMMIT DO NOT COMMIT DO NOT COMMIT
+                timedelta(minutes=5),
                 json.dumps(fdata or {}),
             )
         if 'flights' not in fdata or not fdata['flights']:
@@ -168,27 +168,8 @@ class Flightaware(commands.Cog):
             msg = f'No flights found for ident: **{ident}**\n'
             return await sendable.send(msg, ephemeral=True, delete_after=15)
 
-        # total = len(fdata['flights'])
-        # log.debug('total: %s', total)
-        # live, past, sched = [], [], []
-        # for d in fdata['flights']:
-        #     if int(d['progress_percent']) == 0:
-        #         sched.append(d)
-        #     elif int(d['progress_percent']) == 100:
-        #         past.append(d)
-        #     else:
-        #         live.append(d)
-        # log.debug('-'*20)
-        # log.debug('live: %s', len(live))
-        # log.debug('past: %s', len(past))
-        # log.debug('sched: %s', len(sched))
-        # msgs = [f'**{ident}**: Live: `{len(live)}`  Sched: `{len(sched)}`  Past: `{len(past)}`']
-        # if len(live) > 1 and len(sched) == 0:
-        #     await sendable.send(' '.join(msgs))
-        #     return
-
         embeds = []
-        index = 0
+        index = None
         content = f'Flights found for **{ident}**'
         for i, d in enumerate(reversed(fdata['flights'])):
             live = False
@@ -201,6 +182,7 @@ class Flightaware(commands.Cog):
             )
             em.set_author(name=d['fa_flight_id'], url=id_url)
 
+            # https://www.flightaware.com/commercial/aeroapi/faq.rvt#findstatus
             if not d['actual_off']:
                 em.colour = discord.Colour.blue()
             elif d['actual_off'] and not d['actual_on']:
@@ -211,18 +193,12 @@ class Flightaware(commands.Cog):
             else:
                 em.colour = discord.Colour.light_gray()
 
-            if not index and d['progress_percent'] and 0 < d['progress_percent'] < 100:
-                em.colour = discord.Colour.green()
-                live = True
-                index = i
-                log.debug('set index on (0 < progress_percent < 100)')
-                # msgs.append(f'🟢 [Live Now on FlightAware]({fa.fa_flight_url}{ident}) ')
-            # if d['actual_off'] and d['actual_on'] and (d['actual_off'] == d['actual_on']):
-            # if d['status'] and 'scheduled' in d['status'].lower():
-            #     em.colour = discord.Colour.blue()
-
-            if live:
-                log.debug('LIVE '*5)
+            # # TODO: This should not be necessary using the above method
+            # if index is None and d['progress_percent'] and 0 < d['progress_percent'] < 100:
+            #     em.colour = discord.Colour.green()
+            #     live = True
+            #     index = i
+            #     log.debug('set index on (0 < progress_percent < 100)')
 
             out = d['scheduled_out'] or d['estimated_out'] or d['actual_out']
             off = d['scheduled_off'] or d['estimated_off'] or d['actual_off']
@@ -237,7 +213,8 @@ class Flightaware(commands.Cog):
             # arrive_dt = on_dt or in_dt
 
             em.timestamp = out_dt or off_dt or in_dt or on_dt
-            if not index and depart_dt and datetime.now() < depart_dt:
+            log.debug('----- index: %s', index)
+            if index is None and depart_dt and datetime.now() < depart_dt:
                 index = i
                 log.debug('set index on DATETIME: %s', index)
 
@@ -267,24 +244,24 @@ class Flightaware(commands.Cog):
                 shares = [f'`{x}`' for x in d['codeshares']]
                 msgs.append(f"Codeshares {cf.humanize_list(shares)}")
 
-            msgs.append(f"\n**{d['status']}**")
-            # msgs.extend([
-            #     f"Flight **{flight_link}**",
-            #     f"Status: **{d['status']}**",
-            # ])
+            if live:
+                msgs.append(f"\n\U0001F7E2 In Progress: {d['progress_percent']}% - **{d['status']}**")
+                msgs.append(await self.live_links(d, fa))
+            else:
+                msgs.append(f"\n**{d['status']}**")
 
-            # if d['route']:
-            #     # if not d['route'].startswith(d['origin']['code_icao']):
-            #     #     d['route'] = f"{d['origin']['code_icao']} {d['route']}"
-            #     msgs.append(f"```\n{d['route']}```")
-
-            if d['aircraft_type']:
-                links = await self.aircraft_type_links(d, fa)
-                msgs.append(f"\n**{d['aircraft_type']}** - {links}")
+            if d['registration'] or d['aircraft_type']:
+                type_link = f"[{d['aircraft_type']}]({fa.fa_aircraft_url}{d['aircraft_type']})"
 
             if d['registration']:
-                links = await self.aircraft_reg_links(d, fa)
-                msgs.append(f"**{d['registration']}** - {links}")
+                msgs.append(f"\n\U00002708\U0000FE0F **{type_link} - {d['registration']}**")
+                r_links = await self.aircraft_reg_links(d, fa)
+                msgs.append(f"{r_links}")
+
+            elif d['aircraft_type']:
+                msgs.append(f"\n\U00002708\U0000FE0F **{type_link}**")
+                t_links = await self.aircraft_type_links(d, fa)
+                msgs.append(f"{t_links}")
 
             if d['origin']:
                 origin_link = f"[{d['origin']['code']}]({fa.fa_airport_url}{d['origin']['code']})"
@@ -301,12 +278,10 @@ class Flightaware(commands.Cog):
                 msgs.extend([
                     "",
                     f"\U0001F6EC **{destination_link} {d['destination']['name']}**",
-                    f"Touchdown: {self.get_ts(on_dt)}",
-                    f"Arrival: {self.get_ts(in_dt)}",
+                    f"Runway: {self.get_ts(on_dt)}",
+                    f"Arrive: {self.get_ts(in_dt)}",
                     self.airport_links(d['destination']['code_icao'], fa),
                 ])
-                # if d['gate_destination'] or d['baggage_claim']:
-                #     msgs.append(f"**Gate/Bags**:  {d['gate_destination']} / {d['baggage_claim']}")
 
             em.description = '\n'.join(msgs)
 
@@ -329,78 +304,7 @@ class Flightaware(commands.Cog):
                 #     d['route'] = f"{d['origin']['code_icao']} {d['route']}"
                 em.add_field(name='Route', value=f"```{d['route']}```", inline=False)
 
-            # oper_icao = d['operator_icao'] or d['operator'] or d['operator_iata']
-
-            # matches = ['on the way', 'en route', 'taxiing']
-            # if (d['progress_percent'] and (0 < d['progress_percent'] < 100)) \
-            #         or any([x in d['status'].lower() for x in matches]):
-            #     index = i
-            #     log.debug('set index on PROGRESS or MATCH')
-            #     msgs.append(f'🟢 [Live Now on FlightAware]({fa.fa_flight_url}{ident}) ')
-            #     em.colour = discord.Colour.green()
-
-            # msgs.extend([
-            #     "```ini",
-            #     f"[ICAO/IATA]:  {d['ident_icao']} / {d['ident_iata']}",
-            #     f"[Operator]:   {d['operator_icao']} / {d['operator_iata']}",
-            # ])
-            # if d['codeshares']:
-            #     msgs.append(f"[Codeshares]: {cf.humanize_list(d['codeshares'])}")
-            # msgs.extend([
-            #     f"[Status]:     {d['status']}",
-            #     f"[Distance]:   {d['route_distance']} nm / {d['progress_percent']}%",
-            #     f"[Aircraft]:   {d['aircraft_type']} / {d['registration']}",
-            # ])
-            # if d['filed_airspeed'] or d['filed_altitude']:
-            #     msgs.append(f"[Speed/Alt]:  {d['filed_airspeed']} kn / FL {d['filed_altitude']}")
-            # if d['route']:
-            #     if not d['route'].startswith(d['origin']['code_icao']):
-            #         d['route'] = f"{d['origin']['code_icao']} {d['route']}"
-            #     msgs.append(f"[Route]:      {d['route']}")
-            # msgs.append('')
-            # if d['origin'] and d['destination']:
-            #     msgs.append(f"[From]:       {d['origin']['code']} / {d['origin']['name']}")
-            #     if out:
-            #         msgs.append(f"[Departs]:    {off}")
-            #     if off:
-            #         msgs.append(f"[Takeoff]:    {off}")
-            #     msgs.append('')
-            #     msgs.append(f"[To]:         {d['destination']['code']} / {d['destination']['name']}")
-            #     if _on:
-            #         msgs.append(f"[Landing]:    {_on}")
-            #     if _in:
-            #         msgs.append(f"[Arrival]:    {_in}")
-            # if d['gate_destination'] or d['baggage_claim']:
-            #     msgs.append(f"[Gate/Bags]:  {d['gate_destination']} / {d['baggage_claim']}")
-            # # msgs.append(
-            # #     f"[Speed/Alt]:  {d['filed_airspeed']}/{d['filed_altitude']}\n"
-            # #     f"[From]:       {d['origin']['code']} / {d['origin']['name']}\n"
-            # # )
-            # msgs.append("```")
-            # msgs = '\n'.join(msgs)
-
-            # value = ''
-            # if d['registration']:
-            #     value += f"[{d['registration']}]({fa.fa_registration_url}{d['registration']}) " \
-            #              f"[🖼️]({fa.jetphotos_url}{d['registration']}) | "
-            # if d['aircraft_type']:
-            #     wiki_url = await self.get_wiki_url(d['aircraft_type'])
-            #     if wiki_url:
-            #         value += f"[{d['aircraft_type']}]({wiki_url}) | "
-            #     else:
-            #         value += f"{d['aircraft_type']} | "
-            # if d['origin'] and d['origin']['code_icao']:
-            #     value += f"[{d['origin']['code_icao']}]({fa.airnav_url}{d['origin']['code_icao']}) " \
-            #              f"[🔈]({fa.liveatc_url}{d['origin']['code_icao']}) | "
-            # if d['destination'] and d['destination']['code_icao']:
-            #     value += f"[{d['destination']['code_icao']}]({fa.airnav_url}{d['destination']['code_icao']}) " \
-            #              f"[🔈]({fa.liveatc_url}{d['destination']['code_icao']}) | "
-            # value = value.strip('| ')
-            # # value += f"\n{i+1}/{len(fdata['flights'])}"
-            # em.add_field(name='Links', value=value)
-
             em.set_footer(text=f"{i+1}/{len(fdata['flights'])}")
-            # msgs.append(f"{i+1}/{len(fdata['flights'])}")
             embeds.append(em)
         log.debug('embeds: %s', len(embeds))
         log.debug('index: %s', index)
@@ -617,11 +521,17 @@ class Flightaware(commands.Cog):
         ]
         return ' | '.join(links)
 
+    async def live_links(self, d: dict, fa: FlightAware) -> str:
+        links = [f"[FlightAware]({fa.fa_flight_url}{d['ident']})"]
+        if icao_hex := await self._get_icao_hex(d['registration']):
+            links.append(f"[ADSB-Ex](https://globe.adsbexchange.com/?icao={icao_hex})")
+        return ' | '.join(links)
+
     async def aircraft_type_links(self, d: dict, fa: FlightAware) -> str:
         if not d['aircraft_type']:
             return ''
         links = []
-        links.append(f"[FA]({fa.fa_aircraft_url}{d['aircraft_type']})")
+        # links.append(f"[FA]({fa.fa_aircraft_url}{d['aircraft_type']})")
         if wiki_url := await self.get_wiki_url(d['aircraft_type']):
             links.append(f"[Wikipedia]({wiki_url})")
         return ' | '.join(links)
