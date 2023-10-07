@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from html import unescape
 from typing import List, Optional, Union
 
-from redbot.core import commands, app_commands
+from redbot.core import commands, app_commands, Config
 from redbot.core.bot import Red
 from redbot.core.utils import chat_formatting as cf
 
@@ -22,11 +22,17 @@ log = logging.getLogger('red.flightaware')
 class Flightaware(commands.Cog):
     """Carl's FlightAware Cog"""
 
+    guild_default = {
+        'enabled': True,
+    }
+
     def __init__(self, bot):
         self.bot: Red = bot
         self.api_key: Optional[str] = None
         self.redis: Optional[redis.Redis] = None
         self.cog_dir = pathlib.Path(__file__).parent.resolve()
+        self.config = Config.get_conf(self, 1337, True)
+        self.config.register_guild(**self.guild_default)
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
@@ -62,6 +68,9 @@ class Flightaware(commands.Cog):
         m = re.search('[a-zA-Z0-9]{2,3}[0-9]{1,4}', split[0].upper())
         if not m or not m.group(0):
             return
+
+        if not await self.config.guild(message.guild).enabled():
+            log.debug('%s: Disabled', self.__cog_name__)
 
         fn = m.group(0).upper()
         log.debug('FN: %s', fn)
@@ -118,7 +127,7 @@ class Flightaware(commands.Cog):
     @commands.admin_or_permissions(manage_guild=True)
     @commands.max_concurrency(1, commands.BucketType.guild)
     async def fa_toggle(self, ctx: commands.Context):
-        """Enable/Disable FlightAware"""
+        """Enable/Disable FlightAware Auto Parsing"""
         enabled = await self.config.guild(ctx.guild).enabled()
         if enabled:
             await self.config.guild(ctx.guild).enabled.set(False)
@@ -132,15 +141,15 @@ class Flightaware(commands.Cog):
         """Get Flight Information for: <ident>"""
         await self.process_flight(ctx, ctx.author, ident)
 
-    async def process_flight(self, ctx, author, ident_str: str, silent=False):
-        ctx: commands.Context
-        author: Union[discord.Member, discord.User]
+    async def process_flight(self, sendable: Union[commands.Context, discord.TextChannel],
+                             author: Union[discord.Member, discord.User],
+                             ident_str: str, silent=False):
         ident: str = self.validate_ident(ident_str)
         if not ident:
             if silent:
                 return
             msg = f'Unable to validate `ident`: **{ident_str}**'
-            return await ctx.send(msg, ephemeral=True, delete_after=10)
+            return await sendable.send(msg, ephemeral=True, delete_after=15)
         fa = FlightAware(self.api_key)
         fdata: dict = json.loads(await self.redis.get(f'fa:{ident}') or '{}')
         if not fdata:
@@ -156,7 +165,7 @@ class Flightaware(commands.Cog):
             if silent:
                 return
             msg = f'No flights found for ident: **{ident}**\n'
-            return await ctx.send(msg, ephemeral=True, delete_after=10)
+            return await sendable.send(msg, ephemeral=True, delete_after=15)
 
         # total = len(fdata['flights'])
         # log.debug('total: %s', total)
@@ -174,7 +183,7 @@ class Flightaware(commands.Cog):
         # log.debug('sched: %s', len(sched))
         # msgs = [f'**{ident}**: Live: `{len(live)}`  Sched: `{len(sched)}`  Past: `{len(past)}`']
         # if len(live) > 1 and len(sched) == 0:
-        #     await ctx.send(' '.join(msgs))
+        #     await sendable.send(' '.join(msgs))
         #     return
 
         embeds = []
@@ -208,51 +217,51 @@ class Flightaware(commands.Cog):
             if d['cancelled']:
                 msgs.append('🔴 **Cancelled!** ')
             if d['blocked']:
-                msgs.append('🟠 **Blocked!** ')
+                msgs.append('🔴 **Blocked!** ')
             if d['diverted']:
                 msgs.append('🟡 **Diverted!** ')
-            msgs = ['\n'.join(msgs)]
-            msgs.append(
-                f"```ini\n"
-                f"[ICAO/IATA]:  {d['ident_icao']} / {d['ident_iata']}\n"
-                f"[Operator]:   {d['operator_icao']} / {d['operator_iata']}\n"
-            )
+            msgs.extend([
+                "```ini",
+                f"[ICAO/IATA]:  {d['ident_icao']} / {d['ident_iata']}",
+                f"[Operator]:   {d['operator_icao']} / {d['operator_iata']}",
+            ])
             if d['codeshares']:
-                msgs.append(f"[Codeshares]: {cf.humanize_list(d['codeshares'])}\n")
-            msgs.append(
-                f"[Status]:     {d['status']}\n"
-                f"[Distance]:   {d['route_distance']} nm / {d['progress_percent']}%\n"
-                f"[Aircraft]:   {d['aircraft_type']} / {d['registration']}\n"
-            )
+                msgs.append(f"[Codeshares]: {cf.humanize_list(d['codeshares'])}")
+            msgs.extend([
+                f"[Status]:     {d['status']}",
+                f"[Distance]:   {d['route_distance']} nm / {d['progress_percent']}%",
+                f"[Aircraft]:   {d['aircraft_type']} / {d['registration']}",
+            ])
             if d['filed_airspeed'] or d['filed_altitude']:
-                msgs.append(f"[Speed/Alt]:  {d['filed_airspeed']} kn / FL {d['filed_altitude']}\n")
+                msgs.append(f"[Speed/Alt]:  {d['filed_airspeed']} kn / FL {d['filed_altitude']}")
             if d['route']:
                 if not d['route'].startswith(d['origin']['code_icao']):
                     d['route'] = f"{d['origin']['code_icao']} {d['route']}"
-                msgs.append(f"[Route]:      {d['route']}\n")
-            msgs.append('\n')
+                msgs.append(f"[Route]:      {d['route']}")
+            msgs.append('')
             if d['origin'] and d['destination']:
                 out = d['scheduled_out'] or d['estimated_out'] or d['actual_out']
                 off = d['scheduled_off'] or d['estimated_off'] or d['actual_off']
-                msgs.append(f"[From]:       {d['origin']['code']} / {d['origin']['name']}\n")
+                msgs.append(f"[From]:       {d['origin']['code']} / {d['origin']['name']}")
                 if out:
-                    msgs.append(f"[Departs]:    {off}\n")
+                    msgs.append(f"[Departs]:    {off}")
                 if off:
-                    msgs.append(f"[Takeoff]:    {off}\n")
+                    msgs.append(f"[Takeoff]:    {off}")
                 _on = d['scheduled_on'] or d['estimated_on'] or d['actual_on']
                 _in = d['scheduled_in'] or d['estimated_in'] or d['actual_in']
-                msgs.append(f"\n[To]:         {d['destination']['code']} / {d['destination']['name']}\n")
+                msgs.append(f"[To]:         {d['destination']['code']} / {d['destination']['name']}")
                 if _on:
-                    msgs.append(f"[Landing]:    {_on}\n")
+                    msgs.append(f"[Landing]:    {_on}")
                 if _in:
-                    msgs.append(f"[Arrival]:    {_in}\n")
+                    msgs.append(f"[Arrival]:    {_in}")
             if d['gate_destination'] or d['baggage_claim']:
-                msgs.append(f"[Gate/Bags]:  {d['gate_destination']} / {d['baggage_claim']}\n")
+                msgs.append(f"[Gate/Bags]:  {d['gate_destination']} / {d['baggage_claim']}")
             # msgs.append(
             #     f"[Speed/Alt]:  {d['filed_airspeed']}/{d['filed_altitude']}\n"
             #     f"[From]:       {d['origin']['code']} / {d['origin']['name']}\n"
             # )
             msgs.append("```")
+            msgs = '\n'.join(msgs)
             value = ''
             if d['registration']:
                 value += f"[{d['registration']}]({fa.fa_registration_url}{d['registration']}) " \
@@ -274,12 +283,12 @@ class Flightaware(commands.Cog):
             em.add_field(name='Links', value=value)
             em.set_footer(text=f"{i+1}/{len(fdata['flights'])}")
             # msgs.append(f"{i+1}/{len(fdata['flights'])}")
-            em.description = ''.join(msgs)
+            em.description = msgs
             embeds.append(em)
         log.debug('embeds: %s', len(embeds))
         log.debug('index: %s', index)
         view = EmbedsView(self, author, embeds, oper_icao, index=index)
-        await view.send_initial_message(ctx, content=content)
+        await view.send_initial_message(sendable, content=content)
 
     @fa.command(name='operator', description='Airline Operator Information')
     @app_commands.describe(code='Airline ICAO or IATA Identifier')
