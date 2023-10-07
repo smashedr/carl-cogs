@@ -197,8 +197,8 @@ class Flightaware(commands.Cog):
             if d['status'] and 'scheduled' in d['status'].lower():
                 em.colour = discord.Colour.blue()
             off = d['actual_off'] or d['estimated_off'] or d['scheduled_off']
-            off_dt = datetime.strptime(off, '%Y-%m-%dT%H:%M:%SZ')
-            if off_dt:
+            off_dt = datetime.strptime(off, '%Y-%m-%dT%H:%M:%SZ') if off else None
+            if not index and off_dt:
                 em.timestamp = off_dt
                 if datetime.now() < off_dt:
                     index = i
