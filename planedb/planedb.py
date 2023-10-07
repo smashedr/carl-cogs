@@ -202,16 +202,16 @@ class Planedb(commands.Cog):
             log.debug('--- CACHE CALL ---')
             return cache
         log.debug('--- remote call ---')
-        http_options = {
+        http_options = http_options or {
             'follow_redirects': True,
             'timeout': 30,
-        } or http_options
+        }
         chrome_agent = (
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
             'AppleWebKit/537.36 (KHTML, like Gecko) '
             'Chrome/113.0.0.0 Safari/537.36'
         )
-        headers = {'user-agent': chrome_agent} or headers
+        headers = headers or {'user-agent': chrome_agent}
         async with httpx.AsyncClient(**http_options) as client:
             r = await client.get(url, headers=headers, **kwargs)
             r.raise_for_status()
