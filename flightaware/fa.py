@@ -8,10 +8,13 @@ class FlightAware(object):
     """
     :param api_key: FlightAware API Key or AEROAPI_KEY environment variable
     """
+    fa_id_url = 'https://flightaware.com/live/flight/id/'
     fa_flight_url = 'https://flightaware.com/live/flight/'
-    fa_airport_url = 'https://flightaware.com/live/airport/'
     fa_aircraft_url = 'https://flightaware.com/live/aircrafttype/'
+    fa_fleet_url = 'https://flightaware.com/live/fleet/'
+    fa_airport_url = 'https://flightaware.com/resources/airport/'
     fa_registration_url = 'https://flightaware.com/resources/registration/'
+    fr24_reg_url = 'https://www.flightradar24.com/data/aircraft/'
     airfleets_search_url = 'https://www.airfleets.net/recherche/?key='
     jetphotos_url = 'https://www.jetphotos.com/registration/'
     liveatc_url = 'https://www.liveatc.net/search/?icao='
