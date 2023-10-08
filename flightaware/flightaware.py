@@ -46,6 +46,7 @@ class Flightaware(commands.Cog):
             port=int(redis_data.get('port', 6379)),
             db=int(redis_data.get('db', 0)),
             password=redis_data.get('pass', None),
+            decode_responses=True,
         )
         await self.redis.ping()
         await self.gen_wiki_type_data()
@@ -154,13 +155,13 @@ class Flightaware(commands.Cog):
         fa = FlightAware(self.api_key)
         fdata: dict = json.loads(await self.redis.get(f'fa:{ident}') or '{}')
         if not fdata:
-            log.info('--- API CALL ---')
+            log.info('--- API CALL: fa')
             fdata = await fa.flights_ident(ident)
             log.debug(fdata)
-            await self.redis.setex(
+            await self.redis.set(
                 f'fa:{ident}',
-                timedelta(minutes=5),
                 json.dumps(fdata or {}),
+                timedelta(minutes=5),
             )
         if 'flights' not in fdata or not fdata['flights']:
             if silent:
@@ -326,14 +327,18 @@ class Flightaware(commands.Cog):
         fdata = json.loads(await self.redis.get(f'fa:{operator_id}') or '{}')
         log.debug(fdata)
         if not fdata:
-            log.info('--- API CALL ---')
+            log.info('--- API CALL: fa')
             fdata = await fa.operators_id(operator_id)
             log.debug(fdata)
         if not fdata:
             msg = f'No results for operator id: `{operator_id}`'
             return await ctx.send(msg, ephemeral=True, delete_after=10)
 
-        await self.redis.setex(f'fa:{operator_id}', timedelta(days=30), json.dumps(fdata))
+        await self.redis.set(
+            f'fa:{operator_id}',
+            json.dumps(fdata),
+            timedelta(days=30),
+        )
         d = fdata
         msgs = [(
             f"Operator: **{d['name']}** "
@@ -369,13 +374,17 @@ class Flightaware(commands.Cog):
         fdata = json.loads(await self.redis.get(f'fa:{identifier}') or '{}')
         log.debug(fdata)
         if not fdata:
-            log.info('--- API CALL ---')
+            log.info('--- API CALL: fa')
             fdata = await fa.owner_ident(identifier)
             log.debug(fdata)
         if not fdata:
             return await ctx.send(f'No results for ident: `{identifier}`', ephemeral=True, delete_after=10)
 
-        await self.redis.setex(f'fa:{identifier}', timedelta(days=30), json.dumps(fdata))
+        await self.redis.set(
+            f'fa:{identifier}',
+            json.dumps(fdata),
+            timedelta(days=30),
+        )
         d = fdata['owner']
         msg = (
             f"Registration: **{identifier}** "
@@ -402,20 +411,19 @@ class Flightaware(commands.Cog):
             aircraft_data: dict = json.loads(await self.redis.get('fa:wiki_aircraft_type') or '{}')
             if not aircraft_data:
                 aircraft_data = await self.gen_wiki_type_data()
-            if aircraft_data:
-                if icao_type in aircraft_data:
-                    return f'{base_url}{aircraft_data[icao_type]}'
+            if aircraft_data and icao_type in aircraft_data:
+                return f'{base_url}{aircraft_data[icao_type]}'
         except Exception as error:
             log.exception(error)
 
     async def gen_wiki_type_data(self) -> dict:
         # TODO: Make this a task in a loop
-        log.info('--- REMOTE CALL ---')
         url = 'https://en.wikipedia.org/wiki/List_of_aircraft_type_designators'
         http_options = {
             'follow_redirects': True,
             'timeout': 30,
         }
+        log.info('--- REMOTE CALL: wikipedia.org')
         async with httpx.AsyncClient(**http_options) as client:
             r = await client.get(url)
             r.raise_for_status()
@@ -432,10 +440,10 @@ class Flightaware(commands.Cog):
             aircraft_data[icao_type] = model_href
         # log.debug('-'*20)
         # log.debug(aircraft_data)
-        await self.redis.setex(
+        await self.redis.set(
             'fa:wiki_aircraft_type',
-            timedelta(days=7),
             json.dumps(aircraft_data),
+            timedelta(days=30),
         )
         return aircraft_data
 
@@ -476,8 +484,6 @@ class Flightaware(commands.Cog):
     async def _get_icao_hex(self, registration: str) -> Optional[str]:
         cache: str = await self.redis.get(f'pdb:{registration}')
         if cache:
-            log.debug('cache: %s', cache)
-            log.debug('cache.type: %s', type(cache))
             return cache
         registration = registration.replace('-', '').upper()
         if registration.startswith('N'):
@@ -492,6 +498,7 @@ class Flightaware(commands.Cog):
             'data':	registration,
             'strap': '0',
         }
+        log.info('--- REMOTE CALL: avionictools.com')
         async with httpx.AsyncClient() as client:
             r = await client.post(url, data=data)
             r.raise_for_status()
@@ -507,10 +514,8 @@ class Flightaware(commands.Cog):
         await self.redis.set(
             f'pdb:{registration}',
             hex_value,
-            timedelta(minutes=60*24*7),
+            timedelta(days=7),
         )
-        log.debug('hex_value: %s', hex_value)
-        log.debug('hex_value.type: %s', type(hex_value))
         return hex_value
 
     @staticmethod
