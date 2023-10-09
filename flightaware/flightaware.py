@@ -201,10 +201,10 @@ class Flightaware(commands.Cog):
             #     index = i
             #     log.debug('set index on (0 < progress_percent < 100)')
 
-            out = d['scheduled_out'] or d['estimated_out'] or d['actual_out']
-            off = d['scheduled_off'] or d['estimated_off'] or d['actual_off']
-            _on = d['scheduled_on'] or d['estimated_on'] or d['actual_on']
-            _in = d['scheduled_in'] or d['estimated_in'] or d['actual_in']
+            out = d['actual_out'] or d['estimated_out'] or d['scheduled_out']
+            off = d['actual_off'] or d['estimated_off'] or d['scheduled_off']
+            _on = d['actual_on'] or d['estimated_on'] or d['scheduled_on']
+            _in = d['actual_in'] or d['estimated_in'] or d['scheduled_in']
 
             out_dt = datetime.strptime(out, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=None) if out else None
             off_dt = datetime.strptime(off, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=None) if off else None
@@ -251,16 +251,16 @@ class Flightaware(commands.Cog):
             else:
                 msgs.append(f"\n**{d['status']}**")
 
-            if d['registration'] or d['aircraft_type']:
+            if d['aircraft_type']:
                 type_link = f"[{d['aircraft_type']}]({fa.fa_aircraft_url}{d['aircraft_type']})"
+                type_name = await self.get_type_name(d['aircraft_type']) or 'N/A'
 
-            if d['registration']:
-                msgs.append(f"\n\U00002708\U0000FE0F **{type_link} - {d['registration']}**")
+            if d['aircraft_type'] and d['registration']:
+                msgs.append(f"\n\U00002708\U0000FE0F **{type_link} - {type_name} - {d['registration']}**")
                 r_links = await self.aircraft_reg_links(d, fa)
                 msgs.append(f"{r_links}")
-
             elif d['aircraft_type']:
-                msgs.append(f"\n\U00002708\U0000FE0F **{type_link}**")
+                msgs.append(f"\n\U00002708\U0000FE0F **{type_link} - {type_name}**")
                 t_links = await self.aircraft_type_links(d, fa)
                 msgs.append(f"{t_links}")
 
@@ -404,20 +404,29 @@ class Flightaware(commands.Cog):
         view = ButtonsURLView(buttons)
         await ctx.send(unescape(msg), view=view)
 
+    async def get_type_name(self, icao_type: str) -> Optional[str]:
+        try:
+            wiki_data = await self.redis.get('fa:wiki_aircraft_type') or await self.gen_wiki_type_data()
+            aircraft_data: dict = json.loads(wiki_data)
+            if aircraft_data and icao_type in aircraft_data:
+                return aircraft_data[icao_type][0]
+        except Exception as error:
+            log.exception(error)
+
     async def get_wiki_url(self, icao_type: str) -> Optional[str]:
         icao_type = icao_type.upper()
         base_url = 'https://en.wikipedia.org'
         try:
-            aircraft_data: dict = json.loads(await self.redis.get('fa:wiki_aircraft_type') or '{}')
-            if not aircraft_data:
-                aircraft_data = await self.gen_wiki_type_data()
+            wiki_data = await self.redis.get('fa:wiki_aircraft_type') or await self.gen_wiki_type_data()
+            aircraft_data: dict = json.loads(wiki_data)
             if aircraft_data and icao_type in aircraft_data:
-                return f'{base_url}{aircraft_data[icao_type]}'
+                return f'{base_url}{aircraft_data[icao_type][1]}'
         except Exception as error:
             log.exception(error)
 
     async def gen_wiki_type_data(self) -> dict:
         # TODO: Make this a task in a loop
+        log.debug('...gen_wiki_type_data...')
         url = 'https://en.wikipedia.org/wiki/List_of_aircraft_type_designators'
         http_options = {
             'follow_redirects': True,
@@ -431,13 +440,14 @@ class Flightaware(commands.Cog):
         soup = BeautifulSoup(html, 'html.parser')
         rows = soup.find('table').find('tbody').find_all('tr')
         aircraft_data = {}
-        for row in rows:
+        for row in reversed(rows):
             columns = row.find_all('td')
             if not columns:
                 continue
             icao_type = columns[0].text.strip()
             model_href = columns[2].find('a')['href']
-            aircraft_data[icao_type] = model_href
+            type_name = columns[2].find('a').text
+            aircraft_data[icao_type] = [type_name, model_href]
         # log.debug('-'*20)
         # log.debug(aircraft_data)
         await self.redis.set(
