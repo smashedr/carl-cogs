@@ -33,6 +33,7 @@ class Flightaware(commands.Cog):
         self.cog_dir = pathlib.Path(__file__).parent.resolve()
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(**self.guild_default)
+        self.reg_hex: Optional[dict] = None
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
@@ -50,10 +51,22 @@ class Flightaware(commands.Cog):
         )
         await self.redis.ping()
         await self.gen_wiki_type_data()
+        await self.load_reg_hex()
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
+
+    async def load_reg_hex(self):
+        log.debug('load_reg_hex')
+        # if not await self.redis.exists('fa:reg_hex'):
+        if not self.reg_hex:
+            with open(f'{self.cog_dir}/reghex.txt', 'r') as f:
+                log.debug('OPENED REG HEX FILE')
+                self.reg_hex = json.loads(f.read())
+                # log.debug('READ REG HEX DATA TO MEMORY')
+                # await self.redis.hset('fa:reg_hex', mapping=reg_hex)
+                # log.debug('LOADED REG HEX DATA TO REDIS')
 
     @commands.Cog.listener(name='on_message_without_command')
     async def on_message_without_command(self, message: discord.Message):
@@ -492,41 +505,46 @@ class Flightaware(commands.Cog):
     #     await ctx.reply(msg)
 
     async def _get_icao_hex(self, registration: str) -> Optional[str]:
-        cache: str = await self.redis.get(f'pdb:{registration}')
-        if cache:
-            return cache
-        registration = registration.replace('-', '').upper()
-        if registration.startswith('N'):
-            reg_type = '0'
-        elif registration.startswith('C'):
-            reg_type = '1'
-        else:
-            return None
-        url = 'https://www.avionictools.com/icao.php'
-        data = {
-            'type':	reg_type,
-            'data':	registration,
-            'strap': '0',
-        }
-        log.info('--- REMOTE CALL: avionictools.com')
-        async with httpx.AsyncClient() as client:
-            r = await client.post(url, data=data)
-            r.raise_for_status()
-        soup = BeautifulSoup(r.text, 'html.parser')
-        td_elements = soup.find_all('td')
-        for td in td_elements:
-            if 'Hex:' in td.text:
-                hex_value = td.contents[2]
-                break
-        else:
-            return None
-        hex_value = hex_value.split()[1].lower()
-        await self.redis.set(
-            f'pdb:{registration}',
-            hex_value,
-            timedelta(days=7),
-        )
-        return hex_value
+        reg = registration.strip().replace('-', '').upper()
+        log.debug('_get_icao_hex: reg: %s', reg)
+        if self.reg_hex:
+            return self.reg_hex.get(reg)
+
+        # cache: str = await self.redis.get(f'pdb:{registration}')
+        # if cache:
+        #     return cache
+        # registration = registration.replace('-', '').upper()
+        # if registration.startswith('N'):
+        #     reg_type = '0'
+        # elif registration.startswith('C'):
+        #     reg_type = '1'
+        # else:
+        #     return None
+        # url = 'https://www.avionictools.com/icao.php'
+        # data = {
+        #     'type':	reg_type,
+        #     'data':	registration,
+        #     'strap': '0',
+        # }
+        # log.info('--- REMOTE CALL: avionictools.com')
+        # async with httpx.AsyncClient() as client:
+        #     r = await client.post(url, data=data)
+        #     r.raise_for_status()
+        # soup = BeautifulSoup(r.text, 'html.parser')
+        # td_elements = soup.find_all('td')
+        # for td in td_elements:
+        #     if 'Hex:' in td.text:
+        #         hex_value = td.contents[2]
+        #         break
+        # else:
+        #     return None
+        # hex_value = hex_value.split()[1].lower()
+        # await self.redis.set(
+        #     f'pdb:{registration}',
+        #     hex_value,
+        #     timedelta(days=7),
+        # )
+        # return hex_value
 
     @staticmethod
     def airport_links(code_icao: str, fa: FlightAware) -> str:
@@ -537,9 +555,10 @@ class Flightaware(commands.Cog):
         return ' | '.join(links)
 
     async def live_links(self, d: dict, fa: FlightAware) -> str:
-        links = [f"[FlightAware]({fa.fa_flight_url}{d['ident']})"]
+        links = []
         if icao_hex := await self._get_icao_hex(d['registration']):
-            links.append(f"[ADSB-Ex](https://globe.adsbexchange.com/?icao={icao_hex})")
+            links.append(f"[ADSBx](https://globe.adsbexchange.com/?icao={icao_hex})")
+        links.append(f"[FlightAware]({fa.fa_flight_url}{d['ident']})")
         return ' | '.join(links)
 
     async def aircraft_type_links(self, d: dict, fa: FlightAware) -> str:
@@ -556,6 +575,8 @@ class Flightaware(commands.Cog):
             return ''
         links = []
         if d['registration']:
+            if icao_hex := await self._get_icao_hex(d['registration']):
+                links.append(f"[ADSBx](https://globe.adsbexchange.com/?icao={icao_hex})")
             links.append(f"[FA]({fa.fa_registration_url}{d['registration']})")
             links.append(f"[FR24]({fa.fr24_reg_url}{d['registration']})")
             # TODO: Only do this on live flight
