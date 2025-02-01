@@ -17,6 +17,11 @@ class Coolbirbs(commands.Cog):
     base_url = 'https://coolbirbs.com'
     static_url = 'https://static.coolbirbs.com'
 
+    http_options = {
+        'follow_redirects': True,
+        'timeout': 10,
+    }
+
     def __init__(self, bot):
         self.bot = bot
         self.fake = Faker()
@@ -56,7 +61,7 @@ class Coolbirbs(commands.Cog):
         await ctx.send(embed=embed)
 
     async def get_birb(self) -> Tuple[str, str]:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.get(self.base_url)
             r.raise_for_status()
         soup = BeautifulSoup(r.text, 'html.parser')
