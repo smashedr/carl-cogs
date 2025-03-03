@@ -339,7 +339,7 @@ class Weather(commands.Cog):
     def _num(number: Union[float, int], to: Optional[int] = 0,
              prefix: Optional[str] = '', suffix: Optional[str] = '') -> str:
         """Remove Trailing Zeros and Decimal with Prefix and Suffix"""
-        digit = str(round(number, to)).rstrip('0').rstrip('.')
+        digit = str(round(float(number), to)).rstrip('0').rstrip('.')
         return prefix + digit + suffix
 
     # async def get_forecast(self, lat: float, lon: float) -> Dict[str, Any]:

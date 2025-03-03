@@ -58,6 +58,7 @@ class OpenAI(commands.Cog):
         self.headers = {'Authorization': f'Bearer {self.key}'}
         self.bot.tree.add_command(self.msg_chatgpt)
         self.bot.tree.add_command(self.msg_spelling)
+        log.info('httpx.__version__: %s', httpx.__version__)
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):

@@ -38,7 +38,7 @@ class Exif(commands.Cog):
 
     async def cog_load(self):
         log.info('%s: Cog Load Start', self.__cog_name__)
-        data: Dict[str, str] = await self.bot.get_shared_api_tokens('exif')
+        # data: Dict[str, str] = await self.bot.get_shared_api_tokens('exif')
         self.main_loop.start()
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
@@ -89,7 +89,9 @@ class Exif(commands.Cog):
         file = io.BytesIO(r.content)
         image = Image.open(file)
         exif_data = image.getexif()
+        log.debug(exif_data)
         gps_ifd = exif_data.get_ifd(ExifTags.IFD.GPSInfo)
+        log.debug(gps_ifd)
         url = self.geohack_url_from_exif(gps_ifd)
         if not url:
             return log.info('NO GPS URL from geohack_url_from_exif')
@@ -120,14 +122,13 @@ class Exif(commands.Cog):
                                channel: Optional[discord.TextChannel],
                                silent: Optional[bool]):
         """Set Channel(s) for Exif"""
-        channel: discord.TextChannel
         if not channel:
             await self.config.guild(ctx.guild).channel.set(0)
             return await ctx.send('\U0001F7E2 Disabled. Specify a channel to Enable.', ephemeral=True)
 
         log.debug('channel: %s', channel)
         log.debug('channel.type: %s', channel.type)
-        if not str(channel.type) == 'text':
+        if str(channel.type) != 'text':
             return await ctx.send('\U0001F534 Channel must be a Text Channel.', ephemeral=True)
 
         guild_data = {'channel': channel.id, 'silent': silent}
@@ -193,7 +194,7 @@ class ChannelView(discord.ui.View):
             channels.append(value)
         if not channels:
             await self.cog.config.guild(interaction.guild).channels.set([])
-            msg = f'\U00002705 Exif Channels Cleared.'
+            msg = '\U00002705 Exif Channels Cleared.'
             return await response.send_message(msg, ephemeral=True, delete_after=self.delete_after)
         ids = [x.id for x in channels]
         await self.cog.config.guild(interaction.guild).channels.set(ids)

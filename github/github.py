@@ -210,12 +210,14 @@ class Github(commands.Cog):
 
     @_github.command(name='action', aliases=['act'])
     @commands.max_concurrency(1, commands.BucketType.guild)
-    async def _github_action(self, ctx: commands.Context, repo: str):
+    async def _github_action(self, ctx: commands.Context, repo: str, event_type: str = 'webhook'):
         """Run GitHub Action for owner/repo
         <repo>: `owner/repo` The full name of the repository.
+        <event_type>: Optional event_type to send.
         Example: `django/django`
         """
         log.debug('repo: %s', repo)
+        log.debug('event_type: %s', event_type)
         user_conf: Dict[str, Any] = await self.config.user(ctx.author).all()
         if not user_conf['token']:
             view = ModalView(self)
@@ -235,7 +237,7 @@ class Github(commands.Cog):
         }
         log.debug('headers: %s', headers)
         async with httpx.AsyncClient(**self.http_options) as client:
-            r = await client.post(url, headers=headers, json={"event_type": "webhook"})
+            r = await client.post(url, headers=headers, json={"event_type": event_type})
         log.debug('r.status_code: %s', r.status_code)
         log.debug('r.content: %s', r.content)
         r.raise_for_status()

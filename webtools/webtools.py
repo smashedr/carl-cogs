@@ -76,6 +76,29 @@ class Webtools(commands.Cog):
             self.bot.remove_command('ping')
         self.bot.add_command(self.ping_cmd)
 
+    @commands.command(name='mac', aliases=['macaddress', 'macaddr'])
+    async def mac_command(self, ctx: commands.Context, mac: str):
+        await ctx.typing()
+        log.debug('mac: %s', mac)
+        url = f'https://api.maclookup.app/v2/macs/{mac}'
+        log.debug('url: %s', url)
+        async with httpx.AsyncClient(**self.http_options) as client:
+            r = await client.get(url)
+        if not r.is_success:
+            return await ctx.send(f'⛔ Error `{r.status_code}` performing lookup for mac: **{mac}**')
+        data = r.json()
+        log.debug(data)
+        if not data['success']:
+            return await ctx.send('⛔ Error: Lookup Not Successful')
+        if not data['found']:
+            return await ctx.send('⛔ Error: Lookup Failed')
+        message = (
+            f"Result for: `{mac}`\n"
+            f"Company: **{data['company']}**\n"
+            f"Address: **{data['address']}**\n"
+        )
+        await ctx.send(message)
+
     @commands.command(name='whois', aliases=['who'])
     async def whois_command(self, ctx: commands.Context, hostname: str):
         await ctx.typing()

@@ -556,8 +556,8 @@ class Flightaware(commands.Cog):
 
     async def live_links(self, d: dict, fa: FlightAware) -> str:
         links = []
-        if icao_hex := await self._get_icao_hex(d['registration']):
-            links.append(f"[ADSBx](https://globe.adsbexchange.com/?icao={icao_hex})")
+        # if icao_hex := await self._get_icao_hex(d['registration']):
+        links.append(f"[ADSBx](https://globe.adsbexchange.com/?reg={d['registration']})")
         links.append(f"[FlightAware]({fa.fa_flight_url}{d['ident']})")
         return ' | '.join(links)
 
@@ -663,14 +663,14 @@ class EmbedsView(discord.ui.View):
     @discord.ui.button(label='Next', style=discord.ButtonStyle.green)
     async def next_button(self, interaction, button):
         # await self.disable_enable_buttons(interaction)
-        if not self.index < len(self.embeds) - 1:
+        if self.index >= len(self.embeds) - 1:
             return await interaction.response.edit_message()
         self.index = self.index + 1
         await interaction.response.edit_message(embed=self.embeds[self.index])
 
     @discord.ui.button(label='Delete', style=discord.ButtonStyle.red)
     async def delete_button(self, interaction, button):
-        if not interaction.user.id == self.user_id:
+        if interaction.user.id != self.user_id:
             msg = ("⛔ Looks like you didn't create this response.\n"
                    "You can create your own response with the `/history` command.")
             return await interaction.response.send_message(msg, ephemeral=True, delete_after=10)
