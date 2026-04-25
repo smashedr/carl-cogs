@@ -50,7 +50,10 @@ class Flightaware(commands.Cog):
             decode_responses=True,
         )
         await self.redis.ping()
-        await self.gen_wiki_type_data()
+        try:
+            await self.gen_wiki_type_data()
+        except Exception as error:
+            log.info('Error: gen_wiki_type_data: %s', error)
         await self.load_reg_hex()
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
