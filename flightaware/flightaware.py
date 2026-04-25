@@ -49,11 +49,14 @@ class Flightaware(commands.Cog):
             password=redis_data.get('pass', None),
             decode_responses=True,
         )
+        log.info('Load: redis.ping')
         await self.redis.ping()
+        log.info('Load: gen_wiki_type_data')
         try:
             await self.gen_wiki_type_data()
         except Exception as error:
             log.info('Error: gen_wiki_type_data: %s', error)
+        log.info('Load: load_reg_hex')
         await self.load_reg_hex()
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
@@ -450,7 +453,8 @@ class Flightaware(commands.Cog):
         }
         log.info('--- REMOTE CALL: wikipedia.org')
         async with httpx.AsyncClient(**http_options) as client:
-            r = await client.get(url)
+            headers = {'User-Agent': 'carl-cogs/1.0 (https://github.com/smashedr/carl-cogs)'}
+            r = await client.get(url, headers=headers)
             r.raise_for_status()
         html = r.text
         soup = BeautifulSoup(html, 'html.parser')
