@@ -24,7 +24,7 @@ class OpenAI(commands.Cog):
         'follow_redirects': True,
         'timeout': 30,
     }
-    max_tokens = 480
+    max_tokens = 380
 
     def __init__(self, bot):
         self.bot = bot
