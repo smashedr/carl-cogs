@@ -8,7 +8,7 @@ import validators
 import redis.asyncio as redis
 from datetime import timedelta
 from PIL import Image
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Union
 
 from redbot.core import commands, app_commands
 
@@ -24,13 +24,13 @@ class OpenAI(commands.Cog):
         'follow_redirects': True,
         'timeout': 30,
     }
-    max_tokens = 380
+    max_tokens = 2000
+    model: str = 'gpt-4.1-mini'  # default model is overridden with set api command
 
     def __init__(self, bot):
         self.bot = bot
         self.redis: Optional[redis.Redis] = None
         self.key: Optional[str] = None
-        self.model: str = 'gpt-4.1-mini'
         self.headers: Optional[Dict[str, str]] = None
         self.msg_chatgpt = discord.app_commands.ContextMenu(
             name="AI ChatGPT",
@@ -54,18 +54,29 @@ class OpenAI(commands.Cog):
         )
         await self.redis.ping()
         data: Dict[str, str] = await self.bot.get_shared_api_tokens('openai')
+        log.debug('%s: data: %s', self.__cog_name__, data)
         self.key = data.get('api') or data.get('key') or data.get('token') or data['api_key']
         self.model = data.get('model', self.model)
+        log.debug('%s: model: %s', self.__cog_name__, self.model)
         self.headers = {'Authorization': f'Bearer {self.key}'}
         self.bot.tree.add_command(self.msg_chatgpt)
         self.bot.tree.add_command(self.msg_spelling)
-        log.info('httpx.__version__: %s', httpx.__version__)
+        log.debug('httpx.__version__: %s', httpx.__version__)
         log.info('%s: Cog Load Finish', self.__cog_name__)
 
     async def cog_unload(self):
         log.info('%s: Cog Unload', self.__cog_name__)
         self.bot.tree.remove_command("AI ChatGPT", type=discord.AppCommandType.message)
         self.bot.tree.remove_command("AI Spelling", type=discord.AppCommandType.message)
+
+    @staticmethod
+    async def send_message(ctx: Union[commands.Context, discord.TextChannel], message: str):
+        if len(message) <= 2000:
+            return await ctx.send(message)
+        else:
+            buffer = io.BytesIO(message.encode("utf-8"))
+            file = discord.File(buffer, filename="response.txt")
+            await ctx.send(file=file)
 
     async def msg_chatgpt_callback(self, interaction, message: discord.Message):
         if not message.content:
@@ -265,7 +276,8 @@ class OpenAI(commands.Cog):
         try:
             messages.append({'role': 'user', 'content': question})
             chat_response = await self.query_n_save(ctx, messages)
-            await ctx.send(chat_response)
+            # await ctx.send(chat_response)
+            await self.send_message(ctx, chat_response)
 
         except Exception as error:
             log.exception(error)
@@ -288,7 +300,8 @@ class OpenAI(commands.Cog):
                 {'role': 'user', 'content': question},
             ]
             chat_response = await self.query_n_save(ctx, messages)
-            await ctx.send(chat_response)
+            # await ctx.send(chat_response)
+            await self.send_message(ctx, chat_response)
         except Exception as error:
             log.exception(error)
             await ctx.send(f'Error performing lookup: `{error}`', delete_after=10)
