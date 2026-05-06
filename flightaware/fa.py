@@ -20,6 +20,7 @@ class FlightAware(object):
     jetphotos_url = 'https://www.jetphotos.com/registration/'
     liveatc_url = 'https://www.liveatc.net/search/?icao='
     airnav_url = 'https://www.airnav.com/airport/'
+    avherald_url = 'https://avherald.com/h?dosearch=1&search_term='
 
     url = 'https://aeroapi.flightaware.com/aeroapi'
     http_options = {

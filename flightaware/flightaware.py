@@ -591,6 +591,7 @@ class Flightaware(commands.Cog):
             #     links.append(f"[ADSBE](https://globe.adsbexchange.com/?icao={icao_hex})")
             links.append(f"[AirFleets]({fa.airfleets_search_url}{d['registration']})")
             links.append(f"[JetPhotos]({fa.jetphotos_url}{d['registration']})")
+            links.append(f"[AvHerald]({fa.avherald_url}{d['registration']})")
         return ' | '.join(links)
 
         # if not d['registration'] and d['aircraft_type']:
