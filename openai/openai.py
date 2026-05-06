@@ -24,12 +24,13 @@ class OpenAI(commands.Cog):
         'follow_redirects': True,
         'timeout': 30,
     }
+    max_tokens = 480
 
     def __init__(self, bot):
         self.bot = bot
         self.redis: Optional[redis.Redis] = None
         self.key: Optional[str] = None
-        self.model: str = 'gpt-3.5-turbo'
+        self.model: str = 'gpt-4.1-mini'
         self.headers: Optional[Dict[str, str]] = None
         self.msg_chatgpt = discord.app_commands.ContextMenu(
             name="AI ChatGPT",
@@ -460,7 +461,7 @@ class OpenAI(commands.Cog):
 
     async def openai_completions(self, messages: List):
         url = 'https://api.openai.com/v1/chat/completions'
-        data = {'model': self.model, 'messages': messages}
+        data = {'model': self.model, 'messages': messages, 'max_tokens': self.max_tokens}
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.post(url=url, headers=self.headers, json=data)
             log.error('r.status_code: %s', r.status_code)
