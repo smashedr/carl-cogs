@@ -1,20 +1,12 @@
-import asyncio
 import base64
-
 import discord
 import httpx
 import io
-import json
 import logging
-import re
-import validators
-import redis.asyncio as redis
-from datetime import timedelta
-from PIL import Image
-from typing import Any, Optional, List, Dict, Union
+from typing import Any, Optional, Dict
 from collections.abc import Callable, Coroutine
 
-from redbot.core import commands, app_commands
+from redbot.core import commands
 
 Sendable = Callable[..., Coroutine[Any, Any, discord.Message]]  # TODO: see how useful this type is...
 

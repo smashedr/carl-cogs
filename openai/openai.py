@@ -370,7 +370,7 @@ class OpenAI(commands.Cog):
             quality = img_response.get("quality", "unknown")
             background = img_response.get("background", "unknown")
             chat_response = (
-                f"Generated a `{file_ext}` image at size `{size} in quality `{quality}` "
+                f"Generated a `{file_ext}` image at size `{size}` in quality `{quality}` "
                 f"with an `{background}` background.\n> {query}"
             )
             await ctx.send(chat_response, file=file)
