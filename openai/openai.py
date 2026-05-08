@@ -9,7 +9,7 @@ import validators
 import redis.asyncio as redis
 from datetime import timedelta
 from PIL import Image
-from typing import Optional, List, Dict, Union
+from typing import Optional, List, Dict, Callable
 
 from redbot.core import commands, app_commands
 
@@ -60,6 +60,7 @@ class OpenAI(commands.Cog):
         self.model = data.get("model", self.model)
         log.debug("%s: model: %s", self.__cog_name__, self.model)
         self.headers = {"Authorization": f"Bearer {self.key}"}
+
         self.bot.tree.add_command(self.msg_chatgpt)
         # self.bot.tree.add_command(self.msg_spelling)
         log.debug("httpx.__version__: %s", httpx.__version__)
@@ -69,15 +70,6 @@ class OpenAI(commands.Cog):
         log.info("%s: Cog Unload", self.__cog_name__)
         self.bot.tree.remove_command("AI ChatGPT", type=discord.AppCommandType.message)
         # self.bot.tree.remove_command("AI Spelling", type=discord.AppCommandType.message)
-
-    @staticmethod
-    async def send_message(ctx: Union[commands.Context, discord.TextChannel], message: str):
-        if len(message) <= 2000:
-            return await ctx.send(message)
-        else:
-            buffer = io.BytesIO(message.encode("utf-8"))
-            file = discord.File(buffer, filename="response.txt")
-            await ctx.send(file=file)
 
     async def msg_chatgpt_callback(self, interaction, message: discord.Message):
         if not message.content:
@@ -181,7 +173,7 @@ class OpenAI(commands.Cog):
             data = await self.openai_completions(messages)
             log.debug(data)
             chat_response = data["choices"][0]["message"]["content"]
-            await match.reply(chat_response)
+            await self.send_text(match.reply, chat_response)
 
         except Exception as error:
             log.exception(error)
@@ -281,7 +273,7 @@ class OpenAI(commands.Cog):
             messages.append({"role": "user", "content": question})
             chat_response = await self.query_n_save(ctx, messages)
             # await ctx.send(chat_response)
-            await self.send_message(ctx, chat_response)
+            await self.send_text(ctx.send, chat_response)
 
         except Exception as error:
             log.exception(error)
@@ -302,7 +294,7 @@ class OpenAI(commands.Cog):
             ]
             chat_response = await self.query_n_save(ctx, messages)
             # await ctx.send(chat_response)
-            await self.send_message(ctx, chat_response)
+            await self.send_text(ctx.send, chat_response)
         except Exception as error:
             log.exception(error)
             await ctx.send(f"Error performing lookup: `{error}`", delete_after=10)
@@ -534,3 +526,12 @@ class OpenAI(commands.Cog):
                 best_diff = diff
         log.debug("best_size: %s", best_size)
         return best_size
+
+    @staticmethod
+    async def send_text(send: Callable, message: str):
+        if len(message) < 2000:
+            return await send(message)
+        else:
+            buffer = io.BytesIO(message.encode("utf-8"))
+            file = discord.File(buffer, filename="response.txt")
+            await send(file=file)

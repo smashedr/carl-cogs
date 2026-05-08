@@ -3,12 +3,10 @@ import discord
 import httpx
 import io
 import logging
-from typing import Any, Optional, Dict
-from collections.abc import Callable, Coroutine
+from typing import Optional, Dict
+from collections.abc import Callable
 
 from redbot.core import commands
-
-Sendable = Callable[..., Coroutine[Any, Any, discord.Message]]  # TODO: see how useful this type is...
 
 log = logging.getLogger("red.geoimage")
 
@@ -69,9 +67,7 @@ class GeoImage(commands.Cog):
 
     async def cog_unload(self):
         log.info("%s: Cog Unload", self.__cog_name__)
-        self.bot.tree.remove_command("AI ChatGPT", type=discord.AppCommandType.message)
-        self.bot.tree.remove_command("AI Spelling", type=discord.AppCommandType.message)
-        self.bot.tree.remove_command("AI GeoImage", type=discord.AppCommandType.message)
+        self.bot.tree.remove_command("GeoImage", type=discord.AppCommandType.message)
 
     async def msg_geoimage_callback(self, interaction, message: discord.Message):
         log.debug("msg_geoimage_callback: %s", message)
@@ -105,7 +101,7 @@ class GeoImage(commands.Cog):
         log.info("in: %s, out: %s, thought: %s, total: %s", in_t, out_t, tho_t, tot_t)
         if in_t or out_t or tot_t:
             text = f"{text}\n\n_In: {in_t} / Out: {out_t} / Thought: {tho_t} / Total: {tot_t}_"
-        await self.send_message(interaction.followup.send, text)
+        await self.send_text(interaction.followup.send, text)
 
         # messages = [
         #     {
@@ -172,15 +168,6 @@ class GeoImage(commands.Cog):
         return r.json()
 
     @staticmethod
-    async def send_message(send: Sendable, message: str):
-        if len(message) < 2000:
-            return await send(message)
-        else:
-            buffer = io.BytesIO(message.encode("utf-8"))
-            file = discord.File(buffer, filename="response.txt")
-            await send(file=file)
-
-    @staticmethod
     def get_first_url(message: discord.Message) -> Optional[str]:
         log.debug("attachments: %s", message.attachments)
         if message.attachments:
@@ -195,3 +182,12 @@ class GeoImage(commands.Cog):
 
         text = message.content
         log.debug("text: %s", text)
+
+    @staticmethod
+    async def send_text(send: Callable, message: str):
+        if len(message) < 2000:
+            return await send(message)
+        else:
+            buffer = io.BytesIO(message.encode("utf-8"))
+            file = discord.File(buffer, filename="response.txt")
+            await send(file=file)
