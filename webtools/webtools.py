@@ -173,7 +173,7 @@ class Webtools(commands.Cog):
         embed.add_field(name='Headers', value=cf.box(r.headers))
         await ctx.send(embed=embed)
 
-    @commands.command(name='ipinfo', aliases=['ip', 'ipaddr', 'ipaddress', 'geo'])
+    @commands.command(name='ipinfo', aliases=['ip', 'ipaddr', 'ipaddress'])
     async def ipinfo_command(self, ctx: commands.Context, ip_address: str):
         await ctx.typing()
         try:
