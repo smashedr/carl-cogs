@@ -1,0 +1,17 @@
+{
+  "name": "Gemini",
+  "author": ["Shane#0816"],
+  "short": "Carl's Gemini Module.",
+  "description": "Gemini in Discord.",
+  "install_msg": "Get started with `[p]help Gemini`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "tags": ["redis", "wip"],
+  "requirements": ["httpx", "pillow", "redis", "validators"],
+  "permissions": [],
+  "required_cogs": {},
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 10, 0],
+  "disabled": false,
+  "hidden": false,
+  "type": "COG"
+}
