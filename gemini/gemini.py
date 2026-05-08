@@ -8,29 +8,26 @@ from collections.abc import Callable
 
 from redbot.core import commands
 
-log = logging.getLogger("red.geoimage")
+log = logging.getLogger("red.gemini")
 
 
-class GeoImage(commands.Cog):
-    """Carl's GeoImage Cog"""
+class Gemini(commands.Cog):
+    """Carl's Gemini Cog"""
 
-    model: str = "gpt-4o-mini"  # default model is overridden with set api command
-    max_tokens = 2000
+    # model: str = "gpt-4o-mini"  # default model is overridden with set api command
+    # max_tokens = 2000
     http_options = {
         "follow_redirects": True,
         "timeout": 30,
     }
 
     prompt = (
-        "Analyze this image and identify any geographic or location clues. "
-        "Describe landmarks, signs, vegetation, architecture, terrain, or anything "
-        "that could help determine where this photo was taken. "
+        "You are an expert geolocation analyst. "
+        "Your task is to determine the precise geographic location shown in an image using a systematic, hierarchical chain-of-thought methodology. "
+        "A short 2-3 paragraph summary: what you see, what it tells you, and your conclusion. "
         "Give your best guess at a specific location with reasoning. "
-        "Attempt to determine the exact GPS coordinates and provide a link to GeoHack. "
-        "Example GeoHack URL with example query strings and gps coords format: "
-        "(https://geohack.toolforge.org/geohack.php?params=47.6601_N_122.3338_W&pagename=United%20States%2C%20Washington%2C%20Seattle). "
-        "Please provide a concise response in 2-3 paragraphs. "
-        "The repose will be posted directly in Discord, so please format accordingly."
+        "Provide a GeoHack URL with these example query strings and format: "
+        "<https://geohack.toolforge.org/geohack.php?params=47.6601_N_122.3338_W&pagename=United%20States%2C%20Washington%2C%20Seattle> "
     )
 
     def __init__(self, bot):
@@ -54,12 +51,12 @@ class GeoImage(commands.Cog):
         #     password=redis_data.get('pass', None),
         # )
         # await self.redis.ping()
-        data: Dict[str, str] = await self.bot.get_shared_api_tokens("geoimage")
+        data: Dict[str, str] = await self.bot.get_shared_api_tokens("gemini")
         log.debug("%s: data: %s", self.__cog_name__, data)
         self.key = data.get("api") or data.get("key") or data.get("token") or data["api_key"]
         log.debug("%s: api_key: %s", self.__cog_name__, self.key)
-        self.model = data.get("model", self.model)
-        log.debug("%s: model: %s", self.__cog_name__, self.model)
+        # self.model = data.get("model", self.model)
+        # log.debug("%s: model: %s", self.__cog_name__, self.model)
         self.headers = {"x-goog-api-key": self.key}
 
         self.bot.tree.add_command(self.msg_geoimage)

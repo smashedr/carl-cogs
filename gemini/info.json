@@ -1,9 +1,9 @@
 {
-  "name": "GeoImage",
+  "name": "Gemini",
   "author": ["Shane#0816"],
-  "short": "Carl's GeoImage Module.",
-  "description": "GeoImage in Discord.",
-  "install_msg": "Get started with `[p]help GeoImage`",
+  "short": "Carl's Gemini Module.",
+  "description": "Gemini in Discord.",
+  "install_msg": "Get started with `[p]help Gemini`",
   "end_user_data_statement": "Caveat Emptor.",
   "tags": ["redis", "wip"],
   "requirements": ["httpx", "pillow", "redis", "validators"],

@@ -1,9 +1,9 @@
 [![WIP](https://img.shields.io/badge/tag-WIP-orange?logo=git&logoColor=white)](../README.md#tags)
 [![Redis](https://img.shields.io/badge/tag-Redis-yellow?logo=git&logoColor=white)](../README.md#redis)
 
-# GeoImage
+# Gemini
 
-GeoImage and ChatGPT Commands.
+Gemini and ChatGPT Commands.
 
 **WIP:** This is a Work in Progress and may not work as expected.
 
@@ -12,13 +12,13 @@ GeoImage and ChatGPT Commands.
 ## Install
 
 ```text
-[p]cog install carl-cogs openai
-[p]load openai
+[p]cog install carl-cogs gemini
+[p]load gemini
 
-[p]help GeoImage
+[p]help Gemini
 ```
 
 ---
 
-[Open an Issue](https://github.com/smashedr/carl-cogs/issues/new?title=OpenAI) |
+[Open an Issue](https://github.com/smashedr/carl-cogs/issues/new?title=Gemini) |
 [Back to All Cogs](../README.md#public-cogs)
