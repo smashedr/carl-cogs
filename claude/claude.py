@@ -126,8 +126,12 @@ class Claude(commands.Cog):
         in_t = usage.get("input_tokens", 0)
         out_t = usage.get("output_tokens", 0)
 
-        in_cost = in_t * (3.00 / 1_000_000)
-        out_cost = out_t * (15.00 / 1_000_000)
+        in_cost = in_t * (1.00 / 1_000_000)
+        out_cost = out_t * (5.00 / 1_000_000)
+        # in_cost = in_t * (3.00 / 1_000_000)
+        # out_cost = out_t * (15.00 / 1_000_000)
+        # in_cost = in_t * (5.00 / 1_000_000)
+        # out_cost = out_t * (25.00 / 1_000_000)
         tot_cost = in_cost + out_cost
 
         log.info("in: %s, out: %s, total: %s", in_t, out_t, in_t + out_t)
