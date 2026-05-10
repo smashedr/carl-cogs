@@ -72,9 +72,26 @@ class Claude(commands.Cog):
         text = await self.claude_response(message.content)
         await self.send_text(interaction.followup.send, text)
 
-    # @commands.Cog.listener(name='on_message_without_command')
-    # async def on_message_without_command(self, message: discord.Message):
-    #     log.debug('on_message_without_command: %s', message)
+    @commands.Cog.listener(name="on_message_without_command")
+    async def on_message_without_command(self, message: discord.Message) -> None:
+        """Listener."""
+        if message.author.bot:
+            return
+        # log.debug(message)
+        if message.content.startswith("claude"):
+            content = message.content.removeprefix("claude").lstrip(", ")
+            log.debug("claude - content: %s", message.reference.resolved)
+            if message.reference:
+                replied_to = message.reference.resolved
+                log.debug(f"replied_to: {replied_to}")
+                if replied_to is None:
+                    replied_to = await message.channel.fetch_message(message.reference.message_id)
+                log.debug(f"replied_to.content: {replied_to.content}")
+                content += f"\n\nMessage User Replied Too:\n\n{replied_to.content}"
+            log.debug(f"content: {content}")
+            async with message.channel.typing():
+                text = await self.claude_response(content)
+                await self.send_text(message.channel.send, text)
 
     @commands.hybrid_command(name="claude", aliases=["claud", "clade"], description="Claude Command")
     async def claude_cmd(self, ctx: commands.Context, *, question: str):
