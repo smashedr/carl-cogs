@@ -1,9 +1,14 @@
+import json
+import re
+from datetime import timedelta
+
 import discord
 import httpx
 import io
 import logging
 from typing import Optional, Dict
 from collections.abc import Callable
+import redis.asyncio as redis
 
 # from anthropic import Anthropic
 
@@ -15,8 +20,12 @@ log = logging.getLogger("red.claude")
 class Claude(commands.Cog):
     """Carl's Claude Cog"""
 
-    model: str = "claude-sonnet-4-6"  # default model is overridden with set api command
+    model: str = "claude-haiku-4-5"  # default model is overridden with set api command
     max_tokens = 1024
+
+    chat_expire_min = 30
+    chat_max_messages = 16
+
     http_options = {
         "follow_redirects": True,
         "timeout": 30,
@@ -29,7 +38,7 @@ class Claude(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        # self.redis: Optional[redis.Redis] = None
+        self.redis: Optional[redis.Redis] = None
         self.key: Optional[str] = None
         self.headers: Optional[Dict[str, str]] = None
         self.msg_claude = discord.app_commands.ContextMenu(
@@ -41,14 +50,14 @@ class Claude(commands.Cog):
 
     async def cog_load(self):
         log.info("%s: Cog Load Start", self.__cog_name__)
-        # redis_data: dict = await self.bot.get_shared_api_tokens('redis')
-        # self.redis = redis.Redis(
-        #     host=redis_data.get('host', 'redis'),
-        #     port=int(redis_data.get('port', 6379)),
-        #     db=int(redis_data.get('db', 0)),
-        #     password=redis_data.get('pass', None),
-        # )
-        # await self.redis.ping()
+        redis_data: dict = await self.bot.get_shared_api_tokens("redis")
+        self.redis = redis.Redis(
+            host=redis_data.get("host", "redis"),
+            port=int(redis_data.get("port", 6379)),
+            db=int(redis_data.get("db", 0)),
+            password=redis_data.get("pass", None),
+        )
+        await self.redis.ping()
         data: Dict[str, str] = await self.bot.get_shared_api_tokens("claude")
         log.debug("%s: data: %s", self.__cog_name__, data)
         self.key = data.get("api") or data.get("key") or data.get("token") or data["api_key"]
@@ -77,21 +86,69 @@ class Claude(commands.Cog):
         """Listener."""
         if message.author.bot:
             return
+        # if not message.content.startswith("claude"):
+        #     return
+        pattern = re.compile(r"^((hey|yo)[,\s]+)?(claude|carl)\b", re.IGNORECASE)
+        if not pattern.match(message.content):
+            return
+
         # log.debug(message)
-        if message.content.startswith("claude"):
-            content = message.content.removeprefix("claude").lstrip(", ")
-            log.debug("claude - content: %s", content)
-            if message.reference:
-                replied_to = message.reference.resolved
-                log.debug(f"replied_to: {replied_to}")
-                if replied_to is None:
-                    replied_to = await message.channel.fetch_message(message.reference.message_id)
-                log.debug(f"replied_to.content: {replied_to.content}")
-                content += f"\n\nMessage User Replied Too:\n\n{replied_to.content}"
-            log.debug(f"content: {content}")
-            async with message.channel.typing():
-                text = await self.claude_response(content)
-                await self.send_text(message.channel.send, text)
+        # await message.channel.send("PASS")
+        # return
+
+        await message.channel.typing()
+
+        content = pattern.sub("", message.content, count=1).lstrip(" ,")
+        log.debug("CLAUDE - content: %s", content)
+        if not content:
+            await message.channel.send("I hear you, but I don't see your question...")
+            return
+
+        # await message.channel.send("FAIL")
+        # return
+
+        if content == "clear":
+            stored = await self.redis.get(f"claude:{message.author.id}")
+            log.debug("stored: %s", stored)
+            if stored:
+                messages = json.loads(stored)
+                await self.redis.delete(f"claude:{message.author.id}")
+                await message.channel.send(f"💬 Cleared {len(messages)} Messages")
+            else:
+                await message.channel.send("✅ No Claude History")
+            return
+
+        if content == "history":
+            stored = await self.redis.get(f"claude:{message.author.id}")
+            log.debug("stored: %s", stored)
+            if stored:
+                messages = json.loads(stored)
+                await message.channel.send(f"💬 Found {len(messages)} Messages")
+            else:
+                await message.channel.send("✅ No Claude History")
+            return
+
+        # await message.channel.send("DEBUG")
+        # return
+
+        if not message.reference:
+            data = await self.history_message(message.author.id, content)
+            text = data["content"][0]["text"]
+            text = self.append_usage(data, text)
+            await self.send_text(message.channel.send, text)
+            return
+
+        # TODO: Add history to replies...
+        replied_to = message.reference.resolved
+        log.debug(f"replied_to: {replied_to}")
+        if replied_to is None:
+            replied_to = await message.channel.fetch_message(message.reference.message_id)
+        log.debug(f"replied_to.content: {replied_to.content}")
+        content += f"\n\nMessage User Replied Too:\n\n{replied_to.content}"
+        log.debug(f"content: {content}")
+        async with message.channel.typing():
+            text = await self.claude_response(content)
+            await self.send_text(message.channel.send, text)
 
     @commands.hybrid_command(name="claude", aliases=["claud", "clade"], description="Claude Command")
     async def claude_cmd(self, ctx: commands.Context, *, question: str):
@@ -99,8 +156,84 @@ class Claude(commands.Cog):
         log.debug("claude_cmd - question: %s", question)
         # await ctx.typing()
         async with ctx.typing():
-            text = await self.claude_response(question)
+            data = await self.history_message(ctx.author.id, question)
+            text = data["content"][0]["text"]
             await self.send_text(ctx.send, text)
+
+    async def history_message(self, author_id: int, content: str):
+        log.debug("history_message - content: %s", content)
+        stored = await self.redis.get(f"claude:{author_id}")
+        messages = json.loads(stored) if stored else []
+        messages.append({"role": "user", "content": content})
+        log.debug("messages: %s", messages)
+
+        data = await self.claude_messages(messages)
+        log.debug("data: %s", data)
+
+        text = data["content"][0]["text"]
+        log.debug("text: %s", text)
+
+        messages.append({"role": "assistant", "content": text})
+        log.debug("messages: %s", messages)
+        await self.redis.setex(
+            f"claude:{author_id}",
+            timedelta(minutes=self.chat_expire_min),
+            json.dumps(messages[-self.chat_max_messages :]),
+        )
+        return data
+
+    def append_usage(self, response: dict, content):
+        usage = self.parse_usage(response)
+        if usage:
+            content += f"\n\n_{usage}_"
+        return content
+
+    def parse_usage(self, response: dict):
+        usage = response.get("usage", {})
+        log.info("parse_usage: %s", usage)
+        in_t = usage.get("input_tokens", 0)
+        out_t = usage.get("output_tokens", 0)
+        in_cost, out_cost = 0, 0
+        if "haiku" in self.model:
+            in_cost = in_t * (1.00 / 1_000_000)
+            out_cost = out_t * (5.00 / 1_000_000)
+        elif "sonnet" in self.model:
+            in_cost = in_t * (3.00 / 1_000_000)
+            out_cost = out_t * (15.00 / 1_000_000)
+        elif "opus" in self.model:
+            in_cost = in_t * (5.00 / 1_000_000)
+            out_cost = out_t * (25.00 / 1_000_000)
+        else:
+            log.warning("Unknown Model: %s", self.model)
+        tot_cost = in_cost + out_cost
+        log.info("in: %s, out: %s, total: %s cost: %s", in_t, out_t, in_t + out_t, tot_cost)
+        result = ""
+        if in_t or out_t:
+            result += f"In: {in_t} / Out: {out_t} / Total: {in_t + out_t} / Cost: ${tot_cost:.4f}"
+        return result
+
+    async def claude_messages(self, messages):
+        log.debug("claude_messages - messages: %s", messages)
+        url = "https://api.anthropic.com/v1/messages"
+        headers = {
+            "x-api-key": self.key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        }
+        data = {
+            "model": self.model,
+            "max_tokens": self.max_tokens,
+            "system": self.instructions,
+            "messages": messages,
+        }
+        log.debug("data: %s", data)
+        async with httpx.AsyncClient(**self.http_options) as client:
+            r = await client.post(url=url, headers=headers, json=data)
+            log.debug("r.status_code: %s", r.status_code)
+            r.raise_for_status()
+        response = r.json()
+        log.debug("response: %s", response)
+        return response
 
     # async def claude_response(self, message):
     #     log.debug("claude_response - message: %s", message)
