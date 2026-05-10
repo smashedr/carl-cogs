@@ -80,7 +80,7 @@ class Claude(commands.Cog):
         # log.debug(message)
         if message.content.startswith("claude"):
             content = message.content.removeprefix("claude").lstrip(", ")
-            log.debug("claude - content: %s", message.reference.resolved)
+            log.debug("claude - content: %s", content)
             if message.reference:
                 replied_to = message.reference.resolved
                 log.debug(f"replied_to: {replied_to}")
