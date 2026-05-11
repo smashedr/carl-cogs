@@ -16,16 +16,21 @@ log = logging.getLogger("red.aichat")
 
 MODEL_PRICING = {
     # # GPT-5.4 series
-    "gpt-5.4-mini": (0.75, 4.50),
-    "gpt-5.4-nano": (0.20, 1.25),
+    # "gpt-5.4-mini": (0.75, 4.50),
+    "gpt-5.4-mini": (0.375, 2.25),  # flex
+    # "gpt-5.4-nano": (0.20, 1.25),
+    "gpt-5.4-nano": (0.10, 0.625),  # flex
     # # GPT-5.2 series
     # "gpt-5.2": (1.75, 14.00),
     # # GPT-5.1 series
     # "gpt-5.1": (1.25, 10.00),
     # # GPT-5 series
     # "gpt-5": (1.25, 10.00),
-    "gpt-5-mini": (0.25, 2.00),
-    "gpt-5-nano": (0.05, 0.40),
+    "gpt-5": (0.625, 5.00),  # flex
+    # "gpt-5-mini": (0.25, 2.00),
+    "gpt-5-mini": (0.125, 1.00),  # flex
+    # "gpt-5-nano": (0.05, 0.40),
+    "gpt-5-nano": (0.025, 0.20),  # flex
     # # GPT-4.1 series
     "gpt-4.1-mini": (0.40, 1.60),
     "gpt-4.1-nano": (0.10, 0.40),
@@ -49,7 +54,7 @@ class AIChat(commands.Cog):
     chat_messages = 25
     http_options = {
         "follow_redirects": True,
-        "timeout": 180,
+        "timeout": 60,
     }
 
     def __init__(self, bot):
@@ -68,6 +73,8 @@ class AIChat(commands.Cog):
         self.headers = {"Authorization": f"Bearer {self.key}"}
 
         log.debug("httpx.__version__: %s", httpx.__version__)
+
+        await self.bot.wait_until_ready()
         await self.process_history()
         log.info("%s: Cog Load Finish", self.__cog_name__)
 
@@ -78,13 +85,11 @@ class AIChat(commands.Cog):
         log.debug("%s: process_history", self.__cog_name__)
         all_guilds: dict = await self.config.all_guilds()
         log.debug("all_guilds: %s", all_guilds)
-        # TODO: Move AsyncIter to inner loop and set proper delay/steps
-        for guild_id, data in await AsyncIter(all_guilds.items(), delay=10, steps=5):
+        for guild_id, data in all_guilds.items():
             log.debug("guild_id: %s - data: %s", guild_id, data)
             guild: discord.Guild = self.bot.get_guild(guild_id)
-            # channels = await self.config.guild(guild_id).channels()
-            # log.debug("channels: %s", channels)
-            for channel in data.get("channels", []):
+            log.debug("guild: %s", guild)
+            for channel in await AsyncIter(data.get("channels", []), delay=1, steps=2):
                 log.debug("channel: %s", channel)
                 await self.gen_history(guild, channel)
 
@@ -180,7 +185,7 @@ class AIChat(commands.Cog):
     @ai.command(name="model", aliases=["m", "models"], description="Get or Set AI Models")
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
-    @commands.admin()
+    @commands.admin_or_can_manage_channel()
     async def _ai_model(self, ctx: commands.Context, model: Optional[str] = None):
         """Get or Set AI Models"""
         log.debug("_ai_model: %s", model)
@@ -200,11 +205,11 @@ class AIChat(commands.Cog):
     @ai.command(name="enable", aliases=["e", "on"], description="Enable AI Chat Bot")
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
-    @commands.admin()
+    @commands.admin_or_can_manage_channel()
     async def _ai_enable(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
         """Enable AI Chat Bot"""
         await ctx.typing()
-        channel = channel or ctx.channel
+        channel: discord.TextChannel = channel or ctx.channel
         log.debug("channel: %s", channel)
         channels = await self.config.guild(ctx.guild).channels()
         log.debug("channels: %s", channels)
@@ -219,11 +224,11 @@ class AIChat(commands.Cog):
     @ai.command(name="disable", aliases=["d", "off"], description="Disable AI Chat Bot")
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
-    @commands.admin()
+    @commands.admin_or_can_manage_channel()
     async def _ai_disable(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
         """Disable AI Chat Bot"""
         await ctx.typing()
-        channel = channel or ctx.channel
+        channel: discord.TextChannel = channel or ctx.channel
         log.debug("channel: %s", channel)
         channels = await self.config.guild(ctx.guild).channels()
         log.debug("channels: %s", channels)
@@ -276,7 +281,7 @@ class AIChat(commands.Cog):
         # for out in output:
         #     if out.get("type", "") == "message":
         #         content = out.get("content", [])
-        default = "⚠️ I'm Speechless..."
+        default = "⚠️ I'm Speechless (error)..."
         for item in data.get("output", []):
             if item.get("type") == "message":
                 for content in item.get("content", []):
@@ -293,6 +298,8 @@ class AIChat(commands.Cog):
             "input": messages,
             "max_output_tokens": self.max_tokens,
         }
+        if model.startswith("gpt-5"):
+            data["service_tier"] = "flex"
         if model.startswith("gpt-5-"):
             data["reasoning"] = {"effort": "minimal"}
         if model.startswith("gpt-5.2-"):
