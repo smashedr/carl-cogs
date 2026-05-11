@@ -88,7 +88,7 @@ class Claude(commands.Cog):
             return
         # if not message.content.startswith("claude"):
         #     return
-        pattern = re.compile(r"^((hey|yo)[,\s]+)?(claude|carl)\b", re.IGNORECASE)
+        pattern = re.compile(r"^((hey|yo)[,\s]+)?(claude)\b", re.IGNORECASE)
         if not pattern.match(message.content):
             return
 
