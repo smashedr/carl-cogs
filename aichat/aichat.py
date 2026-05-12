@@ -42,8 +42,8 @@ MODEL_PRICING = {
 class AIChat(commands.Cog):
     """Carl's AIChat Cog"""
 
+    # TODO: Move instructions/max_tokens to guild settings and add commands...
     max_tokens = 1024
-    # TODO: Move instructions to guild settings and add settings commands
     instructions: str = "You are Carl, a Discord bot. Give short answers unless the question genuinely requires detail."
     guild_default = {
         "model": "gpt-4.1-nano",
@@ -51,7 +51,7 @@ class AIChat(commands.Cog):
     }
     channel_histories = {}
 
-    chat_messages = 25
+    chat_messages = 30
     http_options = {
         "follow_redirects": True,
         "timeout": 60,
@@ -89,7 +89,7 @@ class AIChat(commands.Cog):
             log.debug("guild_id: %s - data: %s", guild_id, data)
             guild: discord.Guild = self.bot.get_guild(guild_id)
             log.debug("guild: %s", guild)
-            for channel in await AsyncIter(data.get("channels", []), delay=1, steps=2):
+            for channel in await AsyncIter(data.get("channels", []), delay=1, steps=3):
                 log.debug("channel: %s", channel)
                 await self.gen_history(guild, channel)
 
@@ -140,7 +140,8 @@ class AIChat(commands.Cog):
 
         if message.author.bot:
             return
-        pattern = re.compile(r"^((hey|yo)[,\s]+)?(carl)\b", re.IGNORECASE)
+        # pattern = re.compile(r"^((hey|yo)[,\s]+)?(carl)\b", re.IGNORECASE)
+        pattern = re.compile(r"^(\w+[,\s]+){0,2}(carl)\b", re.IGNORECASE)
         if not pattern.match(message.content):
             return
         # log.debug("message: %s", message)
