@@ -21,6 +21,11 @@ class Gemini(commands.Cog):
         "timeout": 30,
     }
 
+    instructions: str = (
+        "You are Carl, a Discord bot. Give short answers unless the question genuinely requires detail."
+        # "No padding, no filler, no restating the question."
+    )
+
     prompt = (
         "You are an expert geolocation analyst. "
         "Your task is to determine the precise geographic location shown in an image using a systematic, hierarchical chain-of-thought methodology. "
@@ -84,7 +89,7 @@ class Gemini(commands.Cog):
         await interaction.response.defer()
 
         image_bytes = await attachment.read()
-        response = await self.gemini_response(image_bytes, attachment.content_type)
+        response = await self.gemini_img_response(image_bytes, attachment.content_type)
         log.info("response: %s", response)
         text = response["candidates"][0]["content"]["parts"][0]["text"]
         log.info("text: %s", text)
@@ -129,6 +134,17 @@ class Gemini(commands.Cog):
         log.debug("geoimage_cmd: %s", image)
         await ctx.send("INOP")
 
+    @commands.hybrid_command(name="gemini", aliases=["g"], description="Gemini Command")
+    async def gemini_cmd(self, ctx: commands.Context, *, question: str):
+        """Ask Gemini a <question>"""
+        log.debug("gemini_cmd: %s", question)
+        async with ctx.typing():
+            response = await self.gemini_response(question)
+            log.debug("response: %s", response)
+            text = response["candidates"][0]["content"]["parts"][0]["text"]
+            log.info("text: %s", text)
+            await self.send_text(ctx.send, text)
+
     # async def openai_responses(self, messages: List, model: Optional[str] = None):
     #     # log.debug('openai_responses: %s', messages)
     #     url = "https://api.openai.com/v1/responses"
@@ -141,8 +157,26 @@ class Gemini(commands.Cog):
     #         r.raise_for_status()
     #     return r.json()
 
-    async def gemini_response(self, image_bytes: bytes, mime_type: str):
-        log.debug("gemini_response - %s bytes, type=%s", len(image_bytes), mime_type)
+    async def gemini_response(self, text: str):
+        log.debug("gemini_response - text: %s", text)
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": self.key,
+        }
+        data = {
+            "system_instruction": {"parts": [{"text": self.instructions}]},
+            "contents": [{"parts": [{"text": text}]}],
+        }
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+        async with httpx.AsyncClient(**self.http_options) as client:
+            r = await client.post(url=url, headers=headers, json=data)
+            log.error("r.status_code: %s", r.status_code)
+            # log.error("r.text: %s", r.text)
+            r.raise_for_status()
+        return r.json()
+
+    async def gemini_img_response(self, image_bytes: bytes, mime_type: str):
+        log.debug("gemini_img_response - %s bytes, type=%s", len(image_bytes), mime_type)
         log.debug("prompt: %s", self.prompt)
         headers = {
             "Content-Type": "application/json",

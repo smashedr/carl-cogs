@@ -1,0 +1,17 @@
+{
+  "name": "AIChat",
+  "author": ["Shane#0816"],
+  "short": "Carl's AIChat Module.",
+  "description": "AI Chat Bot.",
+  "install_msg": "Get started with `[p]help AIChat`",
+  "end_user_data_statement": "Caveat Emptor.",
+  "tags": ["redis", "wip"],
+  "requirements": ["httpx", "redis"],
+  "permissions": [],
+  "required_cogs": {},
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 10, 0],
+  "disabled": false,
+  "hidden": false,
+  "type": "COG"
+}
