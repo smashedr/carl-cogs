@@ -1,8 +1,19 @@
-[![Discord](https://img.shields.io/discord/899171661457293343?style=plastic&label=Discord&logo=discord&logoColor=white&color=7289da)](https://discord.gg/wXy6m2X8wY)
-[![Codacy](https://img.shields.io/codacy/grade/439cde1e5a5b4c649beca9b27ec108aa?style=plastic&label=Codacy&logo=codacy)](https://app.codacy.com/gh/smashedr/carl-cogs/dashboard)
-[![Issues](https://img.shields.io/github/issues-raw/smashedr/carl-cogs?style=plastic&label=Issues&logo=github&logoColor=white)](https://github.com/smashedr/carl-cogs/issues)
-[![Status](https://uptime-nj.hosted-domains.com/api/badge/26/status?upColor=4fc523&style=plastic)](https://uptime-nj.hosted-domains.com/status/carl)
+[![Discord](https://img.shields.io/discord/899171661457293343?logo=discord&logoColor=white&label=discord&color=7289da)](https://discord.gg/wXy6m2X8wY)
+[![Status](https://uptime-nj.hosted-domains.com/api/badge/26/status?upColor=4fc523)](https://uptime-nj.hosted-domains.com/status/carl)
+[![Codacy](https://img.shields.io/codacy/grade/439cde1e5a5b4c649beca9b27ec108aa?label=codacy&logo=codacy)](https://app.codacy.com/gh/smashedr/carl-cogs/dashboard)
+[![GitHub Last Commit](https://img.shields.io/github/last-commit/smashedr/carl-cogs?logo=listenhub&label=updated)](https://github.com/smashedr/carl-cogs/pulse)
+[![GitHub Repo Size](https://img.shields.io/github/repo-size/smashedr/carl-cogs?logo=buffer&label=repo%20size)](https://github.com/smashedr/carl-cogs?tab=readme-ov-file#readme)
+[![GitHub Top Language](https://img.shields.io/github/languages/top/smashedr/carl-cogs?logo=devbox)](https://github.com/smashedr/carl-cogs?tab=readme-ov-file#readme)
+[![GitHub Contributors](https://img.shields.io/github/contributors-anon/smashedr/carl-cogs?logo=southwestairlines)](https://github.com/smashedr/carl-cogs/graphs/contributors)
+[![GitHub Issues](https://img.shields.io/github/issues/smashedr/carl-cogs?logo=codeforces&logoColor=white)](https://github.com/smashedr/carl-cogs/issues)
+[![GitHub Discussions](https://img.shields.io/github/discussions/smashedr/carl-cogs?logo=theconversation)](https://github.com/smashedr/carl-cogs/discussions)
+[![GitHub Forks](https://img.shields.io/github/forks/smashedr/carl-cogs?style=flat&logo=forgejo&logoColor=white)](https://github.com/smashedr/carl-cogs/forks)
+[![GitHub Repo Stars](https://img.shields.io/github/stars/smashedr/carl-cogs?style=flat&logo=gleam&logoColor=white)](https://github.com/smashedr/carl-cogs/stargazers)
+[![GitHub Org Stars](https://img.shields.io/github/stars/cssnr?style=flat&logo=apachespark&logoColor=white&label=org%20stars)](https://cssnr.github.io/)
+[![Discord](https://img.shields.io/discord/899171661457293343?logo=discord&logoColor=white&label=discord&color=7289da)](https://discord.gg/wXy6m2X8wY)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-72a5f2?logo=kofi&label=support)](https://ko-fi.com/cssnr)
 [![](https://repository-images.githubusercontent.com/422749366/a8e0e86a-fcdf-42f4-a5f8-63946c0cd272)](https://discord.com/oauth2/authorize?client_id=204384021352808450&scope=bot+applications.commands&permissions=8)
+
 # Carl-Cogs
 
 Cogs for Carl Bot and Red Discord Bot.
@@ -12,12 +23,13 @@ to add Carl Bot to your Discord Server.
 
 ## Table of Contents
 
-*   [Installing](#installing)
-*   [Public Cogs](#public-cogs)
-*   [Internal Cogs](#internal-cogs)
-*   [Tags](#tags)
-*   [Redis](#redis)
-*   [Web API](#web-api)
+- [Installing](#installing)
+- [Public Cogs](#public-cogs)
+- [Internal Cogs](#internal-cogs)
+- [Tags](#tags)
+- [Redis](#redis)
+- [Web API](#web-api)
+- [Contributing](#contributing)
 
 ## Installing
 
@@ -37,42 +49,42 @@ These Cogs should be suitable for public use with little to no extra setup.
 
 **34**/50
 
-| Cog | Description |
-| --- | --- |
-| **[activerole](activerole)** | **Redis** - Adds a role to active chatters. |
-| **[asn](asn)** | **Redis** - Aviation Safety Network data in discord. |
-| **[autoarchive](autoarchive)** | **WIP** - Automatically clones and archives channels before 10k. |
-| **[autochannels](autochannels)** |  Creates duplicate channels on the fly and cleans up when done. |
-| **[autodisconnect](autodisconnect)** |  Automatically disconnects users from the AFK channel. |
-| **[autoroles](autoroles)** |  Adds roles to new members on join. |
-| **[avatar](avatar)** | **WIP** - Server Avatar Auto Updates. |
-| **[avherald](avherald)** | **Redis** - Get and post Aviation Herald data to Discord. |
-| **[botutils](botutils)** |  Custom stateless bot utilities for Carl Bot but useful for anyone. |
-| **[chatgraph](chatgraph)** | **API** - Generate Pie Graph of Messages in Current or Specified Channel. |
-| **[colorme](colorme)** |  Allow users to manage the color of their own name. |
-| **[console](console)** | **WIP** - Random console commands converted to Python and Discord. |
-| **[coolbirbs](coolbirbs)** |  Generate a Random Cool Birb from coolbirbs.com. |
-| **[dayinhistory](dayinhistory)** | **Redis** - Gets and Posts Today in History. |
-| **[flightaware](flightaware)** | **Redis** - FlightAware Flights, Operators, Registration. |
-| **[grafana](grafana)** | **WIP** - Grafana Graphs in Discord. |
-| **[heartbeat](heartbeat)** |  Pings a Heartbeat service every X seconds. |
-| **[imdbsearch](imdbsearch)** |  IMDB Search and lookups. |
-| **[liverole](liverole)** |  Give a role to users when they go live in Discord. |
-| **[lmgtfy](lmgtfy)** | **WIP** - LMGTFY chat replies. |
-| **[ocrimage](ocrimage)** | **WIP** - Converts images to text via Flowery OCR API. |
-| **[openai](openai)** | **WIP** - OpenAI and ChatGPT Commands. |
-| **[planedb](planedb)** |  Add Name->NNumber Mappings to easily search. |
-| **[reactpost](reactpost)** |  Set channels to add Emoji->Channel mappings to post to channel. |
-| **[saveforlater](saveforlater)** |  Save any message to later by having the bot send it to you. |
-| **[sunsetrise](sunsetrise)** |  Get Sun Set and Sun Rise for Location. |
-| **[timer](timer)** |  Start and Stop Timers in Discord. |
-| **[tiorun](tiorun)** |  Runs code on tio.run and returns the results. |
-| **[userchannels](userchannels)** |  Creates custom user rooms on the fly and cleans up when done. |
-| **[webtools](webtools)** |  Web Tools for Carl Bot that could end up in their own module. |
-| **[welcome](welcome)** |  Welcomes new users to your servers on join. |
-| **[wolfram](wolfram)** | **WIP** - Query Wolfram Alpha for Results. |
-| **[youtube](youtube)** | **WIP** - Auto post YouTube videos to specified channels. |
-| **[ziplinecog](ziplinecog)** | **WIP** - Zipline Stats in Discord. |
+| Cog                                  | Description                                                               |
+| ------------------------------------ | ------------------------------------------------------------------------- |
+| **[activerole](activerole)**         | **Redis** - Adds a role to active chatters.                               |
+| **[asn](asn)**                       | **Redis** - Aviation Safety Network data in discord.                      |
+| **[autoarchive](autoarchive)**       | **WIP** - Automatically clones and archives channels before 10k.          |
+| **[autochannels](autochannels)**     | Creates duplicate channels on the fly and cleans up when done.            |
+| **[autodisconnect](autodisconnect)** | Automatically disconnects users from the AFK channel.                     |
+| **[autoroles](autoroles)**           | Adds roles to new members on join.                                        |
+| **[avatar](avatar)**                 | **WIP** - Server Avatar Auto Updates.                                     |
+| **[avherald](avherald)**             | **Redis** - Get and post Aviation Herald data to Discord.                 |
+| **[botutils](botutils)**             | Custom stateless bot utilities for Carl Bot but useful for anyone.        |
+| **[chatgraph](chatgraph)**           | **API** - Generate Pie Graph of Messages in Current or Specified Channel. |
+| **[colorme](colorme)**               | Allow users to manage the color of their own name.                        |
+| **[console](console)**               | **WIP** - Random console commands converted to Python and Discord.        |
+| **[coolbirbs](coolbirbs)**           | Generate a Random Cool Birb from coolbirbs.com.                           |
+| **[dayinhistory](dayinhistory)**     | **Redis** - Gets and Posts Today in History.                              |
+| **[flightaware](flightaware)**       | **Redis** - FlightAware Flights, Operators, Registration.                 |
+| **[grafana](grafana)**               | **WIP** - Grafana Graphs in Discord.                                      |
+| **[heartbeat](heartbeat)**           | Pings a Heartbeat service every X seconds.                                |
+| **[imdbsearch](imdbsearch)**         | IMDB Search and lookups.                                                  |
+| **[liverole](liverole)**             | Give a role to users when they go live in Discord.                        |
+| **[lmgtfy](lmgtfy)**                 | **WIP** - LMGTFY chat replies.                                            |
+| **[ocrimage](ocrimage)**             | **WIP** - Converts images to text via Flowery OCR API.                    |
+| **[openai](openai)**                 | **WIP** - OpenAI and ChatGPT Commands.                                    |
+| **[planedb](planedb)**               | Add Name->NNumber Mappings to easily search.                              |
+| **[reactpost](reactpost)**           | Set channels to add Emoji->Channel mappings to post to channel.           |
+| **[saveforlater](saveforlater)**     | Save any message to later by having the bot send it to you.               |
+| **[sunsetrise](sunsetrise)**         | Get Sun Set and Sun Rise for Location.                                    |
+| **[timer](timer)**                   | Start and Stop Timers in Discord.                                         |
+| **[tiorun](tiorun)**                 | Runs code on tio.run and returns the results.                             |
+| **[userchannels](userchannels)**     | Creates custom user rooms on the fly and cleans up when done.             |
+| **[webtools](webtools)**             | Web Tools for Carl Bot that could end up in their own module.             |
+| **[welcome](welcome)**               | Welcomes new users to your servers on join.                               |
+| **[wolfram](wolfram)**               | **WIP** - Query Wolfram Alpha for Results.                                |
+| **[youtube](youtube)**               | **WIP** - Auto post YouTube videos to specified channels.                 |
+| **[ziplinecog](ziplinecog)**         | **WIP** - Zipline Stats in Discord.                                       |
 
 ## Internal Cogs
 
@@ -81,35 +93,35 @@ You will most likely need to look under the hood to set up these Cogs.
 
 **16**/50
 
-| Cog | Description |
-| --- | --- |
-| **[captcha](captcha)** | **WIP** - Protect server with CAPTCHA. |
-| **[carlcog](carlcog)** |  Custom commands for Carl Bot that could end up in their own module. |
-| **[createthings](createthings)** | **Deprecated** - Create pre-defined or user-defined role/emoji sets. |
-| **[dictionary](dictionary)** | **WIP** - Dictionary and Urban Dictionary lookups. |
-| **[dockercog](dockercog)** | **WIP** - Docker Daemon API. |
-| **[github](github)** | **WIP** - Github Functions in Discord. |
-| **[miscog](miscog)** |  Miscellaneous commands for Carl Bot that could end up in their own module. |
-| **[pubsub](pubsub)** | **Redis, API** - Custom Redis pubsub module for Red and Carl Bot. |
-| **[qr](qr)** | **WIP** - Create QR Codes in Discord. |
-| **[qrscanner](qrscanner)** | **WIP** - Scans messages for attachments to parse and post QR Data. |
-| **[reactroles](reactroles)** | **Deprecated** - Create Reaction Role sets to let users get roles from reactions. |
-| **[stickyroles](stickyroles)** | **Deprecated** - Remembers users roles and adds them on rejoin. |
-| **[uptimekuma](uptimekuma)** | **WIP** - Uptimekuma in Discord. |
-| **[voicetext](voicetext)** | **WIP** - Creates Text Channels for Active Voice Channels and Cleans Up. |
-| **[warcraftlogs](warcraftlogs)** | **Deprecated** - Split Warcraft Logs into multiple channels with filters. |
-| **[weather](weather)** | **WIP** - Get Weather for Location. |
+| Cog                              | Description                                                                       |
+| -------------------------------- | --------------------------------------------------------------------------------- |
+| **[captcha](captcha)**           | **WIP** - Protect server with CAPTCHA.                                            |
+| **[carlcog](carlcog)**           | Custom commands for Carl Bot that could end up in their own module.               |
+| **[createthings](createthings)** | **Deprecated** - Create pre-defined or user-defined role/emoji sets.              |
+| **[dictionary](dictionary)**     | **WIP** - Dictionary and Urban Dictionary lookups.                                |
+| **[dockercog](dockercog)**       | **WIP** - Docker Daemon API.                                                      |
+| **[github](github)**             | **WIP** - Github Functions in Discord.                                            |
+| **[miscog](miscog)**             | Miscellaneous commands for Carl Bot that could end up in their own module.        |
+| **[pubsub](pubsub)**             | **Redis, API** - Custom Redis pubsub module for Red and Carl Bot.                 |
+| **[qr](qr)**                     | **WIP** - Create QR Codes in Discord.                                             |
+| **[qrscanner](qrscanner)**       | **WIP** - Scans messages for attachments to parse and post QR Data.               |
+| **[reactroles](reactroles)**     | **Deprecated** - Create Reaction Role sets to let users get roles from reactions. |
+| **[stickyroles](stickyroles)**   | **Deprecated** - Remembers users roles and adds them on rejoin.                   |
+| **[uptimekuma](uptimekuma)**     | **WIP** - Uptimekuma in Discord.                                                  |
+| **[voicetext](voicetext)**       | **WIP** - Creates Text Channels for Active Voice Channels and Cleans Up.          |
+| **[warcraftlogs](warcraftlogs)** | **Deprecated** - Split Warcraft Logs into multiple channels with filters.         |
+| **[weather](weather)**           | **WIP** - Get Weather for Location.                                               |
 
 ## Tags
 
 Information on Cog Tags.
 
-| Tag | Count | Description |
-|---|---|---|
-| redis | **8** | Cog requires **Redis**. [Read More Here...](#redis) |
-| api | **4** | Cog **may** require Web API. [Read More Here...](#web-api) |
-| wip | **20** | Cog is an active **Work in Progress** and may be frequently updated with breaking changes. |
-| deprecated | **4** | Cog is **DEPRECATED** and may not function as expected or receive updates. |
+| Tag        | Count  | Description                                                                                |
+| ---------- | ------ | ------------------------------------------------------------------------------------------ |
+| redis      | **8**  | Cog requires **Redis**. [Read More Here...](#redis)                                        |
+| api        | **4**  | Cog **may** require Web API. [Read More Here...](#web-api)                                 |
+| wip        | **20** | Cog is an active **Work in Progress** and may be frequently updated with breaking changes. |
+| deprecated | **4**  | Cog is **DEPRECATED** and may not function as expected or receive updates.                 |
 
 ## Redis
 
@@ -131,6 +143,7 @@ docker run --name redis -p 6379:6379 -d redis:alpine
 ```
 
 Name `redis` with data:
+
 ```text
 host    redis
 port    6379
@@ -145,4 +158,23 @@ Above information are the defaults. Password defaults to `None`.
 
 It is a Django app in a Docker container:
 
-*   https://github.com/smashedr/red-api
+- https://github.com/smashedr/red-api
+
+# Contributing
+
+Please consider making a donation to support the development of this project
+and [additional](https://cssnr.com/) open source projects.
+
+[![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/cssnr)
+
+Additionally, you can star this project on [GitHub](https://github.com/smashedr/carl-cogs).
+
+For a full list of current projects visit: [https://cssnr.github.io/](https://cssnr.github.io/)
+
+<a href="https://github.com/smashedr/carl-cogs/stargazers">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=smashedr/carl-cogs&type=date&legend=bottom-right&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=smashedr/carl-cogs&type=date&legend=bottom-right" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=smashedr/carl-cogs&type=date&legend=bottom-right" />
+ </picture>
+</a>
