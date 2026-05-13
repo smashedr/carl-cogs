@@ -50,12 +50,12 @@ class AIChat(commands.Cog):
     }
     channel_default = {
         "instructions": None,
-        "chat_messages": 25,  # TODO: Implement Channel Messages
+        # "chat_messages": 20,  # TODO: Implement Channel Messages
     }
     channel_histories = {}
 
     max_tokens = 1024
-    chat_messages = 25
+    chat_messages = 20
     http_options = {
         "follow_redirects": True,
         "timeout": 60,
@@ -228,10 +228,9 @@ class AIChat(commands.Cog):
             await ctx.send("🧹 AI Chat History Cleared")
 
     @ai.command(name="instructions", aliases=["i", "role", "system"], description="AI Channel Instructions")
-    # @commands.max_concurrency(1, commands.BucketType.guild)
-    @commands.cooldown(rate=1, per=30, type=commands.BucketType.channel)
+    @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
-    # @commands.admin_or_can_manage_channel()
+    @commands.admin_or_can_manage_channel()
     async def _ai_instructions(self, ctx: commands.Context, *, instructions: Optional[str] = None):
         """AI Channel Instructions"""
         log.debug("_ai_instructions: %s", instructions)
@@ -246,6 +245,7 @@ class AIChat(commands.Cog):
 
     @ai.command(name="enable", aliases=["e", "on"], description="Enable AI Chat Bot")
     @commands.max_concurrency(1, commands.BucketType.guild)
+    @commands.cooldown(rate=1, per=3, type=commands.BucketType.channel)
     @commands.guild_only()
     @commands.admin_or_can_manage_channel()
     async def _ai_enable(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
@@ -281,6 +281,7 @@ class AIChat(commands.Cog):
 
     @ai.command(name="reset", aliases=["refresh"], description="Reset AI Chat History")
     @commands.max_concurrency(1, commands.BucketType.guild)
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.channel)
     @commands.guild_only()
     @commands.admin_or_can_manage_channel()
     async def _ai_reset(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
