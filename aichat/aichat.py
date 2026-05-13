@@ -42,25 +42,31 @@ MODEL_PRICING = {
 class AIChat(commands.Cog):
     """Carl's AIChat Cog"""
 
-    # TODO: Move instructions/max_tokens to guild settings and add commands...
-    max_tokens = 1024
+    # TODO: Add instructions to guild_default
     instructions: str = "You are Carl, a Discord bot. Give short answers unless the question genuinely requires detail."
     guild_default = {
         "model": "gpt-4.1-nano",
         "channels": [],
     }
+    channel_default = {
+        "instructions": None,
+        "chat_messages": 25,  # TODO: Implement Channel Messages
+    }
     channel_histories = {}
 
-    chat_messages = 30
+    max_tokens = 1024
+    chat_messages = 25
     http_options = {
         "follow_redirects": True,
         "timeout": 60,
     }
 
+    # noinspection PyMissingConstructor
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(**self.guild_default)
+        self.config.register_channel(**self.channel_default)
 
         self.key: Optional[str] = None
         self.headers: Optional[Dict[str, str]] = None
@@ -98,8 +104,11 @@ class AIChat(commands.Cog):
         channel: discord.TextChannel = guild.get_channel(channel_id)
         log.debug("channel: %s", channel)
 
-        if channel_id not in self.channel_histories:
-            self.channel_histories[channel_id] = deque(maxlen=self.chat_messages)
+        # channel_config: dict = await self.config.channel(channel_id).all()
+        # log.debug("channel_config: %s", channel_config)
+
+        # if channel_id not in self.channel_histories:
+        self.channel_histories[channel_id] = deque(maxlen=self.chat_messages)
 
         messages = [msg async for msg in channel.history(limit=self.chat_messages)]
         for message in reversed(messages):
@@ -129,8 +138,11 @@ class AIChat(commands.Cog):
     async def on_message(self, message: discord.Message):
         if not message.content:
             return
-        channels = await self.config.guild(message.guild).channels()
-        if message.channel.id not in channels:
+        # channels = await self.config.guild(message.guild).channels()
+        guild_config: dict = await self.config.guild(message.guild).all()
+        log.debug("guild_config: %s", guild_config)
+        log.debug("channels: %s", guild_config.get("channels", []))
+        if message.channel.id not in guild_config["channels"]:
             return
 
         # log.debug("message: %s", message)
@@ -150,13 +162,21 @@ class AIChat(commands.Cog):
             messages = list(self.channel_histories.get(message.channel.id, deque()))
             # log.debug("messages: %s", messages)
             log.debug("len(messages): %s", len(messages))
-            model = await self.config.guild(message.guild).model()
+
+            # model = await self.config.guild(message.guild).model()
+            model = guild_config.get("model")
             log.debug("model: %s", model)
-            data = await self.openai_responses(messages, model)
-            log.debug("data: %s", data)
+
+            channel_config: dict = await self.config.channel(message.channel).all()
+            log.debug("channel_config: %s", channel_config)
+            instructions = channel_config.get("instructions")
+            log.debug("instructions: %s", instructions)
+
+            data = await self.openai_responses(messages, model, instructions)
+            log.debug("response - data: %s", data)
             # text = data["output"][0]["content"][0]["text"]
             text = self.get_text(data)
-            text = await self.append_usage(model, data, text)
+            # text = await self.append_usage(model, data, text)
             log.debug("text: %s", text)
             await self.send_text(message.channel.send, text)
 
@@ -173,20 +193,140 @@ class AIChat(commands.Cog):
     # @app_commands.describe(question="Question or Query to send to ChatGPT")
     # async def ai_chat(self, ctx: commands.Context, *, question: str):
     #     """Continue or Start ChatGPT Session with <question>"""
-    #     log.info("ai_chat - question: %s", question)
+    #     log.debug("ai_chat - question: %s", question)
     #     await ctx.typing()
 
     # @ai.command(name="newchat", aliases=["chatgpt", "new"], description="Start New ChatGPT Session")
     # @app_commands.describe(question="Question or Query to send to ChatGPT")
     # async def ai_chat_new(self, ctx: commands.Context, *, question: str):
     #     """Start a new ChatGPT with <question>."""
-    #     log.info("ai_chat_new - question: %s", question)
+    #     log.debug("ai_chat_new - question: %s", question)
     #     await ctx.typing()
+
+    ## CHANNEL MANAGEMENT ##
+
+    @ai.command(name="clear", aliases=["c", "clean"], description="Clear AI Chat Context")
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    @commands.guild_only()
+    @commands.admin_or_can_manage_channel()
+    async def _ai_clear(self, ctx: commands.Context, number: Optional[int] = 0):
+        """Clear AI Chat Context"""
+        log.debug("_ai_clear: %s", number)
+        await ctx.typing()
+        channels = await self.config.guild(ctx.guild).channels()
+        if ctx.channel.id not in channels:
+            await ctx.send("❕ AI Disabled. Enable it first.")
+            return
+
+        if number and number > 0:
+            history = self.channel_histories.get(ctx.channel.id)
+            if history:
+                self.channel_histories[ctx.channel.id] = deque(list(history)[-number:])
+            await ctx.send(f"✂️ AI Chat History Truncated to {number} Messages")
+        else:
+            self.channel_histories[ctx.channel.id].clear()
+            await ctx.send("🧹 AI Chat History Cleared")
+
+    @ai.command(name="instructions", aliases=["i", "role", "system"], description="AI Channel Instructions")
+    # @commands.max_concurrency(1, commands.BucketType.guild)
+    @commands.cooldown(rate=1, per=30, type=commands.BucketType.channel)
+    @commands.guild_only()
+    # @commands.admin_or_can_manage_channel()
+    async def _ai_instructions(self, ctx: commands.Context, *, instructions: Optional[str] = None):
+        """AI Channel Instructions"""
+        log.debug("_ai_instructions: %s", instructions)
+        await ctx.typing()
+        channels = await self.config.guild(ctx.guild).channels()
+        if ctx.channel.id not in channels:
+            await ctx.send("❕ AI Disabled. Enable it first.")
+            return
+
+        await self.config.channel(ctx.channel).instructions.set(instructions)
+        await ctx.send(f"✅ Channel Instructions Updated:\n```\n{instructions}\n```")
+
+    @ai.command(name="enable", aliases=["e", "on"], description="Enable AI Chat Bot")
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    @commands.guild_only()
+    @commands.admin_or_can_manage_channel()
+    async def _ai_enable(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
+        """Enable AI Chat Bot"""
+        await ctx.typing()
+        channel: discord.TextChannel = channel or ctx.channel
+        log.debug("channel: %s", channel)
+        channels = await self.config.guild(ctx.guild).channels()
+        if channel.id not in channels:
+            channels.append(channel.id)
+            await self.config.guild(ctx.guild).channels.set(channels)
+            await self.gen_history(ctx.guild, channel.id)
+            await ctx.send(f"✅ AI Chat enabled in {channel.mention}")
+        else:
+            await ctx.send(f"❕ AI Chat is already enabled in {channel.mention}")
+
+    @ai.command(name="disable", aliases=["d", "off"], description="Disable AI Chat Bot")
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    @commands.guild_only()
+    @commands.admin_or_can_manage_channel()
+    async def _ai_disable(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
+        """Disable AI Chat Bot"""
+        await ctx.typing()
+        channel: discord.TextChannel = channel or ctx.channel
+        log.debug("channel: %s", channel)
+        channels = await self.config.guild(ctx.guild).channels()
+        if channel.id in channels:
+            channels.remove(channel.id)
+            await self.config.guild(ctx.guild).channels.set(channels)
+            await ctx.send(f"⛔ AI Chat disabled in {channel.mention}")
+        else:
+            await ctx.send(f"❕ AI Chat is not enabled in {channel.mention}")
+
+    @ai.command(name="reset", aliases=["refresh"], description="Reset AI Chat History")
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    @commands.guild_only()
+    @commands.admin_or_can_manage_channel()
+    async def _ai_reset(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
+        """Reset AI Chat History"""
+        await ctx.typing()
+        channel: discord.TextChannel = channel or ctx.channel
+        log.debug("channel: %s", channel)
+        channels = await self.config.guild(ctx.guild).channels()
+        if channel.id not in channels:
+            await ctx.send(f"❕ AI Chat is not enabled in {channel.mention}")
+            return
+
+        await self.gen_history(ctx.guild, channel.id)
+        await ctx.send(f"✅ AI Chat History regenerated in {channel.mention}")
+
+    @ai.command(name="status", aliases=["s", "info"], description="AI Chat Bot Status")
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    @commands.guild_only()
+    @commands.admin_or_can_manage_channel()
+    async def _ai_status(self, ctx: commands.Context):
+        """AI Chat Bot Status"""
+        await ctx.typing()
+        guild_config: dict = await self.config.guild(ctx.guild).all()
+        log.debug("guild_config: %s", guild_config)
+        channels = guild_config.get("channels", [])
+        log.debug("channels: %s", channels)
+        enabled = "✅ Enabled" if ctx.channel.id in channels else "⛔ Disabled"
+        model = guild_config.get("model")
+        log.debug("model: %s", model)
+        channel_config: dict = await self.config.channel(ctx.channel).all()
+        log.debug("channel_config: %s", channel_config)
+        instructions = channel_config.get("instructions", "No Channel Specific Instructions.")
+        log.debug("instructions: %s", instructions)
+        history = len(self.channel_histories.get(ctx.channel.id) or [])
+        message = (
+            f"AI Chat Status for Channel {ctx.channel.mention}\nStatus: {enabled}\n"
+            f"Model: {model}\nMessage Count: {history}\nInstructions:\n```\n{instructions}\n```"
+        )
+        await ctx.send(message)
+
+    ## GUILD MANAGEMENT ##
 
     @ai.command(name="model", aliases=["m", "models"], description="Get or Set AI Models")
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
-    @commands.admin_or_can_manage_channel()
+    @commands.mod()
     async def _ai_model(self, ctx: commands.Context, model: Optional[str] = None):
         """Get or Set AI Models"""
         log.debug("_ai_model: %s", model)
@@ -203,48 +343,12 @@ class AIChat(commands.Cog):
             model = await self.config.guild(ctx.guild).model()
             await ctx.send(f"🤖 Current Model: `{model}`\n```json\n{pformat(MODEL_PRICING)}\n```")
 
-    @ai.command(name="enable", aliases=["e", "on"], description="Enable AI Chat Bot")
+    @ai.command(name="channels", aliases=["channel", "enabled", "config"], description="AI Enabled Channels")
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
-    @commands.admin_or_can_manage_channel()
-    async def _ai_enable(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
-        """Enable AI Chat Bot"""
-        await ctx.typing()
-        channel: discord.TextChannel = channel or ctx.channel
-        log.debug("channel: %s", channel)
-        channels = await self.config.guild(ctx.guild).channels()
-        log.debug("channels: %s", channels)
-        if channel.id not in channels:
-            channels.append(channel.id)
-            await self.config.guild(ctx.guild).channels.set(channels)
-            await ctx.send(f"✅ AI Chat enabled in {channel.mention}")
-            await self.gen_history(ctx.guild, channel.id)
-        else:
-            await ctx.send(f"❕ AI Chat is already enabled in {channel.mention}")
-
-    @ai.command(name="disable", aliases=["d", "off"], description="Disable AI Chat Bot")
-    @commands.max_concurrency(1, commands.BucketType.guild)
-    @commands.guild_only()
-    @commands.admin_or_can_manage_channel()
-    async def _ai_disable(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
-        """Disable AI Chat Bot"""
-        await ctx.typing()
-        channel: discord.TextChannel = channel or ctx.channel
-        log.debug("channel: %s", channel)
-        channels = await self.config.guild(ctx.guild).channels()
-        log.debug("channels: %s", channels)
-        if channel.id in channels:
-            channels.remove(channel.id)
-            await self.config.guild(ctx.guild).channels.set(channels)
-            await ctx.send(f"⛔ AI Chat disabled in {channel.mention}")
-        else:
-            await ctx.send(f"❕ AI Chat is not enabled in {channel.mention}")
-
-    @ai.command(name="status", aliases=["s", "info"], description="AI Chat Bot Status")
-    @commands.max_concurrency(1, commands.BucketType.guild)
-    @commands.guild_only()
-    async def _ai_status(self, ctx: commands.Context):
-        """AI Chat Bot Status"""
+    @commands.mod()
+    async def _ai_channels(self, ctx: commands.Context):
+        """AI Enabled Channels"""
         await ctx.typing()
         channel_ids = await self.config.guild(ctx.guild).channels()
         log.debug("channel_ids: %s", channel_ids)
@@ -290,12 +394,13 @@ class AIChat(commands.Cog):
                         return content.get("text", default)
         return default
 
-    async def openai_responses(self, messages: list, model="gpt-4.1-nano"):
+    async def openai_responses(self, messages: list, model="gpt-4.1-nano", instructions: Optional[str] = None):
         # log.debug("openai_responses: %s", messages)
         url = "https://api.openai.com/v1/responses"
         data = {
             "model": model,
-            "instructions": self.instructions,
+            # "instructions": f"{self.instructions}\n\n{instructions}".strip(),
+            "instructions": "\n\n".join(filter(None, [self.instructions, instructions])),
             "input": messages,
             "max_output_tokens": self.max_tokens,
         }
@@ -305,7 +410,7 @@ class AIChat(commands.Cog):
             data["reasoning"] = {"effort": "minimal"}
         if model.startswith("gpt-5.2-"):
             data["reasoning"] = {"effort": "none"}
-        log.debug("openai_responses: %s", data)
+        log.debug("request - data: %s", data)
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.post(url=url, headers=self.headers, json=data)
             log.error("r.status_code: %s", r.status_code)
@@ -332,7 +437,7 @@ class AIChat(commands.Cog):
     @staticmethod
     async def parse_usage(model: str, response: dict):
         usage = response.get("usage", {})
-        log.info("parse_usage: %s", usage)
+        log.debug("parse_usage: %s", usage)
         if not usage:
             return ""
         in_t = usage.get("input_tokens", 0)
@@ -346,7 +451,7 @@ class AIChat(commands.Cog):
             in_cost = out_cost = 0
 
         tot_cost = in_cost + out_cost
-        log.info("in: %s, out: %s, total: %s cost: %s", in_t, out_t, in_t + out_t, tot_cost)
+        log.debug("in: %s, out: %s, total: %s cost: %s", in_t, out_t, in_t + out_t, tot_cost)
         result = ""
         if in_t or out_t:
             result += f"In: {in_t} / Out: {out_t} / Total: {in_t + out_t} / Cost: ${tot_cost:.5f}"
