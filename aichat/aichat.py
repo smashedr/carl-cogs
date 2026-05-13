@@ -1,3 +1,4 @@
+import json
 import discord
 import httpx
 import io
@@ -26,7 +27,7 @@ MODEL_PRICING = {
     # "gpt-5.1": (1.25, 10.00),
     # # GPT-5 series
     # "gpt-5": (1.25, 10.00),
-    "gpt-5": (0.625, 5.00),  # flex
+    # "gpt-5": (0.625, 5.00),  # flex
     # "gpt-5-mini": (0.25, 2.00),
     "gpt-5-mini": (0.125, 1.00),  # flex
     # "gpt-5-nano": (0.05, 0.40),
@@ -123,15 +124,11 @@ class AIChat(commands.Cog):
     def push_message(results: list, message: discord.Message, user_id: int):
         # log.debug("push_message - id: %s - bot: %s", message.author.id, user_id)
         if message.author.id == user_id:
-            lines = message.content.split("\n")
-            if lines and lines[-1].startswith("_In:"):
-                lines.pop()
-                message.content = "\n".join(lines).strip()
-            # results.append({"role": "model", "parts": [{"text": message.content}]}) # Gemini
+            # results.append({"role": "model", "parts": [{"text": message.content}]})  # Gemini
             results.append({"role": "assistant", "content": message.content})  # OpenAI
         else:
             text = f"[{message.author.display_name}]: {message.content}"
-            # results.append({"role": "user", "parts": [{"text": text}]}) # Gemini
+            # results.append({"role": "user", "parts": [{"text": text}]})  # Gemini
             results.append({"role": "user", "content": text})  # OpenAI
 
     @commands.Cog.listener(name="on_message")
@@ -205,13 +202,35 @@ class AIChat(commands.Cog):
 
     ## CHANNEL MANAGEMENT ##
 
-    @ai.command(name="clear", aliases=["c", "clean"], description="Clear AI Chat Context")
+    @ai.command(name="context", aliases=["c", "ctx"], description="Dump AI Chat Context")
     @commands.max_concurrency(1, commands.BucketType.guild)
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.channel)
+    @commands.guild_only()
+    async def _ai_context(self, ctx: commands.Context):
+        """Dump AI Chat Context"""
+        log.debug("_ai_context")
+        await ctx.typing()
+        channels = await self.config.guild(ctx.guild).channels()
+        if ctx.channel.id not in channels:
+            await ctx.send("❕ AI Disabled. Enable it first.")
+            return
+
+        history = list(self.channel_histories.get(ctx.channel.id))
+        log.debug("history: %s", history)
+        data = json.dumps(history, indent=2)
+        log.debug("data: %s", data)
+        bytes_io = io.BytesIO(bytes(data, "utf-8"))
+        file = discord.File(bytes_io, f"{ctx.channel.name}.json")
+        await ctx.send(f"Chat Context for {ctx.channel.mention}", file=file)
+
+    @ai.command(name="reset", aliases=["r", "clear"], description="Reset or Cut AI Chat Context")
+    @commands.max_concurrency(1, commands.BucketType.guild)
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.channel)
     @commands.guild_only()
     @commands.admin_or_can_manage_channel()
-    async def _ai_clear(self, ctx: commands.Context, number: Optional[int] = 0):
-        """Clear AI Chat Context"""
-        log.debug("_ai_clear: %s", number)
+    async def _ai_reset(self, ctx: commands.Context, number: Optional[int] = 0):
+        """Reset or Cut AI Chat Context"""
+        log.debug("_ai_reset: %s", number)
         await ctx.typing()
         channels = await self.config.guild(ctx.guild).channels()
         if ctx.channel.id not in channels:
@@ -279,28 +298,10 @@ class AIChat(commands.Cog):
         else:
             await ctx.send(f"❕ AI Chat is not enabled in {channel.mention}")
 
-    @ai.command(name="reset", aliases=["refresh"], description="Reset AI Chat History")
-    @commands.max_concurrency(1, commands.BucketType.guild)
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.channel)
-    @commands.guild_only()
-    @commands.admin_or_can_manage_channel()
-    async def _ai_reset(self, ctx: commands.Context, channel: Optional[discord.TextChannel]):
-        """Reset AI Chat History"""
-        await ctx.typing()
-        channel: discord.TextChannel = channel or ctx.channel
-        log.debug("channel: %s", channel)
-        channels = await self.config.guild(ctx.guild).channels()
-        if channel.id not in channels:
-            await ctx.send(f"❕ AI Chat is not enabled in {channel.mention}")
-            return
-
-        await self.gen_history(ctx.guild, channel.id)
-        await ctx.send(f"✅ AI Chat History regenerated in {channel.mention}")
-
     @ai.command(name="status", aliases=["s", "info"], description="AI Chat Bot Status")
     @commands.max_concurrency(1, commands.BucketType.guild)
     @commands.guild_only()
-    @commands.admin_or_can_manage_channel()
+    # @commands.admin_or_can_manage_channel()
     async def _ai_status(self, ctx: commands.Context):
         """AI Chat Bot Status"""
         await ctx.typing()
@@ -360,18 +361,6 @@ class AIChat(commands.Cog):
         log.debug("mentions: %s", mentions)
         await ctx.send(f"🤖 Enabled in {len(channels)} channels.\nModel: `{model}`\nchannels: {mentions}")
 
-    # @ai.command(name="test", aliases=["t"], description="AI Test Command")
-    # @commands.max_concurrency(1, commands.BucketType.guild)
-    # @commands.guild_only()
-    # @commands.admin()
-    # async def _ai_test(self, ctx: commands.Context):
-    #     """Disable AI Chat Bot"""
-    #     await ctx.typing()
-    #     log.debug("ctx.guild.me.id: %s", ctx.guild.me.id)
-    #     history = list(self.channel_histories.get(ctx.channel.id, deque()))
-    #     log.debug("history: %s", history)
-    #     await ctx.send("I Did The Thing...")
-
     @staticmethod
     async def send_text(send: Callable, message: str):
         if len(message) < 2000:
@@ -429,31 +418,31 @@ class AIChat(commands.Cog):
     #         r.raise_for_status()
     #     return r.json()
 
-    async def append_usage(self, model: str, response: dict, content):
-        usage = await self.parse_usage(model, response)
-        if usage:
-            content += f"\n\n_{usage}_"
-        return content
-
-    @staticmethod
-    async def parse_usage(model: str, response: dict):
-        usage = response.get("usage", {})
-        log.debug("parse_usage: %s", usage)
-        if not usage:
-            return ""
-        in_t = usage.get("input_tokens", 0)
-        out_t = usage.get("output_tokens", 0)
-        if pricing := MODEL_PRICING.get(model):
-            in_rate, out_rate = pricing
-            in_cost = in_t * (in_rate / 1_000_000)
-            out_cost = out_t * (out_rate / 1_000_000)
-        else:
-            log.warning("Unknown Model: %s", model)
-            in_cost = out_cost = 0
-
-        tot_cost = in_cost + out_cost
-        log.debug("in: %s, out: %s, total: %s cost: %s", in_t, out_t, in_t + out_t, tot_cost)
-        result = ""
-        if in_t or out_t:
-            result += f"In: {in_t} / Out: {out_t} / Total: {in_t + out_t} / Cost: ${tot_cost:.5f}"
-        return result
+    # async def append_usage(self, model: str, response: dict, content):
+    #     usage = await self.parse_usage(model, response)
+    #     if usage:
+    #         content += f"\n\n_{usage}_"
+    #     return content
+    #
+    # @staticmethod
+    # async def parse_usage(model: str, response: dict):
+    #     usage = response.get("usage", {})
+    #     log.debug("parse_usage: %s", usage)
+    #     if not usage:
+    #         return ""
+    #     in_t = usage.get("input_tokens", 0)
+    #     out_t = usage.get("output_tokens", 0)
+    #     if pricing := MODEL_PRICING.get(model):
+    #         in_rate, out_rate = pricing
+    #         in_cost = in_t * (in_rate / 1_000_000)
+    #         out_cost = out_t * (out_rate / 1_000_000)
+    #     else:
+    #         log.warning("Unknown Model: %s", model)
+    #         in_cost = out_cost = 0
+    #
+    #     tot_cost = in_cost + out_cost
+    #     log.debug("in: %s, out: %s, total: %s cost: %s", in_t, out_t, in_t + out_t, tot_cost)
+    #     result = ""
+    #     if in_t or out_t:
+    #         result += f"In: {in_t} / Out: {out_t} / Total: {in_t + out_t} / Cost: ${tot_cost:.5f}"
+    #     return result
