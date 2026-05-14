@@ -1,3 +1,4 @@
+import asyncio
 import json
 import discord
 import httpx
@@ -44,7 +45,13 @@ class AIChat(commands.Cog):
     """Carl's AIChat Cog"""
 
     # TODO: Add instructions to guild_default
-    instructions: str = "You are Carl, a Discord bot. Give short answers unless the question genuinely requires detail."
+    instructions: str = (
+        "You are Carl, a Discord bot. Each user message is a chat message from a user. "
+        "Each message is prefixed with the user's username, ex: [Shane]: "
+        "Give short answers unless the question genuinely requires detail. "
+        "IMPORTANT: ALWAYS wrap every URL (link) in angle brackets <> "
+        "Example: <https://cssnr.com/> "
+    )
     guild_default = {
         "model": "gpt-4.1-nano",
         "channels": [],
@@ -59,7 +66,7 @@ class AIChat(commands.Cog):
     chat_messages = 20
     http_options = {
         "follow_redirects": True,
-        "timeout": 60,
+        "timeout": 90,
     }
 
     # noinspection PyMissingConstructor
@@ -68,27 +75,38 @@ class AIChat(commands.Cog):
         self.config = Config.get_conf(self, 1337, True)
         self.config.register_guild(**self.guild_default)
         self.config.register_channel(**self.channel_default)
+        self.task: Optional[asyncio.Task] = None
 
         self.key: Optional[str] = None
         self.headers: Optional[Dict[str, str]] = None
+        self.search_mcp_url: Optional[str] = None
+        self.search_mcp_auth: Optional[str] = None
 
     async def cog_load(self):
         log.info("%s: Cog Load Start", self.__cog_name__)
         data: Dict[str, str] = await self.bot.get_shared_api_tokens("openai")
         log.debug("%s: data: %s", self.__cog_name__, data)
-        self.key = data.get("api") or data.get("key") or data.get("token") or data["api_key"]
+        self.key = data.get("api") or data.get("key") or data.get("token") or data.get("api_key")
         self.headers = {"Authorization": f"Bearer {self.key}"}
+        self.search_mcp_url = data.get("search_mcp_url") or data.get("search_url")
+        self.search_mcp_auth = data.get("search_mcp_auth") or data.get("search_auth")
+        log.debug("self.search_mcp_url: %s", self.search_mcp_url)
+        log.debug("self.search_mcp_auth: %s", self.search_mcp_auth)
+        if self.search_mcp_url and self.search_mcp_auth:
+            log.info("Web Search MCP Enabled")
 
         log.debug("httpx.__version__: %s", httpx.__version__)
 
-        await self.bot.wait_until_ready()
-        await self.process_history()
+        # await self.bot.wait_until_ready()
+        # await self.process_history()
+        self.task = asyncio.create_task(self.process_history())
         log.info("%s: Cog Load Finish", self.__cog_name__)
 
     async def cog_unload(self):
         log.info("%s: Cog Unload", self.__cog_name__)
 
     async def process_history(self):
+        await self.bot.wait_until_ready()
         log.debug("%s: process_history", self.__cog_name__)
         all_guilds: dict = await self.config.all_guilds()
         log.debug("all_guilds: %s", all_guilds)
@@ -133,7 +151,7 @@ class AIChat(commands.Cog):
 
     @commands.Cog.listener(name="on_message")
     async def on_message(self, message: discord.Message):
-        if not message.content:
+        if not message.content or not message.guild:
             return
         # channels = await self.config.guild(message.guild).channels()
         guild_config: dict = await self.config.guild(message.guild).all()
@@ -389,10 +407,10 @@ class AIChat(commands.Cog):
         url = "https://api.openai.com/v1/responses"
         data = {
             "model": model,
-            # "instructions": f"{self.instructions}\n\n{instructions}".strip(),
             "instructions": "\n\n".join(filter(None, [self.instructions, instructions])),
             "input": messages,
             "max_output_tokens": self.max_tokens,
+            "tools": [],
         }
         if model.startswith("gpt-5"):
             data["service_tier"] = "flex"
@@ -400,6 +418,19 @@ class AIChat(commands.Cog):
             data["reasoning"] = {"effort": "minimal"}
         if model.startswith("gpt-5.2-"):
             data["reasoning"] = {"effort": "none"}
+
+        if self.search_mcp_url and self.search_mcp_auth:
+            data["tools"].append(
+                {
+                    "type": "mcp",
+                    "server_label": "web-search",
+                    "server_url": self.search_mcp_url,
+                    "require_approval": "never",
+                    "allowed_tools": ["search", "fetchWebContent", "fetchGithubReadme"],
+                    "headers": {"Authorization": f"Basic {self.search_mcp_auth}"},
+                }
+            )
+
         log.debug("request - data: %s", data)
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.post(url=url, headers=self.headers, json=data)
