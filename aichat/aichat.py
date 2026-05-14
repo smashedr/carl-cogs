@@ -142,12 +142,14 @@ class AIChat(commands.Cog):
     def push_message(results: list, message: discord.Message, user_id: int):
         # log.debug("push_message - id: %s - bot: %s", message.author.id, user_id)
         if message.author.id == user_id:
-            # results.append({"role": "model", "parts": [{"text": message.content}]})  # Gemini
-            results.append({"role": "assistant", "content": message.content})  # OpenAI
+            # data = {"role": "model", "parts": [{"text": message.content}]}  # Gemini
+            data = {"role": "assistant", "content": message.content}
         else:
             text = f"[{message.author.display_name}]: {message.content}"
-            # results.append({"role": "user", "parts": [{"text": text}]})  # Gemini
-            results.append({"role": "user", "content": text})  # OpenAI
+            # data = {"role": "user", "parts": [{"text": text}]}  # Gemini
+            data = {"role": "user", "content": text}  # OpenAI
+        results.append(data)
+        return data
 
     @commands.Cog.listener(name="on_message")
     async def on_message(self, message: discord.Message):
@@ -155,8 +157,8 @@ class AIChat(commands.Cog):
             return
         # channels = await self.config.guild(message.guild).channels()
         guild_config: dict = await self.config.guild(message.guild).all()
-        log.debug("guild_config: %s", guild_config)
-        log.debug("channels: %s", guild_config.get("channels", []))
+        # log.debug("guild_config: %s", guild_config)
+        # log.debug("channels: %s", guild_config.get("channels", []))
         if message.channel.id not in guild_config["channels"]:
             return
 
@@ -174,9 +176,23 @@ class AIChat(commands.Cog):
         # log.debug("message: %s", message)
 
         async with message.channel.typing():
-            messages = list(self.channel_histories.get(message.channel.id, deque()))
+            # messages = list(self.channel_histories.get(message.channel.id, deque()))
+            messages = list(self.channel_histories[message.channel.id])
             # log.debug("messages: %s", messages)
             log.debug("len(messages): %s", len(messages))
+
+            if message.attachments:
+                attachment: discord.Attachment = message.attachments[0]
+                log.debug("attachment.filename: %s", attachment.filename)
+                log.debug("attachment.content_type: %s", attachment.content_type)
+                log.debug("attachment.size: %s", attachment.size)
+                if attachment.content_type.startswith("text/") and attachment.size < 96 * 1000:
+                    text = await attachment.read()
+                    text = text.decode().strip()
+                    log.debug("text: %s", text)
+                    head = f"User Uploaded Filename: {attachment.filename}\nContent Type: {attachment.content_type}"
+                    messages[-1]["content"] += f"\n\n{head}\n---BEGIN FILE---\n{text}\n---END FILE---"
+                    log.debug("messages[-1]: %s", messages[-1])
 
             # model = await self.config.guild(message.guild).model()
             model = guild_config.get("model")
