@@ -46,9 +46,12 @@ class AIChat(commands.Cog):
 
     # TODO: Add instructions to guild_default
     instructions: str = (
-        "You are Carl, a Discord bot. Each user message is a chat message from a user. "
-        "Each message is prefixed with the user's username, ex: [Shane]: "
+        "You are Carl, a Discord bot in a chat. Users interact with you by saying your name. "
+        "Each user message is a different chat message from a user, prefixed with their Name. "
+        "The Name prefix is added by the system so you know who said what. "
+        "Example message from Shane: `[Shane]: Hello, my name is Shane.` "
         "Give short answers unless the question genuinely requires detail. "
+        "Try to keep responses less than 2000 characters when possible. "
         "IMPORTANT: ALWAYS wrap every URL (link) in angle brackets <> "
         "Example: <https://cssnr.com/> "
     )
@@ -434,6 +437,17 @@ class AIChat(commands.Cog):
             data["reasoning"] = {"effort": "minimal"}
         if model.startswith("gpt-5.2-"):
             data["reasoning"] = {"effort": "none"}
+
+        data["tools"].append(
+            {
+                "type": "mcp",
+                "server_label": "inaturalist-mcp",
+                "server_url": "https://inaturalist-mcp.cssnr.com/mcp",
+                "require_approval": "never",
+                # "allowed_tools": ["search_taxa"],
+                "headers": {},
+            }
+        )
 
         if self.search_mcp_url and self.search_mcp_auth:
             data["tools"].append(
