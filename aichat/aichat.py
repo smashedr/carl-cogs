@@ -421,6 +421,17 @@ class AIChat(commands.Cog):
                         return content.get("text", default)
         return default
 
+    @staticmethod
+    def _add_mcp_tool(data: dict, server_label: str, server_url: str, **kwargs):
+        tool = {
+            "type": "mcp",
+            "require_approval": "never",
+            "server_label": server_label,
+            "server_url": server_url,
+        }
+        tool.update(kwargs)
+        data["tools"].append(tool)
+
     async def openai_responses(self, messages: list, model="gpt-4.1-nano", instructions: Optional[str] = None):
         # log.debug("openai_responses: %s", messages)
         url = "https://api.openai.com/v1/responses"
@@ -438,34 +449,34 @@ class AIChat(commands.Cog):
         if model.startswith("gpt-5.2-"):
             data["reasoning"] = {"effort": "none"}
 
-        data["tools"].append(
-            {
-                "type": "mcp",
-                "server_label": "inaturalist-mcp",
-                "server_url": "https://inaturalist-mcp.cssnr.com/mcp",
-                "require_approval": "never",
-                # "allowed_tools": ["search_taxa"],
-                "headers": {},
-            }
-        )
+        self._add_mcp_tool(data, "inaturalist", "https://inaturalist-mcp.cssnr.com/mcp")
+        self._add_mcp_tool(data, "geolocation", "https://geopy-mcp.cssnr.com/mcp")
 
         if self.search_mcp_url and self.search_mcp_auth:
-            data["tools"].append(
-                {
-                    "type": "mcp",
-                    "server_label": "web-search",
-                    "server_url": self.search_mcp_url,
-                    "require_approval": "never",
-                    "allowed_tools": ["search", "fetchWebContent", "fetchGithubReadme"],
-                    "headers": {"Authorization": f"Basic {self.search_mcp_auth}"},
-                }
+            self._add_mcp_tool(
+                data,
+                "web-search",
+                self.search_mcp_url,
+                allowed_tools=["search", "fetchWebContent", "fetchGithubReadme"],
+                headers={"Authorization": f"Basic {self.search_mcp_auth}"},
             )
 
         log.debug("request - data: %s", data)
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.post(url=url, headers=self.headers, json=data)
-            log.error("r.status_code: %s", r.status_code)
-            r.raise_for_status()
+            log.debug("r.status_code: %s", r.status_code)
+            # log.debug("r.headers: %s", dict(r.headers))
+            if r.is_error:
+                log.error("r.text: %s", r.text)
+                return {
+                    "output": [
+                        {
+                            "type": "message",
+                            "content": [{"type": "output_text", "text": f"⚠️ API Error: {r.status_code}"}],
+                        }
+                    ]
+                }
+            # r.raise_for_status()
         return r.json()
 
     # async def gemini_response(self, contents: list):
