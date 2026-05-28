@@ -82,6 +82,7 @@ class AIChat(commands.Cog):
 
         self.key: Optional[str] = None
         self.headers: Optional[Dict[str, str]] = None
+        self.mcp_auth: Optional[str] = None
         self.search_mcp_url: Optional[str] = None
         self.search_mcp_auth: Optional[str] = None
 
@@ -91,10 +92,9 @@ class AIChat(commands.Cog):
         log.debug("%s: data: %s", self.__cog_name__, data)
         self.key = data.get("api") or data.get("key") or data.get("token") or data.get("api_key")
         self.headers = {"Authorization": f"Bearer {self.key}"}
+        self.mcp_auth = data.get("mcp_auth")
         self.search_mcp_url = data.get("search_mcp_url") or data.get("search_url")
         self.search_mcp_auth = data.get("search_mcp_auth") or data.get("search_auth")
-        log.debug("self.search_mcp_url: %s", self.search_mcp_url)
-        log.debug("self.search_mcp_auth: %s", self.search_mcp_auth)
         if self.search_mcp_url and self.search_mcp_auth:
             log.info("Web Search MCP Enabled")
 
@@ -451,6 +451,14 @@ class AIChat(commands.Cog):
 
         self._add_mcp_tool(data, "inaturalist", "https://inaturalist-mcp.cssnr.com/mcp")
         self._add_mcp_tool(data, "geolocation", "https://geopy-mcp.cssnr.com/mcp")
+        self._add_mcp_tool(data, "urbandictionary", "https://urban-dictionary-mcp.cssnr.com/mcp")
+        if self.mcp_auth:
+            self._add_mcp_tool(
+                data,
+                "flightaware",
+                "https://flightaware-mcp.cssnr.com/mcp",
+                headers={"Authorization": f"Basic {self.mcp_auth}"},
+            )
 
         if self.search_mcp_url and self.search_mcp_auth:
             self._add_mcp_tool(
