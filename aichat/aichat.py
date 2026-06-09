@@ -473,6 +473,10 @@ class AIChat(commands.Cog):
         async with httpx.AsyncClient(**self.http_options) as client:
             r = await client.post(url=url, headers=self.headers, json=data)
             log.debug("r.status_code: %s", r.status_code)
+            if r.status_code == 429:
+                log.info("%s - RETRY WITHOUT FLEX", r.status_code)
+                data["service_tier"] = "default"
+                r = await client.post(url=url, headers=self.headers, json=data)
             # log.debug("r.headers: %s", dict(r.headers))
             if r.is_error:
                 log.error("r.text: %s", r.text)
