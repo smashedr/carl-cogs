@@ -17,6 +17,8 @@ log = logging.getLogger("red.aichat")
 
 
 MODEL_PRICING = {
+    # # GPT-5.6 series
+    "gpt-5.6-luna": (0.10, 0.6),  # flex
     # # GPT-5.4 series
     # "gpt-5.4-mini": (0.75, 4.50),
     "gpt-5.4-mini": (0.375, 2.25),  # flex
@@ -447,6 +449,8 @@ class AIChat(commands.Cog):
         if model.startswith("gpt-5-"):
             data["reasoning"] = {"effort": "minimal"}
         if model.startswith("gpt-5.2-"):
+            data["reasoning"] = {"effort": "none"}
+        if model.startswith("gpt-5.6-"):
             data["reasoning"] = {"effort": "none"}
 
         self._add_mcp_tool(data, "inaturalist", "https://inaturalist-mcp.cssnr.com/mcp")
