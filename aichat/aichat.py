@@ -451,7 +451,7 @@ class AIChat(commands.Cog):
         if model.startswith("gpt-5.2-"):
             data["reasoning"] = {"effort": "none"}
         if model.startswith("gpt-5.6-"):
-            data["reasoning"] = {"effort": "none"}
+            data["reasoning"] = {"effort": "low"}
 
         self._add_mcp_tool(data, "inaturalist", "https://inaturalist-mcp.cssnr.com/mcp")
         self._add_mcp_tool(data, "geolocation", "https://geopy-mcp.cssnr.com/mcp")
