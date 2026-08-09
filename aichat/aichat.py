@@ -58,7 +58,7 @@ class AIChat(commands.Cog):
         "Example: <https://cssnr.com/> "
     )
     guild_default = {
-        "model": "gpt-4.1-nano",
+        "model": "gpt-5.6-luna",
         "channels": [],
     }
     channel_default = {
@@ -68,7 +68,7 @@ class AIChat(commands.Cog):
     channel_histories = {}
 
     max_tokens = 1024
-    chat_messages = 20
+    chat_messages = 25
     http_options = {
         "follow_redirects": True,
         "timeout": 90,
