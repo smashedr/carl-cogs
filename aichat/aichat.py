@@ -176,7 +176,8 @@ class AIChat(commands.Cog):
             return
         # pattern = re.compile(r"^((hey|yo)[,\s]+)?(carl)\b", re.IGNORECASE)
         pattern = re.compile(r"^(\w+[,\s]+){0,2}(carl)\b", re.IGNORECASE)
-        if not pattern.match(message.content):
+        mentioned = message.guild.me.mentioned_in(message)
+        if not pattern.match(message.content) and not mentioned:
             return
         # log.debug("message: %s", message)
 
