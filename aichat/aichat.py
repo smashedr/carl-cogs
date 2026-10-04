@@ -67,8 +67,10 @@ class AIChat(commands.Cog):
     }
     channel_histories = {}
 
+    first_x_words = 10
+    last_x_words = 6
     max_tokens = 1024
-    chat_messages = 25
+    chat_messages = 30
     http_options = {
         "follow_redirects": True,
         "timeout": 90,
@@ -156,6 +158,34 @@ class AIChat(commands.Cog):
         results.append(data)
         return data
 
+    def at_carl(self, message: discord.Message) -> bool:
+        # note: guild.me.mentioned_in() is also True for @here/@everyone and for any role
+        # the bot holds, so check the bot's own user mention directly instead
+        if message.guild and any(user.id == message.guild.me.id for user in message.mentions):
+            return True
+
+        # drop code, links, and discord markup (mentions, custom emoji, timestamps)
+        text = re.sub(
+            r"```.*?```|`[^`\n]+`|\b(?:https?://|www\.)\S+|\b[\w-]+(?:\.[\w-]+)+\b(?:/\S*)?"
+            r"|<(?:@[!&]?|#|a?:|t:)[^>\s]*>",
+            " ",
+            message.content,
+            flags=re.DOTALL,
+        )
+        words = re.findall(r"[^\W_]+", text.casefold())
+
+        return "carl" in words[: self.first_x_words] + words[-self.last_x_words :]
+
+        # text = message.content
+        # text = re.sub(r"```.*?```", lambda m: "\0" * len(m.group(0)), text, flags=re.DOTALL)
+        # text = re.sub(r"`[^`\n]+`", lambda m: "\0" * len(m.group(0)), text)
+        # text = re.sub(
+        #     r"\b(?:https?://|www\.)\S+|\b[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+(?:/\S*)?",
+        #     lambda m: "\0" * len(m.group(0)),
+        #     text,
+        # )
+        # return bool(re.search(r"\bcarl\b", text, re.IGNORECASE))
+
     @commands.Cog.listener(name="on_message")
     async def on_message(self, message: discord.Message):
         if not message.content or not message.guild:
@@ -175,9 +205,11 @@ class AIChat(commands.Cog):
         if message.author.bot:
             return
         # pattern = re.compile(r"^((hey|yo)[,\s]+)?(carl)\b", re.IGNORECASE)
-        pattern = re.compile(r"^(\w+[,\s]+){0,2}(carl)\b", re.IGNORECASE)
-        mentioned = message.guild.me.mentioned_in(message)
-        if not pattern.match(message.content) and not mentioned:
+        # pattern = re.compile(r"^(\w+[,\s]+){0,2}(carl)\b", re.IGNORECASE)
+        # mentioned = message.guild.me.mentioned_in(message)
+        # if not pattern.match(message.content) and not mentioned:
+        #     return
+        if not self.at_carl(message):
             return
         # log.debug("message: %s", message)
 
