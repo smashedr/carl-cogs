@@ -17,6 +17,8 @@ log = logging.getLogger("red.aichat")
 
 
 MODEL_PRICING = {
+    # # GPT-6 series
+    "gpt-6-luna": (0.05, 0.25),  # flex
     # # GPT-5.6 series
     "gpt-5.6-luna": (0.10, 0.6),  # flex
     # # GPT-5.4 series
@@ -58,7 +60,7 @@ class AIChat(commands.Cog):
         "Example: <https://cssnr.com/> "
     )
     guild_default = {
-        "model": "gpt-5.6-luna",
+        "model": "gpt-6-luna",
         "channels": [],
     }
     channel_default = {
