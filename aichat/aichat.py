@@ -174,7 +174,8 @@ class AIChat(commands.Cog):
             message.content,
             flags=re.DOTALL,
         )
-        words = re.findall(r"[^\W_]+", text.casefold())
+        # words = re.findall(r"[^\W_]+", text.casefold())
+        words = re.findall(r"[^\W_]+(?:[-_][^\W_]+)*", text.casefold())
 
         return "carl" in words[: self.first_x_words] + words[-self.last_x_words :]
 
@@ -490,12 +491,12 @@ class AIChat(commands.Cog):
         if model.startswith("gpt-5.6-"):
             data["reasoning"] = {"effort": "medium"}
 
-        self._add_mcp_tool(
-            data,
-            "inaturalist",
-            "https://inaturalist-mcp.cssnr.com/mcp",
-            headers={"Authorization": f"Basic {self.mcp_auth}"},
-        )
+        # self._add_mcp_tool(
+        #     data,
+        #     "inaturalist",
+        #     "https://K-mcp.cssnr.com/mcp",
+        #     headers={"Authorization": f"Basic {self.mcp_auth}"},
+        # )
         self._add_mcp_tool(
             data,
             "geolocation",
