@@ -174,6 +174,7 @@ class AIChat(commands.Cog):
             message.content,
             flags=re.DOTALL,
         )
+        # Note: Updated to not match `carl-cogs` or `carl_cogs`
         # words = re.findall(r"[^\W_]+", text.casefold())
         words = re.findall(r"[^\W_]+(?:[-_][^\W_]+)*", text.casefold())
 
