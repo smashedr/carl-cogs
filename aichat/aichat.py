@@ -479,7 +479,7 @@ class AIChat(commands.Cog):
             "max_output_tokens": self.max_tokens,
             "tools": [],
         }
-        if model.startswith("gpt-5"):
+        if model.startswith("gpt-5") or model.startswith("gpt-6"):
             data["service_tier"] = "flex"
         if model.startswith("gpt-5-"):
             data["reasoning"] = {"effort": "minimal"}
