@@ -490,25 +490,37 @@ class AIChat(commands.Cog):
         if model.startswith("gpt-5.6-"):
             data["reasoning"] = {"effort": "medium"}
 
-        self._add_mcp_tool(data, "inaturalist", "https://inaturalist-mcp.cssnr.com/mcp")
-        self._add_mcp_tool(data, "geolocation", "https://geopy-mcp.cssnr.com/mcp")
-        self._add_mcp_tool(data, "urbandictionary", "https://urban-dictionary-mcp.cssnr.com/mcp")
-        if self.mcp_auth:
-            self._add_mcp_tool(
-                data,
-                "flightaware",
-                "https://flightaware-mcp.cssnr.com/mcp",
-                headers={"Authorization": f"Basic {self.mcp_auth}"},
-            )
-
-        if self.search_mcp_url and self.search_mcp_auth:
-            self._add_mcp_tool(
-                data,
-                "web-search",
-                self.search_mcp_url,
-                allowed_tools=["search", "fetchWebContent", "fetchGithubReadme"],
-                headers={"Authorization": f"Basic {self.search_mcp_auth}"},
-            )
+        self._add_mcp_tool(
+            data,
+            "inaturalist",
+            "https://inaturalist-mcp.cssnr.com/mcp",
+            headers={"Authorization": f"Basic {self.mcp_auth}"},
+        )
+        self._add_mcp_tool(
+            data,
+            "geolocation",
+            "https://geopy-mcp.cssnr.com/mcp",
+            headers={"Authorization": f"Basic {self.mcp_auth}"},
+        )
+        self._add_mcp_tool(
+            data,
+            "urbandictionary",
+            "https://urban-dictionary-mcp.cssnr.com/mcp",
+            headers={"Authorization": f"Basic {self.mcp_auth}"},
+        )
+        self._add_mcp_tool(
+            data,
+            "flightaware",
+            "https://flightaware-mcp.cssnr.com/mcp",
+            headers={"Authorization": f"Basic {self.mcp_auth}"},
+        )
+        self._add_mcp_tool(
+            data,
+            "web-search",
+            "https://web-search-mcp.cssnr.com/mcp",
+            allowed_tools=["search", "fetchWebContent", "fetchGithubReadme"],
+            headers={"Authorization": f"Basic {self.mcp_auth}"},
+        )
 
         log.debug("request - data: %s", data)
         async with httpx.AsyncClient(**self.http_options) as client:
